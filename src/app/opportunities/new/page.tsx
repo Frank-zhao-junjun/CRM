@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useCRM } from '@/lib/crm-context';
 import { Button } from '@/components/ui/button';
@@ -27,7 +27,7 @@ const stages: { value: OpportunityStage; label: string; probability: number }[] 
   { value: 'closed_lost', label: '失败', probability: 0 },
 ];
 
-export default function NewOpportunityPage() {
+function NewOpportunityForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { customers, contacts, addOpportunity } = useCRM();
@@ -89,6 +89,147 @@ export default function NewOpportunityPage() {
   };
 
   return (
+    <form onSubmit={handleSubmit} className="space-y-6">
+      <Card>
+        <CardHeader>
+          <CardTitle>机会信息</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="title">机会名称 *</Label>
+            <Input
+              id="title"
+              value={formData.title}
+              onChange={(e) => handleChange('title', e.target.value)}
+              placeholder="输入机会名称"
+              required
+            />
+          </div>
+
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div className="space-y-2">
+              <Label htmlFor="customerId">客户 *</Label>
+              <Select 
+                value={formData.customerId} 
+                onValueChange={(v) => handleChange('customerId', v)}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="选择客户" />
+                </SelectTrigger>
+                <SelectContent>
+                  {customers.map(customer => (
+                    <SelectItem key={customer.id} value={customer.id}>
+                      {customer.company}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="contactId">联系人</Label>
+              <Select 
+                value={formData.contactId} 
+                onValueChange={(v) => handleChange('contactId', v)}
+                disabled={!formData.customerId}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="选择联系人" />
+                </SelectTrigger>
+                <SelectContent>
+                  {customerContacts.map(contact => (
+                    <SelectItem key={contact.id} value={contact.id}>
+                      {contact.lastName}{contact.firstName} - {contact.position}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          <div className="grid gap-4 sm:grid-cols-3">
+            <div className="space-y-2">
+              <Label htmlFor="value">金额 *</Label>
+              <Input
+                id="value"
+                type="number"
+                value={formData.value}
+                onChange={(e) => handleChange('value', e.target.value)}
+                placeholder="0"
+                min="0"
+                required
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="stage">阶段</Label>
+              <Select 
+                value={formData.stage} 
+                onValueChange={(v) => handleChange('stage', v)}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {stages.map(stage => (
+                    <SelectItem key={stage.value} value={stage.value}>
+                      {stage.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="probability">概率</Label>
+              <Input
+                id="probability"
+                type="number"
+                value={formData.probability}
+                onChange={(e) => handleChange('probability', e.target.value)}
+                min="0"
+                max="100"
+                disabled
+              />
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="expectedCloseDate">预计成交日期 *</Label>
+            <Input
+              id="expectedCloseDate"
+              type="date"
+              value={formData.expectedCloseDate}
+              onChange={(e) => handleChange('expectedCloseDate', e.target.value)}
+              required
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="description">描述</Label>
+            <textarea
+              id="description"
+              value={formData.description}
+              onChange={(e) => handleChange('description', e.target.value)}
+              placeholder="机会描述..."
+              className="flex min-h-[100px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+            />
+          </div>
+        </CardContent>
+      </Card>
+
+      <div className="flex justify-end gap-4">
+        <Button variant="outline" type="button" asChild>
+          <Link href="/opportunities">取消</Link>
+        </Button>
+        <Button type="submit" disabled={loading || !formData.customerId}>
+          <Save className="h-4 w-4 mr-2" />
+          保存
+        </Button>
+      </div>
+    </form>
+  );
+}
+
+export default function NewOpportunityPage() {
+  return (
     <div className="max-w-2xl mx-auto space-y-6">
       <div className="flex items-center gap-4">
         <Button variant="ghost" size="icon" asChild>
@@ -99,142 +240,9 @@ export default function NewOpportunityPage() {
         <h2 className="text-2xl font-bold">新建销售机会</h2>
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-6">
-        <Card>
-          <CardHeader>
-            <CardTitle>机会信息</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="title">机会名称 *</Label>
-              <Input
-                id="title"
-                value={formData.title}
-                onChange={(e) => handleChange('title', e.target.value)}
-                placeholder="输入机会名称"
-                required
-              />
-            </div>
-
-            <div className="grid gap-4 sm:grid-cols-2">
-              <div className="space-y-2">
-                <Label htmlFor="customerId">客户 *</Label>
-                <Select 
-                  value={formData.customerId} 
-                  onValueChange={(v) => handleChange('customerId', v)}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="选择客户" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {customers.map(customer => (
-                      <SelectItem key={customer.id} value={customer.id}>
-                        {customer.company}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="contactId">联系人</Label>
-                <Select 
-                  value={formData.contactId} 
-                  onValueChange={(v) => handleChange('contactId', v)}
-                  disabled={!formData.customerId}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="选择联系人" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {customerContacts.map(contact => (
-                      <SelectItem key={contact.id} value={contact.id}>
-                        {contact.lastName}{contact.firstName} - {contact.position}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-
-            <div className="grid gap-4 sm:grid-cols-3">
-              <div className="space-y-2">
-                <Label htmlFor="value">金额 *</Label>
-                <Input
-                  id="value"
-                  type="number"
-                  value={formData.value}
-                  onChange={(e) => handleChange('value', e.target.value)}
-                  placeholder="0"
-                  min="0"
-                  required
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="stage">阶段</Label>
-                <Select 
-                  value={formData.stage} 
-                  onValueChange={(v) => handleChange('stage', v)}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {stages.map(stage => (
-                      <SelectItem key={stage.value} value={stage.value}>
-                        {stage.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="probability">概率</Label>
-                <Input
-                  id="probability"
-                  type="number"
-                  value={formData.probability}
-                  onChange={(e) => handleChange('probability', e.target.value)}
-                  min="0"
-                  max="100"
-                  disabled
-                />
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="expectedCloseDate">预计成交日期 *</Label>
-              <Input
-                id="expectedCloseDate"
-                type="date"
-                value={formData.expectedCloseDate}
-                onChange={(e) => handleChange('expectedCloseDate', e.target.value)}
-                required
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="description">描述</Label>
-              <textarea
-                id="description"
-                value={formData.description}
-                onChange={(e) => handleChange('description', e.target.value)}
-                placeholder="机会描述..."
-                className="flex min-h-[100px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-              />
-            </div>
-          </CardContent>
-        </Card>
-
-        <div className="flex justify-end gap-4">
-          <Button variant="outline" type="button" asChild>
-            <Link href="/opportunities">取消</Link>
-          </Button>
-          <Button type="submit" disabled={loading || !formData.customerId}>
-            <Save className="h-4 w-4 mr-2" />
-            保存
-          </Button>
-        </div>
-      </form>
+      <Suspense fallback={<div className="text-center py-8">加载中...</div>}>
+        <NewOpportunityForm />
+      </Suspense>
     </div>
   );
 }

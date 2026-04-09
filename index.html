@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Frank's CRM Demo</title>
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+  <!-- Sidebar -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-header">
+      <div class="logo">
+        <span class="logo-icon">📊</span>
+        <span class="logo-text">Frank's CRM</span>
+      </div>
+    </div>
+    <nav class="sidebar-nav">
+      <a href="#" class="nav-item active" data-page="dashboard">
+        <span class="nav-icon">🏠</span>
+        <span class="nav-label">Dashboard</span>
+      </a>
+      <a href="#" class="nav-item" data-page="customers">
+        <span class="nav-icon">👥</span>
+        <span class="nav-label">Customers</span>
+      </a>
+      <a href="#" class="nav-item" data-page="leads">
+        <span class="nav-icon">🎯</span>
+        <span class="nav-label">Leads</span>
+      </a>
+      <a href="#" class="nav-item" data-page="contacts">
+        <span class="nav-icon">📇</span>
+        <span class="nav-label">Contacts</span>
+      </a>
+      <a href="#" class="nav-item" data-page="tasks">
+        <span class="nav-icon">✅</span>
+        <span class="nav-label">Tasks</span>
+      </a>
+      <a href="#" class="nav-item" data-page="reports">
+        <span class="nav-icon">📈</span>
+        <span class="nav-label">Reports</span>
+      </a>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="user-info">
+        <div class="user-avatar">F</div>
+        <div class="user-details">
+          <div class="user-name">Frank Zhao</div>
+          <div class="user-role">Administrator</div>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Main Content -->
+  <main class="main-content" id="main-content">
+    <!-- Top Bar -->
+    <header class="topbar">
+      <button class="menu-toggle" id="menu-toggle">☰</button>
+      <div class="topbar-title" id="page-title">Dashboard</div>
+      <div class="topbar-actions">
+        <button class="btn btn-primary" id="action-btn" onclick="handleActionBtn()">+ New Customer</button>
+      </div>
+    </header>
+
+    <!-- Pages -->
+    <div class="page-content">
+
+      <!-- Dashboard Page -->
+      <section id="page-dashboard" class="page active">
+        <div class="stats-grid">
+          <div class="stat-card">
+            <div class="stat-icon customer-icon">👥</div>
+            <div class="stat-info">
+              <div class="stat-value" id="stat-customers">0</div>
+              <div class="stat-label">Total Customers</div>
+            </div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon lead-icon">🎯</div>
+            <div class="stat-info">
+              <div class="stat-value" id="stat-leads">0</div>
+              <div class="stat-label">Active Leads</div>
+            </div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon revenue-icon">💰</div>
+            <div class="stat-info">
+              <div class="stat-value" id="stat-revenue">$0</div>
+              <div class="stat-label">Total Revenue</div>
+            </div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon task-icon">✅</div>
+            <div class="stat-info">
+              <div class="stat-value" id="stat-tasks">0</div>
+              <div class="stat-label">Pending Tasks</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="dashboard-grid">
+          <div class="card">
+            <div class="card-header">
+              <h3>Recent Customers</h3>
+              <a href="#" class="view-all" data-page="customers">View All</a>
+            </div>
+            <div class="card-body" id="recent-customers">
+              <p class="empty-state">No customers yet.</p>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-header">
+              <h3>Lead Pipeline</h3>
+              <a href="#" class="view-all" data-page="leads">View All</a>
+            </div>
+            <div class="card-body" id="pipeline-summary">
+              <p class="empty-state">No leads yet.</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="card mt-20">
+          <div class="card-header">
+            <h3>Upcoming Tasks</h3>
+            <a href="#" class="view-all" data-page="tasks">View All</a>
+          </div>
+          <div class="card-body" id="upcoming-tasks">
+            <p class="empty-state">No tasks yet.</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- Customers Page -->
+      <section id="page-customers" class="page">
+        <div class="toolbar">
+          <input type="text" class="search-input" id="customer-search" placeholder="Search customers..." oninput="filterCustomers()" />
+          <select class="filter-select" id="customer-filter" onchange="filterCustomers()">
+            <option value="">All Status</option>
+            <option value="Active">Active</option>
+            <option value="Inactive">Inactive</option>
+            <option value="Prospect">Prospect</option>
+          </select>
+        </div>
+        <div class="card">
+          <table class="data-table" id="customer-table">
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>Company</th>
+                <th>Email</th>
+                <th>Phone</th>
+                <th>Status</th>
+                <th>Value</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="customer-tbody">
+              <tr><td colspan="7" class="empty-state">No customers yet. Click "+ New Customer" to add one.</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- Leads Page -->
+      <section id="page-leads" class="page">
+        <div class="pipeline">
+          <div class="pipeline-col" id="col-new">
+            <div class="pipeline-header new-header">New</div>
+            <div class="pipeline-cards" id="cards-new" ondragover="allowDrop(event)" ondrop="drop(event, 'New')"></div>
+          </div>
+          <div class="pipeline-col" id="col-contacted">
+            <div class="pipeline-header contacted-header">Contacted</div>
+            <div class="pipeline-cards" id="cards-contacted" ondragover="allowDrop(event)" ondrop="drop(event, 'Contacted')"></div>
+          </div>
+          <div class="pipeline-col" id="col-qualified">
+            <div class="pipeline-header qualified-header">Qualified</div>
+            <div class="pipeline-cards" id="cards-qualified" ondragover="allowDrop(event)" ondrop="drop(event, 'Qualified')"></div>
+          </div>
+          <div class="pipeline-col" id="col-proposal">
+            <div class="pipeline-header proposal-header">Proposal</div>
+            <div class="pipeline-cards" id="cards-proposal" ondragover="allowDrop(event)" ondrop="drop(event, 'Proposal')"></div>
+          </div>
+          <div class="pipeline-col" id="col-closed">
+            <div class="pipeline-header closed-header">Closed Won</div>
+            <div class="pipeline-cards" id="cards-closed" ondragover="allowDrop(event)" ondrop="drop(event, 'Closed Won')"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Contacts Page -->
+      <section id="page-contacts" class="page">
+        <div class="toolbar">
+          <input type="text" class="search-input" id="contact-search" placeholder="Search contacts..." oninput="filterContacts()" />
+        </div>
+        <div class="card">
+          <table class="data-table" id="contact-table">
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>Title</th>
+                <th>Company</th>
+                <th>Email</th>
+                <th>Phone</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="contact-tbody">
+              <tr><td colspan="6" class="empty-state">No contacts yet. Click "+ New Contact" to add one.</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- Tasks Page -->
+      <section id="page-tasks" class="page">
+        <div class="toolbar">
+          <select class="filter-select" id="task-filter" onchange="filterTasks()">
+            <option value="">All Tasks</option>
+            <option value="pending">Pending</option>
+            <option value="done">Completed</option>
+          </select>
+        </div>
+        <div class="card">
+          <table class="data-table" id="task-table">
+            <thead>
+              <tr>
+                <th>Task</th>
+                <th>Related To</th>
+                <th>Due Date</th>
+                <th>Priority</th>
+                <th>Status</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="task-tbody">
+              <tr><td colspan="6" class="empty-state">No tasks yet. Click "+ New Task" to add one.</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- Reports Page -->
+      <section id="page-reports" class="page">
+        <div class="reports-grid">
+          <div class="card">
+            <div class="card-header"><h3>Customer Status Breakdown</h3></div>
+            <div class="card-body">
+              <canvas id="chart-customer-status" width="300" height="200"></canvas>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-header"><h3>Lead Pipeline Summary</h3></div>
+            <div class="card-body">
+              <canvas id="chart-pipeline" width="300" height="200"></canvas>
+            </div>
+          </div>
+          <div class="card full-width">
+            <div class="card-header"><h3>Revenue by Customer</h3></div>
+            <div class="card-body">
+              <canvas id="chart-revenue" width="600" height="200"></canvas>
+            </div>
+          </div>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <!-- Modal -->
+  <div class="modal-overlay" id="modal-overlay" onclick="closeModal()">
+    <div class="modal" id="modal" onclick="event.stopPropagation()">
+      <div class="modal-header">
+        <h2 id="modal-title">Add Customer</h2>
+        <button class="modal-close" onclick="closeModal()">✕</button>
+      </div>
+      <div class="modal-body" id="modal-body"></div>
+    </div>
+  </div>
+
+  <script src="js/data.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>

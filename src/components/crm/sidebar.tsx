@@ -12,6 +12,7 @@ import {
   ChevronLeft,
   Menu,
   Zap,
+  Lightbulb,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
@@ -29,6 +30,13 @@ const navigation = [
     href: '/customers', 
     icon: Users,
     gradient: 'from-purple-500 to-pink-500',
+  },
+  { 
+    name: '销售线索', 
+    href: '/leads', 
+    icon: Lightbulb,
+    gradient: 'from-yellow-500 to-amber-500',
+    badge: '线索',
   },
   { 
     name: '销售机会', 

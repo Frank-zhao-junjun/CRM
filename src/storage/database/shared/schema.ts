@@ -46,6 +46,32 @@ export const contacts = pgTable(
   ]
 );
 
+// 销售线索表
+export const leads = pgTable(
+  "leads",
+  {
+    id: varchar("id", { length: 36 }).primaryKey().default(sql`gen_random_uuid()`),
+    title: varchar("title", { length: 255 }).notNull(),
+    source: varchar("source", { length: 50 }).notNull(), // referral, website, cold_call, event, advertisement, other
+    customer_id: varchar("customer_id", { length: 36 }).notNull().references(() => customers.id, { onDelete: "cascade" }),
+    customer_name: varchar("customer_name", { length: 255 }).notNull(),
+    contact_id: varchar("contact_id", { length: 36 }).references(() => contacts.id, { onDelete: "set null" }),
+    contact_name: varchar("contact_name", { length: 255 }),
+    estimated_value: numeric("estimated_value", { precision: 15, scale: 2 }).notNull().default("0"),
+    probability: integer("probability").notNull().default(10), // 线索默认10%
+    status: varchar("status", { length: 20 }).notNull().default("new"), // new, contacted, qualified, disqualified
+    notes: text("notes"),
+    created_at: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+    updated_at: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => [
+    index("leads_customer_id_idx").on(table.customer_id),
+    index("leads_status_idx").on(table.status),
+    index("leads_source_idx").on(table.source),
+    index("leads_created_at_idx").on(table.created_at),
+  ]
+);
+
 // 销售机会表
 export const opportunities = pgTable(
   "opportunities",
@@ -54,17 +80,22 @@ export const opportunities = pgTable(
     title: varchar("title", { length: 255 }).notNull(),
     customer_id: varchar("customer_id", { length: 36 }).notNull().references(() => customers.id, { onDelete: "cascade" }),
     contact_id: varchar("contact_id", { length: 36 }).references(() => contacts.id, { onDelete: "set null" }),
+    customer_name: varchar("customer_name", { length: 255 }).notNull(),
+    contact_name: varchar("contact_name", { length: 255 }),
     value: numeric("value", { precision: 15, scale: 2 }).notNull().default("0"),
-    stage: varchar("stage", { length: 20 }).notNull().default("lead"), // lead, qualified, proposal, negotiation, closed_won, closed_lost
-    probability: integer("probability").notNull().default(10),
+    stage: varchar("stage", { length: 20 }).notNull().default("qualified"), // qualified, proposal, negotiation, closed_won, closed_lost (线索已移除)
+    probability: integer("probability").notNull().default(30), // 机会默认30%
     expected_close_date: timestamp("expected_close_date", { withTimezone: true }),
     description: text("description"),
+    notes: text("notes"),
+    source_lead_id: varchar("source_lead_id", { length: 36 }).references(() => leads.id, { onDelete: "set null" }), // 来源线索
     created_at: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
     updated_at: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
   },
   (table) => [
     index("opportunities_customer_id_idx").on(table.customer_id),
     index("opportunities_stage_idx").on(table.stage),
+    index("opportunities_source_lead_id_idx").on(table.source_lead_id),
     index("opportunities_expected_close_date_idx").on(table.expected_close_date),
     index("opportunities_created_at_idx").on(table.created_at),
   ]
@@ -93,6 +124,8 @@ export type Customer = typeof customers.$inferSelect;
 export type InsertCustomer = typeof customers.$inferInsert;
 export type Contact = typeof contacts.$inferSelect;
 export type InsertContact = typeof contacts.$inferInsert;
+export type Lead = typeof leads.$inferSelect;
+export type InsertLead = typeof leads.$inferInsert;
 export type Opportunity = typeof opportunities.$inferSelect;
 export type InsertOpportunity = typeof opportunities.$inferInsert;
 export type Activity = typeof activities.$inferSelect;

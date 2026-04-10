@@ -38,14 +38,9 @@ import { zhCN } from 'date-fns/locale';
 import { Progress } from '@/components/ui/progress';
 
 const stageConfig: Record<OpportunityStage, { label: string; className: string; gradient: string; color: string }> = {
-  lead: { 
-    label: '线索', 
-    className: 'bg-gray-500/10 text-gray-600 dark:text-gray-400 border-gray-500/20',
-    gradient: 'from-gray-400 to-slate-500',
-    color: 'text-gray-600 dark:text-gray-400'
-  },
+  // 注意: lead 阶段已移除，销售线索在独立页面管理
   qualified: { 
-    label: '已Qualified', 
+    label: '销售机会', 
     className: 'bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20',
     gradient: 'from-blue-400 to-cyan-500',
     color: 'text-blue-600 dark:text-blue-400'
@@ -63,13 +58,13 @@ const stageConfig: Record<OpportunityStage, { label: string; className: string; 
     color: 'text-orange-600 dark:text-orange-400'
   },
   closed_won: { 
-    label: '已成交', 
+    label: '成交', 
     className: 'bg-green-500/10 text-green-600 dark:text-green-400 border-green-500/20',
     gradient: 'from-green-400 to-emerald-500',
     color: 'text-green-600 dark:text-green-400'
   },
   closed_lost: { 
-    label: '已失败', 
+    label: '失败', 
     className: 'bg-red-500/10 text-red-600 dark:text-red-400 border-red-500/20',
     gradient: 'from-red-400 to-rose-500',
     color: 'text-red-600 dark:text-red-400'
@@ -153,12 +148,11 @@ export default function OpportunitiesPage() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">全部阶段</SelectItem>
-                <SelectItem value="lead">线索</SelectItem>
-                <SelectItem value="qualified">已Qualified</SelectItem>
+                <SelectItem value="qualified">销售机会</SelectItem>
                 <SelectItem value="proposal">提案</SelectItem>
                 <SelectItem value="negotiation">谈判</SelectItem>
-                <SelectItem value="closed_won">已成交</SelectItem>
-                <SelectItem value="closed_lost">已失败</SelectItem>
+                <SelectItem value="closed_won">成交</SelectItem>
+                <SelectItem value="closed_lost">失败</SelectItem>
               </SelectContent>
             </Select>
           </div>

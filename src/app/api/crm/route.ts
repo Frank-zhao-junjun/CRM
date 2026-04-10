@@ -1,4 +1,4 @@
-// CRM API 路由 - 处理所有 CRUD 操作
+// CRM API 路由 - 处理所有 CRUD 操作 (支持线索管理)
 
 import { NextRequest, NextResponse } from 'next/server';
 import * as db from '@/lib/crm-database';
@@ -29,13 +29,34 @@ export async function GET(request: NextRequest) {
       return NextResponse.json(contacts);
     }
     
+    // 销售线索 (leads) - 新增
+    if (type === 'leads') {
+      const customerId = searchParams.get('customerId');
+      const status = searchParams.get('status');
+      
+      let leads = customerId 
+        ? await db.getLeadsByCustomerId(customerId)
+        : await db.getAllLeads();
+      
+      // 过滤状态
+      if (status && status !== 'all') {
+        leads = leads.filter(l => l.status === status);
+      }
+      
+      return NextResponse.json(leads);
+    }
+    
+    // 销售机会 (opportunities)
     if (type === 'opportunities') {
       const customerId = searchParams.get('customerId');
+      const excludeLead = searchParams.get('excludeLead') === 'true';
+      
       if (customerId) {
         const opportunities = await db.getOpportunitiesByCustomerId(customerId);
         return NextResponse.json(opportunities);
       }
-      const opportunities = await db.getAllOpportunities();
+      
+      const opportunities = await db.getAllOpportunities(excludeLead);
       return NextResponse.json(opportunities);
     }
     
@@ -54,22 +75,170 @@ export async function POST(request: NextRequest) {
     const { action, data } = body;
     
     switch (action) {
+      // Customer
       case 'createCustomer': {
         const customer = await db.createCustomer(data);
+        // 记录活动
+        await db.createActivity({
+          id: `act_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
+          type: 'created',
+          entity_type: 'customer',
+          entity_id: customer.id,
+          entity_name: customer.name,
+          description: `创建客户 ${customer.name}`,
+          timestamp: new Date().toISOString(),
+        });
         return NextResponse.json(customer);
       }
+      
+      // Contact
       case 'createContact': {
         const contact = await db.createContact(data);
+        await db.createActivity({
+          id: `act_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
+          type: 'created',
+          entity_type: 'contact',
+          entity_id: contact.id,
+          entity_name: `${contact.first_name} ${contact.last_name}`,
+          description: `添加联系人 ${contact.first_name} ${contact.last_name}`,
+          timestamp: new Date().toISOString(),
+        });
         return NextResponse.json(contact);
       }
+      
+      // Lead (线索)
+      case 'createLead': {
+        const lead = await db.createLead({
+          id: `lead_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
+          title: data.title,
+          source: data.source,
+          customer_id: data.customerId,
+          customer_name: data.customerName,
+          contact_id: data.contactId,
+          contact_name: data.contactName,
+          estimated_value: data.estimatedValue,
+          notes: data.notes,
+        });
+        await db.createActivity({
+          id: `act_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
+          type: 'created',
+          entity_type: 'lead',
+          entity_id: lead.id,
+          entity_name: lead.title,
+          description: `创建销售线索 "${lead.title}"，预估金额 ¥${Number(lead.estimated_value).toLocaleString()}`,
+          timestamp: new Date().toISOString(),
+        });
+        return NextResponse.json(lead);
+      }
+      
+      // Lead Qualified (线索转为机会)
+      case 'qualifyLead': {
+        const lead = await db.getLeadById(data.leadId);
+        if (!lead) {
+          return NextResponse.json({ error: '线索不存在' }, { status: 404 });
+        }
+        
+        // 更新线索状态
+        await db.updateLead(data.leadId, { status: 'qualified' });
+        
+        // 创建销售机会
+        const opportunity = await db.createOpportunity({
+          id: `opp_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
+          title: data.opportunityTitle || lead.title,
+          customer_id: lead.customer_id,
+          customer_name: lead.customer_name,
+          contact_id: data.contactId || lead.contact_id,
+          contact_name: data.contactName || lead.contact_name,
+          value: data.value || lead.estimated_value,
+          stage: 'qualified',
+          probability: 30,
+          expected_close_date: data.expectedCloseDate,
+          description: data.notes || lead.notes,
+          source_lead_id: lead.id,
+        });
+        
+        // 记录活动
+        await db.createActivity({
+          id: `act_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
+          type: 'qualified',
+          entity_type: 'lead',
+          entity_id: lead.id,
+          entity_name: lead.title,
+          description: `销售线索 "${lead.title}" 已Qualified，转为销售机会`,
+          timestamp: new Date().toISOString(),
+        });
+        
+        await db.createActivity({
+          id: `act_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
+          type: 'created',
+          entity_type: 'opportunity',
+          entity_id: opportunity.id,
+          entity_name: opportunity.title,
+          description: `创建销售机会 "${opportunity.title}"，金额 ¥${Number(opportunity.value).toLocaleString()}`,
+          timestamp: new Date().toISOString(),
+        });
+        
+        return NextResponse.json({ lead, opportunity });
+      }
+      
+      // Lead Disqualify (放弃线索)
+      case 'disqualifyLead': {
+        const lead = await db.getLeadById(data.leadId);
+        if (!lead) {
+          return NextResponse.json({ error: '线索不存在' }, { status: 404 });
+        }
+        
+        await db.updateLead(data.leadId, { 
+          status: 'disqualified',
+          notes: lead.notes ? `${lead.notes}\n放弃原因: ${data.reason || '未说明'}` : `放弃原因: ${data.reason || '未说明'}`,
+        });
+        
+        await db.createActivity({
+          id: `act_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
+          type: 'disqualified',
+          entity_type: 'lead',
+          entity_id: lead.id,
+          entity_name: lead.title,
+          description: `销售线索 "${lead.title}" 已被放弃${data.reason ? `，原因: ${data.reason}` : ''}`,
+          timestamp: new Date().toISOString(),
+        });
+        
+        return NextResponse.json({ success: true });
+      }
+      
+      // Opportunity
       case 'createOpportunity': {
-        const opportunity = await db.createOpportunity(data);
+        const opportunity = await db.createOpportunity({
+          id: `opp_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
+          title: data.title,
+          customer_id: data.customerId,
+          customer_name: data.customerName,
+          contact_id: data.contactId,
+          contact_name: data.contactName,
+          value: data.value,
+          stage: data.stage || 'qualified',
+          probability: data.probability || 30,
+          expected_close_date: data.expectedCloseDate,
+          description: data.description,
+        });
+        await db.createActivity({
+          id: `act_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
+          type: 'created',
+          entity_type: 'opportunity',
+          entity_id: opportunity.id,
+          entity_name: opportunity.title,
+          description: `创建销售机会 "${opportunity.title}"，金额 ¥${Number(opportunity.value).toLocaleString()}`,
+          timestamp: new Date().toISOString(),
+        });
         return NextResponse.json(opportunity);
       }
+      
+      // Activity
       case 'createActivity': {
         const activity = await db.createActivity(data);
         return NextResponse.json(activity);
       }
+      
       default:
         return NextResponse.json({ error: 'Unknown action' }, { status: 400 });
     }
@@ -85,18 +254,129 @@ export async function PUT(request: NextRequest) {
     const { action, id, data } = body;
     
     switch (action) {
+      // Customer
       case 'updateCustomer': {
         const customer = await db.updateCustomer(id, data);
+        await db.createActivity({
+          id: `act_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
+          type: 'updated',
+          entity_type: 'customer',
+          entity_id: customer.id,
+          entity_name: customer.name,
+          description: `更新客户 ${customer.name}`,
+          timestamp: new Date().toISOString(),
+        });
         return NextResponse.json(customer);
       }
+      
+      // Contact
       case 'updateContact': {
         const contact = await db.updateContact(id, data);
         return NextResponse.json(contact);
       }
+      
+      // Lead (线索)
+      case 'updateLead': {
+        const lead = await db.updateLead(id, data);
+        return NextResponse.json(lead);
+      }
+      
+      // Opportunity (机会)
       case 'updateOpportunity': {
+        const oldOpp = await db.getOpportunityById(id);
         const opportunity = await db.updateOpportunity(id, data);
+        
+        // 如果阶段变更，记录活动
+        if (oldOpp && data.stage && oldOpp.stage !== data.stage) {
+          const stageLabels: Record<string, string> = {
+            qualified: '销售机会',
+            proposal: '提案',
+            negotiation: '谈判',
+            closed_won: '成交',
+            closed_lost: '失败',
+          };
+          
+          await db.createActivity({
+            id: `act_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
+            type: data.stage === 'closed_won' ? 'closed_won' : data.stage === 'closed_lost' ? 'closed_lost' : 'stage_change',
+            entity_type: 'opportunity',
+            entity_id: opportunity.id,
+            entity_name: opportunity.title,
+            description: data.stage === 'closed_won' 
+              ? `销售机会 "${opportunity.title}" 成交！金额: ¥${Number(opportunity.value).toLocaleString()}`
+              : data.stage === 'closed_lost'
+              ? `销售机会 "${opportunity.title}" 失败${data.reason ? `，原因: ${data.reason}` : ''}`
+              : `销售机会 "${opportunity.title}" 从 ${stageLabels[oldOpp.stage]} 变更为 ${stageLabels[data.stage]}`,
+            timestamp: new Date().toISOString(),
+          });
+        }
+        
         return NextResponse.json(opportunity);
       }
+      
+      // Stage Change (阶段变更) - 专门的端点
+      case 'changeStage': {
+        const opportunity = await db.getOpportunityById(id);
+        if (!opportunity) {
+          return NextResponse.json({ error: '机会不存在' }, { status: 404 });
+        }
+        
+        // 验证阶段转换
+        const validTransitions: Record<string, string[]> = {
+          qualified: ['proposal', 'closed_lost'],
+          proposal: ['negotiation', 'closed_lost'],
+          negotiation: ['closed_won', 'closed_lost'],
+          closed_won: [],
+          closed_lost: [],
+        };
+        
+        if (!validTransitions[opportunity.stage]?.includes(data.stage)) {
+          return NextResponse.json({ 
+            error: `不能从 "${opportunity.stage}" 阶段直接转换到 "${data.stage}" 阶段` 
+          }, { status: 400 });
+        }
+        
+        const stageLabels: Record<string, string> = {
+          qualified: '销售机会',
+          proposal: '提案',
+          negotiation: '谈判',
+          closed_won: '成交',
+          closed_lost: '失败',
+        };
+        
+        const defaultProbabilities: Record<string, number> = {
+          qualified: 30,
+          proposal: 50,
+          negotiation: 80,
+          closed_won: 100,
+          closed_lost: 0,
+        };
+        
+        const updated = await db.updateOpportunity(id, {
+          stage: data.stage,
+          probability: defaultProbabilities[data.stage],
+          notes: data.stage === 'closed_lost' && data.reason 
+            ? `${opportunity.description || ''}\n失败原因: ${data.reason}`.trim()
+            : opportunity.description,
+        });
+        
+        await db.createActivity({
+          id: `act_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
+          type: data.stage === 'closed_won' ? 'closed_won' : data.stage === 'closed_lost' ? 'closed_lost' : 'stage_change',
+          entity_type: 'opportunity',
+          entity_id: updated.id,
+          entity_name: updated.title,
+          description: data.stage === 'closed_won' 
+            ? `销售机会 "${updated.title}" 成交！金额: ¥${Number(updated.value).toLocaleString()}`
+            : data.stage === 'closed_lost'
+            ? `销售机会 "${updated.title}" 失败${data.reason ? `，原因: ${data.reason}` : ''}`
+            : `销售机会 "${updated.title}" 从 ${stageLabels[opportunity.stage]} 变更为 ${stageLabels[data.stage]}`,
+          timestamp: new Date().toISOString(),
+        });
+        
+        return NextResponse.json(updated);
+      }
+      
       default:
         return NextResponse.json({ error: 'Unknown action' }, { status: 400 });
     }
@@ -117,18 +397,65 @@ export async function DELETE(request: NextRequest) {
     }
     
     switch (action) {
+      // Customer (级联删除)
       case 'deleteCustomer': {
-        await db.deleteCustomer(id);
+        const customer = await db.getCustomerById(id);
+        if (customer) {
+          await db.deleteCustomer(id);
+          await db.createActivity({
+            id: `act_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
+            type: 'deleted',
+            entity_type: 'customer',
+            entity_id: id,
+            entity_name: customer.name,
+            description: `删除客户 ${customer.name}`,
+            timestamp: new Date().toISOString(),
+          });
+        }
         return NextResponse.json({ success: true });
       }
+      
       case 'deleteContact': {
         await db.deleteContact(id);
         return NextResponse.json({ success: true });
       }
-      case 'deleteOpportunity': {
-        await db.deleteOpportunity(id);
+      
+      // Lead
+      case 'deleteLead': {
+        const lead = await db.getLeadById(id);
+        if (lead) {
+          await db.deleteLead(id);
+          await db.createActivity({
+            id: `act_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
+            type: 'deleted',
+            entity_type: 'lead',
+            entity_id: id,
+            entity_name: lead.title,
+            description: `删除销售线索 ${lead.title}`,
+            timestamp: new Date().toISOString(),
+          });
+        }
         return NextResponse.json({ success: true });
       }
+      
+      // Opportunity
+      case 'deleteOpportunity': {
+        const opportunity = await db.getOpportunityById(id);
+        if (opportunity) {
+          await db.deleteOpportunity(id);
+          await db.createActivity({
+            id: `act_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
+            type: 'deleted',
+            entity_type: 'opportunity',
+            entity_id: id,
+            entity_name: opportunity.title,
+            description: `删除销售机会 ${opportunity.title}`,
+            timestamp: new Date().toISOString(),
+          });
+        }
+        return NextResponse.json({ success: true });
+      }
+      
       default:
         return NextResponse.json({ error: 'Unknown action' }, { status: 400 });
     }

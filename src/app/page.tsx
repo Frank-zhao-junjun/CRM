@@ -8,15 +8,16 @@ import {
   Briefcase, 
   TrendingUp, 
   DollarSign,
-  Clock,
-  Activity,
+  Activity as ActivityIcon,
   ArrowUpRight,
   Sparkles,
+  Lightbulb,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { format, formatDistanceToNow } from 'date-fns';
 import { zhCN } from 'date-fns/locale';
 import { Badge } from '@/components/ui/badge';
+import Link from 'next/link';
 
 const statCards = [
   { 
@@ -34,11 +35,20 @@ const statCards = [
     bgGradient: 'bg-gradient-to-br from-green-500/10 to-emerald-500/5',
   },
   { 
+    key: 'totalLeads', 
+    label: '销售线索', 
+    icon: Lightbulb, 
+    gradient: 'from-yellow-500 to-amber-500',
+    bgGradient: 'bg-gradient-to-br from-yellow-500/10 to-amber-500/5',
+    link: '/leads',
+  },
+  { 
     key: 'totalOpportunities', 
     label: '销售机会', 
     icon: Briefcase, 
     gradient: 'from-purple-500 to-pink-500',
     bgGradient: 'bg-gradient-to-br from-purple-500/10 to-pink-500/5',
+    link: '/opportunities',
   },
   { 
     key: 'totalRevenue', 
@@ -57,23 +67,28 @@ const activityColors = {
   stage_change: { bg: 'bg-purple-500', label: '阶段变更', color: 'text-purple-600 dark:text-purple-400' },
   closed_won: { bg: 'bg-emerald-500', label: '成交', color: 'text-emerald-600 dark:text-emerald-400' },
   closed_lost: { bg: 'bg-gray-500', label: '失败', color: 'text-gray-600 dark:text-gray-400' },
+  qualified: { bg: 'bg-cyan-500', label: 'Qualified', color: 'text-cyan-600 dark:text-cyan-400' },
+  disqualified: { bg: 'bg-yellow-500', label: '放弃', color: 'text-yellow-600 dark:text-yellow-400' },
 };
 
 export default function DashboardPage() {
-  const { stats, opportunities, activities } = useCRM();
+  const { stats, opportunities, leads, activities } = useCRM();
 
-  // 计算销售漏斗数据
+  // 计算销售漏斗数据（仅销售机会，不含线索）
   const funnelData = [
-    { stage: '线索', count: opportunities.filter(o => o.stage === 'lead').length, value: opportunities.filter(o => o.stage === 'lead').reduce((sum, o) => sum + o.value, 0), gradient: 'from-blue-400 to-blue-600' },
-    { stage: 'qualified', count: opportunities.filter(o => o.stage === 'qualified').length, value: opportunities.filter(o => o.stage === 'qualified').reduce((sum, o) => sum + o.value, 0), gradient: 'from-cyan-400 to-cyan-600' },
-    { stage: '提案', count: opportunities.filter(o => o.stage === 'proposal').length, value: opportunities.filter(o => o.stage === 'proposal').reduce((sum, o) => sum + o.value, 0), gradient: 'from-purple-400 to-purple-600' },
-    { stage: '谈判', count: opportunities.filter(o => o.stage === 'negotiation').length, value: opportunities.filter(o => o.stage === 'negotiation').reduce((sum, o) => sum + o.value, 0), gradient: 'from-orange-400 to-orange-600' },
-    { stage: '成交', count: opportunities.filter(o => o.stage === 'closed_won').length, value: opportunities.filter(o => o.stage === 'closed_won').reduce((sum, o) => sum + o.value, 0), gradient: 'from-emerald-400 to-emerald-600' },
+    { stage: '销售机会', key: 'qualified', count: opportunities.filter(o => o.stage === 'qualified').length, value: opportunities.filter(o => o.stage === 'qualified').reduce((sum, o) => sum + o.value, 0), gradient: 'from-blue-400 to-cyan-500' },
+    { stage: '提案', key: 'proposal', count: opportunities.filter(o => o.stage === 'proposal').length, value: opportunities.filter(o => o.stage === 'proposal').reduce((sum, o) => sum + o.value, 0), gradient: 'from-purple-400 to-pink-500' },
+    { stage: '谈判', key: 'negotiation', count: opportunities.filter(o => o.stage === 'negotiation').length, value: opportunities.filter(o => o.stage === 'negotiation').reduce((sum, o) => sum + o.value, 0), gradient: 'from-orange-400 to-amber-500' },
+    { stage: '成交', key: 'closed_won', count: opportunities.filter(o => o.stage === 'closed_won').length, value: opportunities.filter(o => o.stage === 'closed_won').reduce((sum, o) => sum + o.value, 0), gradient: 'from-emerald-400 to-green-500' },
   ];
 
   const maxCount = Math.max(...funnelData.map(d => d.count), 1);
 
-  // 最近的机会
+  // 线索统计
+  const activeLeads = leads.filter(l => l.status !== 'disqualified');
+  const qualifiedLeads = leads.filter(l => l.status === 'qualified').length;
+
+  // 最近的机会（不含线索）
   const recentOpportunities = [...opportunities]
     .sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())
     .slice(0, 5);

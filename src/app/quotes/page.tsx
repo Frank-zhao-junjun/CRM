@@ -31,7 +31,8 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { Plus, Search, FileText, Trash2, Send, ArrowRight, MoreVertical, X } from 'lucide-react';
+import { Plus, Search, FileText, Trash2, Send, ArrowRight, MoreVertical, X, Building2 } from 'lucide-react';
+import Link from 'next/link';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { QUOTE_STATUS_CONFIG, type Quote, type QuoteStatus } from '@/lib/crm-types';
 import { format } from 'date-fns';
@@ -80,6 +81,8 @@ export default function QuotesPage() {
         setQuotes(data.map((q: Record<string, unknown>) => ({
           id: q.id,
           opportunityId: q.opportunity_id as string,
+          customerId: q.customer_id as string | undefined,
+          customerName: q.customer_name as string | undefined,
           title: q.title as string,
           version: Number(q.version) || 1,
           revisionReason: q.revision_reason as string | undefined,
@@ -264,6 +267,7 @@ export default function QuotesPage() {
               <TableHeader>
                 <TableRow>
                   <TableHead>报价单标题</TableHead>
+                  <TableHead>客户</TableHead>
                   <TableHead>版本</TableHead>
                   <TableHead>状态</TableHead>
                   <TableHead>总金额</TableHead>
@@ -286,6 +290,20 @@ export default function QuotesPage() {
                             </p>
                           )}
                         </div>
+                      </TableCell>
+                      <TableCell>
+                        {quote.customerName ? (
+                          <Link
+                            href={`/customers/${quote.customerId}`}
+                            className="text-primary hover:underline flex items-center gap-1"
+                            onClick={e => e.stopPropagation()}
+                          >
+                            <Building2 className="h-3.5 w-3.5" />
+                            {quote.customerName}
+                          </Link>
+                        ) : (
+                          <span className="text-muted-foreground">-</span>
+                        )}
                       </TableCell>
                       <TableCell>
                         <Badge variant="outline" className={quote.version > 1 ? "bg-purple-50 text-purple-600 border-purple-200" : "bg-gray-50 text-gray-500 border-gray-200"}>

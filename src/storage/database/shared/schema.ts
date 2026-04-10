@@ -168,6 +168,8 @@ export const quotes = pgTable(
   {
     id: varchar("id", { length: 36 }).primaryKey().default(sql`gen_random_uuid()`),
     opportunity_id: varchar("opportunity_id", { length: 36 }).notNull().references(() => opportunities.id, { onDelete: "cascade" }),
+    customer_id: varchar("customer_id", { length: 36 }),
+    customer_name: varchar("customer_name", { length: 255 }),
     title: varchar("title", { length: 255 }).notNull(),
     version: integer("version").notNull().default(1), // 报价单版本号
     revision_reason: text("revision_reason"), // 新建版本的原因

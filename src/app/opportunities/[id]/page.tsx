@@ -88,6 +88,8 @@ export default function OpportunityDetailPage() {
         setQuotes(data.map((q: Record<string, unknown>) => ({
           id: q.id as string,
           opportunityId: q.opportunity_id as string,
+          customerId: q.customer_id as string | undefined,
+          customerName: q.customer_name as string | undefined,
           title: q.title as string,
           version: Number(q.version) || 1,
           revisionReason: q.revision_reason as string | undefined,

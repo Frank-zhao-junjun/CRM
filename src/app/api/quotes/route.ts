@@ -46,11 +46,24 @@ export async function POST(request: NextRequest) {
           const maxVersion = Math.max(...existingQuotes.map((q: Record<string, unknown>) => Number(q.version) || 0));
           version = maxVersion + 1;
         }
+
+        // Fetch customer info from the related opportunity
+        let customerId: string | null = data.customerId || null;
+        let customerName: string | null = data.customerName || null;
+        if (!customerId || !customerName) {
+          const opp = await db.getOpportunityById(data.opportunityId);
+          if (opp) {
+            customerId = customerId || opp.customer_id;
+            customerName = customerName || opp.customer_name;
+          }
+        }
         
         const quote = await db.createQuote(
           {
             id,
             opportunity_id: data.opportunityId,
+            customer_id: customerId,
+            customer_name: customerName,
             title: data.title,
             version,
             revision_reason: data.revisionReason || null,

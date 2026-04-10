@@ -13,7 +13,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { ArrowLeft, Send, ArrowRight, FileText, Briefcase, GitBranch, MessageSquare } from 'lucide-react';
+import { ArrowLeft, Send, ArrowRight, FileText, Briefcase, GitBranch, MessageSquare, Building2 } from 'lucide-react';
 import Link from 'next/link';
 import { QUOTE_STATUS_CONFIG, type Quote, type QuoteStatus } from '@/lib/crm-types';
 import { format } from 'date-fns';
@@ -35,6 +35,8 @@ export default function QuoteDetailPage() {
           const mappedQuote: Quote = {
             id: data.id,
             opportunityId: data.opportunity_id,
+            customerId: data.customer_id,
+            customerName: data.customer_name,
             title: data.title,
             version: Number(data.version) || 1,
             revisionReason: data.revision_reason,
@@ -71,6 +73,8 @@ export default function QuoteDetailPage() {
               setAllQuotesForOpp(oppData.map((q: Record<string, unknown>) => ({
                 id: q.id,
                 opportunityId: q.opportunity_id as string,
+                customerId: q.customer_id as string | undefined,
+                customerName: q.customer_name as string | undefined,
                 title: q.title as string,
                 version: Number(q.version) || 1,
                 revisionReason: q.revision_reason as string | undefined,
@@ -223,6 +227,16 @@ export default function QuoteDetailPage() {
             <CardContent className="space-y-3 text-sm">
               <div><span className="text-muted-foreground">状态</span><div className="mt-1"><Badge className={statusConf.className}>{statusConf.label}</Badge></div></div>
               <div><span className="text-muted-foreground">版本</span><div className="mt-1"><Badge variant="outline" className={quote.version > 1 ? "bg-purple-50 text-purple-600 border-purple-200" : "bg-gray-50 text-gray-500 border-gray-200"}>V{quote.version}</Badge></div></div>
+              {quote.customerName && (
+                <div>
+                  <span className="text-muted-foreground">客户</span>
+                  <div className="mt-1">
+                    <Link href={`/customers/${quote.customerId}`} className="text-primary hover:underline flex items-center gap-1">
+                      <Building2 className="h-3.5 w-3.5" /> {quote.customerName}
+                    </Link>
+                  </div>
+                </div>
+              )}
               <div>
                 <span className="text-muted-foreground">关联销售机会</span>
                 <div className="mt-1">

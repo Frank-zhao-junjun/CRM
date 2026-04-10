@@ -151,6 +151,8 @@ export interface Quote {
   id: string;
   opportunityId: string;
   opportunityName?: string;
+  customerId?: string;
+  customerName?: string;
   title: string;
   version: number;
   revisionReason?: string;

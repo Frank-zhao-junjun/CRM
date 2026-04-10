@@ -1,12 +1,12 @@
 'use client';
 
 import { createContext, useContext, useState, useCallback, useEffect, ReactNode } from 'react';
-import { Customer, Contact, Opportunity, DashboardStats, Activity, CustomerStatus, OpportunityStage, SalesLead, LeadStatusType, LeadSourceType } from './crm-types';
+import { Customer, Contact, SalesOpportunity, DashboardStats, Activity, CustomerStatus, OpportunityStage, SalesLead, LeadStatusType, LeadSourceType } from './crm-types';
 
 interface CRMContextType {
   customers: Customer[];
   contacts: Contact[];
-  opportunities: Opportunity[];
+  opportunities: SalesOpportunity[];
   leads: SalesLead[];  // 销售线索
   activities: Activity[];
   stats: DashboardStats;
@@ -39,8 +39,8 @@ interface CRMContextType {
   disqualifyLead: (leadId: string, reason?: string) => Promise<void>;
   
   // Opportunity operations (销售机会)
-  addOpportunity: (opportunity: Omit<Opportunity, 'id' | 'createdAt' | 'updatedAt'>) => Promise<void>;
-  updateOpportunity: (id: string, opportunity: Partial<Opportunity>) => Promise<void>;
+  addOpportunity: (opportunity: Omit<SalesOpportunity, 'id' | 'createdAt' | 'updatedAt'>) => Promise<void>;
+  updateOpportunity: (id: string, opportunity: Partial<SalesOpportunity>) => Promise<void>;
   deleteOpportunity: (id: string) => Promise<void>;
   changeOpportunityStage: (id: string, newStage: OpportunityStage, reason?: string) => Promise<void>;
 }
@@ -214,7 +214,7 @@ function convertContact(db: DBContact): Contact {
   };
 }
 
-function convertOpportunity(db: DBOpportunity): Opportunity {
+function convertOpportunity(db: DBOpportunity): SalesOpportunity {
   return {
     id: db.id,
     title: db.title,
@@ -267,7 +267,7 @@ const CRMContext = createContext<CRMContextType | undefined>(undefined);
 export function CRMProvider({ children }: { children: ReactNode }) {
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [contacts, setContacts] = useState<Contact[]>([]);
-  const [opportunities, setOpportunities] = useState<Opportunity[]>([]);
+  const [opportunities, setOpportunities] = useState<SalesOpportunity[]>([]);
   const [leads, setLeads] = useState<SalesLead[]>([]);
   const [activities, setActivities] = useState<Activity[]>([]);
   const [stats, setStats] = useState<DashboardStats>({
@@ -499,7 +499,7 @@ export function CRMProvider({ children }: { children: ReactNode }) {
   }, [loadData]);
 
   // Opportunity operations (销售机会)
-  const addOpportunity = useCallback(async (opportunity: Omit<Opportunity, 'id' | 'createdAt' | 'updatedAt'>) => {
+  const addOpportunity = useCallback(async (opportunity: Omit<SalesOpportunity, 'id' | 'createdAt' | 'updatedAt'>) => {
     const newOpp = await apiPost<DBOpportunity>('createOpportunity', {
       title: opportunity.title,
       customer_id: opportunity.customerId,
@@ -514,7 +514,7 @@ export function CRMProvider({ children }: { children: ReactNode }) {
     await loadData();
   }, [addActivity, loadData]);
 
-  const updateOpportunity = useCallback(async (id: string, updates: Partial<Opportunity>) => {
+  const updateOpportunity = useCallback(async (id: string, updates: Partial<SalesOpportunity>) => {
     const oldOpp = opportunities.find(o => o.id === id);
     
     const updated = await apiPut<DBOpportunity>('updateOpportunity', id, {

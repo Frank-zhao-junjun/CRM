@@ -86,7 +86,7 @@ export async function POST(request: NextRequest) {
           entity_id: customer.id,
           entity_name: customer.name,
           description: `创建客户 ${customer.name}`,
-          timestamp: new Date().toISOString(),
+          timestamp: new Date(),
         });
         return NextResponse.json(customer);
       }
@@ -101,7 +101,7 @@ export async function POST(request: NextRequest) {
           entity_id: contact.id,
           entity_name: `${contact.first_name} ${contact.last_name}`,
           description: `添加联系人 ${contact.first_name} ${contact.last_name}`,
-          timestamp: new Date().toISOString(),
+          timestamp: new Date(),
         });
         return NextResponse.json(contact);
       }
@@ -126,7 +126,7 @@ export async function POST(request: NextRequest) {
           entity_id: lead.id,
           entity_name: lead.title,
           description: `创建销售线索 "${lead.title}"，预估金额 ¥${Number(lead.estimated_value).toLocaleString()}`,
-          timestamp: new Date().toISOString(),
+          timestamp: new Date(),
         });
         return NextResponse.json(lead);
       }
@@ -165,7 +165,7 @@ export async function POST(request: NextRequest) {
           entity_id: lead.id,
           entity_name: lead.title,
           description: `销售线索 "${lead.title}" 已Qualified，转为销售机会`,
-          timestamp: new Date().toISOString(),
+          timestamp: new Date(),
         });
         
         await db.createActivity({
@@ -175,7 +175,7 @@ export async function POST(request: NextRequest) {
           entity_id: opportunity.id,
           entity_name: opportunity.title,
           description: `创建销售机会 "${opportunity.title}"，金额 ¥${Number(opportunity.value).toLocaleString()}`,
-          timestamp: new Date().toISOString(),
+          timestamp: new Date(),
         });
         
         return NextResponse.json({ lead, opportunity });
@@ -200,7 +200,7 @@ export async function POST(request: NextRequest) {
           entity_id: lead.id,
           entity_name: lead.title,
           description: `销售线索 "${lead.title}" 已被放弃${data.reason ? `，原因: ${data.reason}` : ''}`,
-          timestamp: new Date().toISOString(),
+          timestamp: new Date(),
         });
         
         return NextResponse.json({ success: true });
@@ -228,7 +228,7 @@ export async function POST(request: NextRequest) {
           entity_id: opportunity.id,
           entity_name: opportunity.title,
           description: `创建销售机会 "${opportunity.title}"，金额 ¥${Number(opportunity.value).toLocaleString()}`,
-          timestamp: new Date().toISOString(),
+          timestamp: new Date(),
         });
         return NextResponse.json(opportunity);
       }
@@ -264,7 +264,7 @@ export async function PUT(request: NextRequest) {
           entity_id: customer.id,
           entity_name: customer.name,
           description: `更新客户 ${customer.name}`,
-          timestamp: new Date().toISOString(),
+          timestamp: new Date(),
         });
         return NextResponse.json(customer);
       }
@@ -307,7 +307,7 @@ export async function PUT(request: NextRequest) {
               : data.stage === 'closed_lost'
               ? `销售机会 "${opportunity.title}" 失败${data.reason ? `，原因: ${data.reason}` : ''}`
               : `销售机会 "${opportunity.title}" 从 ${stageLabels[oldOpp.stage]} 变更为 ${stageLabels[data.stage]}`,
-            timestamp: new Date().toISOString(),
+            timestamp: new Date(),
           });
         }
         
@@ -371,7 +371,7 @@ export async function PUT(request: NextRequest) {
             : data.stage === 'closed_lost'
             ? `销售机会 "${updated.title}" 失败${data.reason ? `，原因: ${data.reason}` : ''}`
             : `销售机会 "${updated.title}" 从 ${stageLabels[opportunity.stage]} 变更为 ${stageLabels[data.stage]}`,
-          timestamp: new Date().toISOString(),
+          timestamp: new Date(),
         });
         
         return NextResponse.json(updated);
@@ -409,7 +409,7 @@ export async function DELETE(request: NextRequest) {
             entity_id: id,
             entity_name: customer.name,
             description: `删除客户 ${customer.name}`,
-            timestamp: new Date().toISOString(),
+            timestamp: new Date(),
           });
         }
         return NextResponse.json({ success: true });
@@ -432,7 +432,7 @@ export async function DELETE(request: NextRequest) {
             entity_id: id,
             entity_name: lead.title,
             description: `删除销售线索 ${lead.title}`,
-            timestamp: new Date().toISOString(),
+            timestamp: new Date(),
           });
         }
         return NextResponse.json({ success: true });
@@ -450,7 +450,7 @@ export async function DELETE(request: NextRequest) {
             entity_id: id,
             entity_name: opportunity.title,
             description: `删除销售机会 ${opportunity.title}`,
-            timestamp: new Date().toISOString(),
+            timestamp: new Date(),
           });
         }
         return NextResponse.json({ success: true });

@@ -15,7 +15,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { ArrowLeft, Lightbulb, Building2, User, DollarSign, FileText } from 'lucide-react';
-import { LEAD_SOURCE_CONFIG } from '@/lib/crm-types';
+import { LEAD_SOURCE_CONFIG, LeadSourceType } from '@/lib/crm-types';
 import Link from 'next/link';
 
 export default function NewLeadPage() {
@@ -45,7 +45,7 @@ export default function NewLeadPage() {
     try {
       await addLead({
         title: form.title,
-        source: form.source as any,
+        source: form.source as LeadSourceType,
         customerId: form.customerId,
         customerName: customer.company,
         contactId: form.contactId || undefined,
@@ -67,8 +67,6 @@ export default function NewLeadPage() {
   const getContactName = (contactId: string) => {
     return contactId; // 简化处理
   };
-
-  const selectedCustomerContacts = customers.find(c => c.id === form.customerId);
 
   return (
     <div className="space-y-8 max-w-2xl mx-auto">

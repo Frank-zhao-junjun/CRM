@@ -1,21 +1,20 @@
 // 导出所有仓储接口
-export { 
+export type { 
   ICustomerRepository, 
-  IContactRepository, 
-  type CustomerFilter 
+  CustomerFilter 
 } from './ICustomerRepository';
 
-export { 
+export type { 
   ISalesLeadRepository, 
-  type LeadFilter 
+  LeadFilter 
 } from './ISalesLeadRepository';
 
-export { 
+export type { 
   ISalesOpportunityRepository, 
-  type OpportunityFilter 
+  OpportunityFilter 
 } from './ISalesOpportunityRepository';
 
-export { 
+export type { 
   IActivityRepository, 
-  type ActivityRecord 
+  ActivityRecord 
 } from './IActivityRepository';

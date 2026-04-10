@@ -1,6 +1,6 @@
 // 聚合根: 客户
 import { CustomerStatus, ContactInfo, Address } from '../value-objects';
-import { Contact, ContactProps } from './Contact';
+import { Contact } from '../entities/Contact';
 
 export interface CustomerProps {
   id: string;

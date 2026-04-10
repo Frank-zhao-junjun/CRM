@@ -19,10 +19,9 @@ import Link from 'next/link';
 import { OpportunityStage } from '@/lib/crm-types';
 
 const stages: { value: OpportunityStage; label: string; probability: number }[] = [
-  { value: 'lead', label: '线索', probability: 10 },
-  { value: 'qualified', label: 'qualified', probability: 25 },
+  { value: 'qualified', label: '销售机会', probability: 30 },
   { value: 'proposal', label: '提案', probability: 50 },
-  { value: 'negotiation', label: '谈判', probability: 75 },
+  { value: 'negotiation', label: '谈判', probability: 80 },
   { value: 'closed_won', label: '成交', probability: 100 },
   { value: 'closed_lost', label: '失败', probability: 0 },
 ];
@@ -37,7 +36,7 @@ function NewOpportunityForm() {
     customerId: '',
     contactId: '',
     value: '',
-    stage: 'lead' as OpportunityStage,
+    stage: 'qualified' as OpportunityStage,
     probability: 10,
     expectedCloseDate: '',
     description: '',

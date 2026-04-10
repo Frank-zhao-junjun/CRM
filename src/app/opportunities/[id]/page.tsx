@@ -23,8 +23,7 @@ import { format } from 'date-fns';
 import { zhCN } from 'date-fns/locale';
 
 const stageLabels: Record<OpportunityStage, { label: string; className: string }> = {
-  lead: { label: '线索', className: 'bg-gray-500/10 text-gray-500 border-gray-500/20' },
-  qualified: { label: 'qualified', className: 'bg-blue-500/10 text-blue-500 border-blue-500/20' },
+  qualified: { label: '销售机会', className: 'bg-blue-500/10 text-blue-500 border-blue-500/20' },
   proposal: { label: '提案', className: 'bg-purple-500/10 text-purple-500 border-purple-500/20' },
   negotiation: { label: '谈判', className: 'bg-orange-500/10 text-orange-500 border-orange-500/20' },
   closed_won: { label: '成交', className: 'bg-green-500/10 text-green-500 border-green-500/20' },

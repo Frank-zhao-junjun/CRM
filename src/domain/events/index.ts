@@ -1,7 +1,5 @@
 // 导出所有领域事件
 export { 
-  DomainEvent, 
-  generateEventId,
   type LeadCreatedPayload,
   type LeadStatusChangedPayload,
   type LeadQualifiedPayload,

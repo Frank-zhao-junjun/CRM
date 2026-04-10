@@ -18,7 +18,6 @@ import { cn } from '@/lib/utils';
 import { format, formatDistanceToNow } from 'date-fns';
 import { zhCN } from 'date-fns/locale';
 import { Badge } from '@/components/ui/badge';
-import Link from 'next/link';
 
 const statCards = [
   { 
@@ -73,7 +72,7 @@ const activityColors = {
 };
 
 export default function DashboardPage() {
-  const { stats, opportunities, leads, activities } = useCRM();
+  const { stats, opportunities, activities } = useCRM();
 
   // 计算销售漏斗数据（仅销售机会，不含线索）
   const funnelData = [
@@ -84,10 +83,6 @@ export default function DashboardPage() {
   ];
 
   const maxCount = Math.max(...funnelData.map(d => d.count), 1);
-
-  // 线索统计
-  const activeLeads = leads.filter(l => l.status !== 'disqualified');
-  const qualifiedLeads = leads.filter(l => l.status === 'qualified').length;
 
   // 最近的机会（不含线索）
   const recentOpportunities = [...opportunities]
@@ -322,7 +317,6 @@ export default function DashboardPage() {
                         <Badge variant="outline" className="text-xs capitalize">
                           {opp.stage === 'closed_won' ? '已成交' : 
                            opp.stage === 'closed_lost' ? '已失败' :
-                           opp.stage === 'lead' ? '线索' :
                            opp.stage === 'qualified' ? '已Qualified' :
                            opp.stage === 'proposal' ? '提案' :
                            opp.stage === 'negotiation' ? '谈判' : opp.stage}

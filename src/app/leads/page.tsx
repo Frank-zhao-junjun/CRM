@@ -37,18 +37,16 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Plus, Search, Building2, DollarSign, Calendar, User, Lightbulb, MoreVertical, ArrowRightLeft, XCircle, Trash2, ChevronRight, Sparkles } from 'lucide-react';
-import { LeadStatusType, LEAD_STATUS_CONFIG, LEAD_SOURCE_CONFIG, OPPORTUNITY_STAGE_CONFIG } from '@/lib/crm-types';
-import { cn } from '@/lib/utils';
+import { Plus, Search, Building2, DollarSign, Lightbulb, MoreVertical, ArrowRightLeft, XCircle, Trash2, Sparkles } from 'lucide-react';
+import { LEAD_STATUS_CONFIG, LEAD_SOURCE_CONFIG } from '@/lib/crm-types';
 import { format } from 'date-fns';
-import { Progress } from '@/components/ui/progress';
 
 const statusConfig = LEAD_STATUS_CONFIG;
 const sourceConfig = LEAD_SOURCE_CONFIG;
 
 export default function LeadsPage() {
   const router = useRouter();
-  const { leads, qualifyLead, disqualifyLead, deleteLead, customers, contacts } = useCRM();
+  const { leads, qualifyLead, disqualifyLead, deleteLead, contacts } = useCRM();
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [deleteId, setDeleteId] = useState<string | null>(null);
@@ -362,7 +360,7 @@ export default function LeadsPage() {
               线索转为销售机会
             </DialogTitle>
             <DialogDescription>
-              将 "{qualifyDialog.lead?.title}" 转为正式的销售机会
+              将 &ldquo;{qualifyDialog.lead?.title}&rdquo; 转为正式的销售机会
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">

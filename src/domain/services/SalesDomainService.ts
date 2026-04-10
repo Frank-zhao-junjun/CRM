@@ -2,10 +2,10 @@
 import { 
   SalesLead, 
   SalesOpportunity, 
-  OpportunityData,
+  QualifyData,
   StageChangeResult 
 } from '../aggregates';
-import { OpportunityStage, Money, Percentage } from '../value-objects';
+import { OpportunityStage, type OpportunityStageType, LeadSourceType } from '../value-objects';
 import {
   LeadCreatedEvent,
   LeadQualifiedEvent,
@@ -55,7 +55,7 @@ export class SalesDomainService {
     const lead = SalesLead.create({
       id: params.id,
       title: params.title,
-      source: params.source as any,
+      source: params.source as LeadSourceType,
       customerId: params.customerId,
       customerName: params.customerName,
       contactId: params.contactId,
@@ -89,23 +89,19 @@ export class SalesDomainService {
   // 线索Qualified转换为销售机会
   async qualifyLead(
     lead: SalesLead,
-    opportunityData: OpportunityData
+    qualifyData: QualifyData
   ): Promise<{
     lead: SalesLead;
     opportunity: SalesOpportunity;
   }> {
     // 1. 执行Qualified转换
-    const { opportunityData: oppData } = lead.qualify(opportunityData);
+    const { opportunityData: oppData } = lead.qualify(qualifyData);
 
     // 2. 创建销售机会
     const opportunityId = `opp_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
     const opportunity = SalesOpportunity.createFromLead({
       id: opportunityId,
-      data: {
-        ...oppData,
-        value: opportunityData.value,
-        probability: Percentage.create(30),
-      },
+      data: oppData,
     });
 
     // 3. 发布领域事件
@@ -171,7 +167,7 @@ export class SalesDomainService {
     reason?: string
   ): Promise<StageChangeResult> {
     // 1. 创建新的阶段值对象
-    const newStage = OpportunityStage.create(newStageType as any);
+    const newStage = OpportunityStage.create(newStageType as OpportunityStageType);
 
     // 2. 执行阶段变更（包含验证）
     const result = opportunity.changeStage(newStage, reason);

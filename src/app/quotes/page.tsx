@@ -66,6 +66,7 @@ export default function QuotesPage() {
     validUntil: '',
     terms: '',
     notes: '',
+    revisionReason: '',
   });
   const [createItems, setCreateItems] = useState<QuoteItemForm[]>([
     { productName: '', description: '', quantity: 1, unitPrice: 0, discount: 0, subtotal: 0 },
@@ -80,6 +81,8 @@ export default function QuotesPage() {
           id: q.id,
           opportunityId: q.opportunity_id as string,
           title: q.title as string,
+          version: Number(q.version) || 1,
+          revisionReason: q.revision_reason as string | undefined,
           status: q.status as QuoteStatus,
           validFrom: q.valid_from as string | undefined,
           validUntil: q.valid_until as string | undefined,
@@ -118,6 +121,12 @@ export default function QuotesPage() {
     return matchesSearch && matchesStatus;
   });
 
+  // Calculate existing quotes info for the selected opportunity in the create dialog
+  const selectedOppId = createForm.opportunityId;
+  const quotesForSelectedOpp = selectedOppId ? quotes.filter(q => q.opportunityId === selectedOppId) : [];
+  const maxVersionForSelectedOpp = quotesForSelectedOpp.length > 0 ? Math.max(...quotesForSelectedOpp.map(q => q.version)) : 0;
+  const hasExistingQuotes = quotesForSelectedOpp.length > 0;
+
   const handleCreate = async () => {
     const subtotal = createItems.reduce((sum, i) => sum + i.subtotal, 0);
     const discount = createItems.reduce((sum, i) => sum + i.discount, 0);
@@ -134,6 +143,7 @@ export default function QuotesPage() {
           data: {
             opportunityId: createForm.opportunityId,
             title: createForm.title,
+            revisionReason: createForm.revisionReason || null,
             validFrom: createForm.validFrom || null,
             validUntil: createForm.validUntil || null,
             subtotal,
@@ -155,7 +165,7 @@ export default function QuotesPage() {
       });
       if (res.ok) {
         setShowCreate(false);
-        setCreateForm({ opportunityId: '', title: '', validFrom: '', validUntil: '', terms: '', notes: '' });
+        setCreateForm({ opportunityId: '', title: '', validFrom: '', validUntil: '', terms: '', notes: '', revisionReason: '' });
         setCreateItems([{ productName: '', description: '', quantity: 1, unitPrice: 0, discount: 0, subtotal: 0 }]);
         fetchQuotes();
       }
@@ -254,6 +264,7 @@ export default function QuotesPage() {
               <TableHeader>
                 <TableRow>
                   <TableHead>报价单标题</TableHead>
+                  <TableHead>版本</TableHead>
                   <TableHead>状态</TableHead>
                   <TableHead>总金额</TableHead>
                   <TableHead>有效期至</TableHead>
@@ -266,7 +277,21 @@ export default function QuotesPage() {
                   const statusConf = QUOTE_STATUS_CONFIG[quote.status];
                   return (
                     <TableRow key={quote.id} className="group cursor-pointer" onClick={() => router.push(`/quotes/${quote.id}`)}>
-                      <TableCell className="font-medium">{quote.title}</TableCell>
+                      <TableCell>
+                        <div>
+                          <p className="font-medium">{quote.title}</p>
+                          {quote.revisionReason && (
+                            <p className="text-xs text-purple-500 mt-0.5 truncate max-w-[200px]" title={quote.revisionReason}>
+                              修订: {quote.revisionReason}
+                            </p>
+                          )}
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant="outline" className={quote.version > 1 ? "bg-purple-50 text-purple-600 border-purple-200" : "bg-gray-50 text-gray-500 border-gray-200"}>
+                          V{quote.version}
+                        </Badge>
+                      </TableCell>
                       <TableCell>
                         <Badge className={statusConf.className}>{statusConf.label}</Badge>
                       </TableCell>
@@ -324,10 +349,28 @@ export default function QuotesPage() {
       <Dialog open={showCreate} onOpenChange={setShowCreate}>
         <DialogContent className="sm:max-w-2xl max-h-[85vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>新建报价单</DialogTitle>
-            <DialogDescription>为销售机会创建报价单</DialogDescription>
+            <DialogTitle>
+              {hasExistingQuotes ? '新建报价版本' : '新建报价单'}
+            </DialogTitle>
+            <DialogDescription>
+              {hasExistingQuotes
+                ? `为该机会创建新版报价单（当前最新版本: V${maxVersionForSelectedOpp}）`
+                : '为销售机会创建报价单'}
+            </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
+            {/* Revision reason - only show when there are existing quotes for the selected opportunity */}
+            {hasExistingQuotes && (
+              <div className="space-y-2 border-l-4 border-purple-400 pl-4 py-1 bg-purple-50/50 rounded-r-md">
+                <Label className="text-purple-700">版本修订原因 *</Label>
+                <Textarea
+                  value={createForm.revisionReason}
+                  onChange={e => setCreateForm(prev => ({ ...prev, revisionReason: e.target.value }))}
+                  placeholder="请说明为什么要新建一版报价，例如：客户要求调整价格、产品配置变更..."
+                  rows={2}
+                />
+              </div>
+            )}
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label>关联机会 *</Label>
@@ -415,8 +458,8 @@ export default function QuotesPage() {
           </div>
           <DialogFooter className="gap-2">
             <Button variant="outline" onClick={() => setShowCreate(false)}>取消</Button>
-            <Button onClick={handleCreate} disabled={!createForm.opportunityId || !createForm.title} className="bg-gradient-to-r from-primary to-purple-600">
-              保存草稿
+            <Button onClick={handleCreate} disabled={!createForm.opportunityId || !createForm.title || (hasExistingQuotes && !createForm.revisionReason)} className="bg-gradient-to-r from-primary to-purple-600">
+              {hasExistingQuotes ? `创建 V${maxVersionForSelectedOpp + 1} 版本` : '保存草稿'}
             </Button>
           </DialogFooter>
         </DialogContent>

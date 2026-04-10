@@ -169,6 +169,8 @@ export const quotes = pgTable(
     id: varchar("id", { length: 36 }).primaryKey().default(sql`gen_random_uuid()`),
     opportunity_id: varchar("opportunity_id", { length: 36 }).notNull().references(() => opportunities.id, { onDelete: "cascade" }),
     title: varchar("title", { length: 255 }).notNull(),
+    version: integer("version").notNull().default(1), // 报价单版本号
+    revision_reason: text("revision_reason"), // 新建版本的原因
     status: varchar("status", { length: 20 }).notNull().default("draft"), // draft, active, accepted, rejected, expired
     valid_from: timestamp("valid_from"),
     valid_until: timestamp("valid_until"),

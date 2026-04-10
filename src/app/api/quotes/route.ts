@@ -38,11 +38,22 @@ export async function POST(request: NextRequest) {
     switch (action) {
       case 'create': {
         const id = `quote_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
+        
+        // Auto-increment version: find the max version for this opportunity
+        let version = 1;
+        const existingQuotes = await db.getQuotesByOpportunity(data.opportunityId);
+        if (existingQuotes && existingQuotes.length > 0) {
+          const maxVersion = Math.max(...existingQuotes.map((q: Record<string, unknown>) => Number(q.version) || 0));
+          version = maxVersion + 1;
+        }
+        
         const quote = await db.createQuote(
           {
             id,
             opportunity_id: data.opportunityId,
             title: data.title,
+            version,
+            revision_reason: data.revisionReason || null,
             status: data.status || 'draft',
             valid_from: data.validFrom || null,
             valid_until: data.validUntil || null,
@@ -103,6 +114,8 @@ export async function PUT(request: NextRequest) {
 
     const updates: Record<string, unknown> = {};
     if (data.title !== undefined) updates.title = data.title;
+    if (data.version !== undefined) updates.version = data.version;
+    if (data.revisionReason !== undefined) updates.revision_reason = data.revisionReason;
     if (data.status !== undefined) updates.status = data.status;
     if (data.validFrom !== undefined) updates.valid_from = data.validFrom;
     if (data.validUntil !== undefined) updates.valid_until = data.validUntil;

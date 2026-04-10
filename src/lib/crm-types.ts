@@ -152,6 +152,8 @@ export interface Quote {
   opportunityId: string;
   opportunityName?: string;
   title: string;
+  version: number;
+  revisionReason?: string;
   status: QuoteStatus;
   validFrom?: string;
   validUntil?: string;

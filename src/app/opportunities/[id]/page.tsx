@@ -69,6 +69,7 @@ export default function OpportunityDetailPage() {
     validUntil: '',
     terms: '',
     notes: '',
+    revisionReason: '',
   });
   const [createQuoteItems, setCreateQuoteItems] = useState<QuoteItemForm[]>([
     { productName: '', description: '', quantity: 1, unitPrice: 0, discount: 0, subtotal: 0 },
@@ -88,6 +89,8 @@ export default function OpportunityDetailPage() {
           id: q.id as string,
           opportunityId: q.opportunity_id as string,
           title: q.title as string,
+          version: Number(q.version) || 1,
+          revisionReason: q.revision_reason as string | undefined,
           status: q.status as QuoteStatus,
           validFrom: q.valid_from as string | undefined,
           validUntil: q.valid_until as string | undefined,
@@ -162,6 +165,7 @@ export default function OpportunityDetailPage() {
           data: {
             opportunityId: opportunity.id,
             title: createQuoteForm.title,
+            revisionReason: createQuoteForm.revisionReason || null,
             validFrom: createQuoteForm.validFrom || null,
             validUntil: createQuoteForm.validUntil || null,
             subtotal,
@@ -183,7 +187,7 @@ export default function OpportunityDetailPage() {
       });
       if (res.ok) {
         setShowCreateQuote(false);
-        setCreateQuoteForm({ title: '', validFrom: '', validUntil: '', terms: '', notes: '' });
+        setCreateQuoteForm({ title: '', validFrom: '', validUntil: '', terms: '', notes: '', revisionReason: '' });
         setCreateQuoteItems([{ productName: '', description: '', quantity: 1, unitPrice: 0, discount: 0, subtotal: 0 }]);
         fetchQuotes();
       }
@@ -230,7 +234,7 @@ export default function OpportunityDetailPage() {
         <div className="flex gap-2">
           <Button onClick={() => setShowCreateQuote(true)} className="gap-2">
             <FileText className="h-4 w-4" />
-            新建报价单
+            {quotes.length > 0 ? '新建报价版本' : '新建报价单'}
           </Button>
           <Button variant="outline" asChild>
             <Link href={`/opportunities/${opportunity.id}/edit`}>
@@ -406,7 +410,7 @@ export default function OpportunityDetailPage() {
           <div className="flex items-center justify-between">
             <h3 className="text-lg font-semibold">关联报价单</h3>
             <Button onClick={() => setShowCreateQuote(true)} className="gap-2">
-              <Plus className="h-4 w-4" /> 新建报价单
+              <Plus className="h-4 w-4" /> {quotes.length > 0 ? '新建报价版本' : '新建报价单'}
             </Button>
           </div>
 
@@ -441,10 +445,23 @@ export default function OpportunityDetailPage() {
                         <div className="flex items-center gap-3">
                           <FileText className="h-5 w-5 text-muted-foreground" />
                           <div>
-                            <p className="font-medium">{quote.title}</p>
-                            <p className="text-xs text-muted-foreground">
-                              创建于 {format(new Date(quote.createdAt), 'yyyy-MM-dd')}
-                            </p>
+                            <div className="flex items-center gap-2">
+                              <p className="font-medium">{quote.title}</p>
+                              {quote.version > 1 && (
+                                <Badge variant="outline" className="text-xs px-1.5 py-0 bg-purple-50 text-purple-600 border-purple-200">
+                                  V{quote.version}
+                                </Badge>
+                              )}
+                            </div>
+                            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                              <span>创建于 {format(new Date(quote.createdAt), 'yyyy-MM-dd')}</span>
+                              {quote.revisionReason && (
+                                <>
+                                  <span className="text-muted-foreground/40">|</span>
+                                  <span className="text-purple-500">修订原因: {quote.revisionReason}</span>
+                                </>
+                              )}
+                            </div>
                           </div>
                         </div>
                         <div className="flex items-center gap-3">
@@ -556,10 +573,28 @@ export default function OpportunityDetailPage() {
       <Dialog open={showCreateQuote} onOpenChange={setShowCreateQuote}>
         <DialogContent className="sm:max-w-2xl max-h-[85vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>新建报价单</DialogTitle>
-            <DialogDescription>为销售机会「{opportunity.title}」创建报价单</DialogDescription>
+            <DialogTitle>
+              {quotes.length > 0 ? '新建报价版本' : '新建报价单'}
+            </DialogTitle>
+            <DialogDescription>
+              {quotes.length > 0
+                ? `为销售机会「${opportunity.title}」创建新版报价单（当前最新版本: V${Math.max(...quotes.map(q => q.version))}）`
+                : `为销售机会「${opportunity.title}」创建报价单`}
+            </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
+            {/* Revision reason - only show when there are existing quotes */}
+            {quotes.length > 0 && (
+              <div className="space-y-2 border-l-4 border-purple-400 pl-4 py-1 bg-purple-50/50 rounded-r-md">
+                <Label className="text-purple-700">版本修订原因 *</Label>
+                <Textarea
+                  value={createQuoteForm.revisionReason}
+                  onChange={e => setCreateQuoteForm(prev => ({ ...prev, revisionReason: e.target.value }))}
+                  placeholder="请说明为什么要新建一版报价，例如：客户要求调整价格、产品配置变更..."
+                  rows={2}
+                />
+              </div>
+            )}
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label>关联机会</Label>
@@ -657,8 +692,8 @@ export default function OpportunityDetailPage() {
           </div>
           <DialogFooter className="gap-2">
             <Button variant="outline" onClick={() => setShowCreateQuote(false)}>取消</Button>
-            <Button onClick={handleCreateQuote} disabled={!createQuoteForm.title} className="bg-gradient-to-r from-primary to-purple-600">
-              保存草稿
+            <Button onClick={handleCreateQuote} disabled={!createQuoteForm.title || (quotes.length > 0 && !createQuoteForm.revisionReason)} className="bg-gradient-to-r from-primary to-purple-600">
+              {quotes.length > 0 ? `创建 V${Math.max(...quotes.map(q => q.version)) + 1} 版本` : '保存草稿'}
             </Button>
           </DialogFooter>
         </DialogContent>

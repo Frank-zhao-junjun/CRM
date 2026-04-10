@@ -307,7 +307,7 @@ export default function OrdersPage() {
                   const opp = opportunities.find(o => o.id === v);
                   setCreateForm(prev => ({ ...prev, opportunityId: v, customerId: opp?.customerId || prev.customerId }));
                 }}>
-                  <SelectTrigger><SelectValue placeholder="选择销售机会" /></SelectTrigger>
+                  <SelectTrigger><SelectValue placeholder="选择商机" /></SelectTrigger>
                   <SelectContent>
                     {opportunities.map(o => <SelectItem key={o.id} value={o.id}>{o.title} ({o.customerName})</SelectItem>)}
                   </SelectContent>

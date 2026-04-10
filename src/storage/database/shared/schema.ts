@@ -72,7 +72,7 @@ export const leads = pgTable(
   ]
 );
 
-// 销售机会表
+// 商机表
 export const opportunities = pgTable(
   "opportunities",
   {
@@ -83,8 +83,8 @@ export const opportunities = pgTable(
     customer_name: varchar("customer_name", { length: 255 }).notNull(),
     contact_name: varchar("contact_name", { length: 255 }),
     value: numeric("value", { precision: 15, scale: 2 }).notNull().default("0"),
-    stage: varchar("stage", { length: 20 }).notNull().default("qualified"), // qualified, proposal, negotiation, closed_won, closed_lost (线索已移除)
-    probability: integer("probability").notNull().default(30), // 机会默认30%
+    stage: varchar("stage", { length: 20 }).notNull().default("qualified"), // qualified, discovery, proposal, negotiation, contract, closed_won, closed_lost
+    probability: integer("probability").notNull().default(20), // 商机默认20%
     expected_close_date: timestamp("expected_close_date", { withTimezone: true }),
     description: text("description"),
     notes: text("notes"),

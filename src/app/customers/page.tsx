@@ -330,7 +330,7 @@ export default function CustomersPage() {
               确认删除客户
             </DialogTitle>
             <DialogDescription>
-              确定要删除这个客户吗？此操作不可撤销，相关联系人和销售机会也会被一并删除。
+              确定要删除这个客户吗？此操作不可撤销，相关联系人和商机也会被一并删除。
             </DialogDescription>
           </DialogHeader>
           <DialogFooter className="gap-2">

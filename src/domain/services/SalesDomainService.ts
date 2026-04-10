@@ -86,7 +86,7 @@ export class SalesDomainService {
     return lead;
   }
 
-  // 线索Qualified转换为销售机会
+  // 线索Qualified转换为商机
   async qualifyLead(
     lead: SalesLead,
     qualifyData: QualifyData
@@ -97,7 +97,7 @@ export class SalesDomainService {
     // 1. 执行Qualified转换
     const { opportunityData: oppData } = lead.qualify(qualifyData);
 
-    // 2. 创建销售机会
+    // 2. 创建商机
     const opportunityId = `opp_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
     const opportunity = SalesOpportunity.createFromLead({
       id: opportunityId,
@@ -130,7 +130,7 @@ export class SalesDomainService {
       entityType: 'lead',
       entityId: lead.id,
       entityName: lead.title,
-      description: `销售线索 "${lead.title}" 已Qualified，转为销售机会`,
+      description: `销售线索 "${lead.title}" 已Qualified，转为商机`,
     });
 
     return { lead, opportunity };
@@ -196,7 +196,7 @@ export class SalesDomainService {
         entityType: 'opportunity',
         entityId: opportunity.id,
         entityName: opportunity.title,
-        description: `销售机会 "${opportunity.title}" 成交！金额: ${opportunity.value.format()}`,
+        description: `商机 "${opportunity.title}" 成交！金额: ${opportunity.value.format()}`,
       });
     }
 
@@ -213,7 +213,7 @@ export class SalesDomainService {
         entityType: 'opportunity',
         entityId: opportunity.id,
         entityName: opportunity.title,
-        description: `销售机会 "${opportunity.title}" 失败${reason ? `，原因: ${reason}` : ''}`,
+        description: `商机 "${opportunity.title}" 失败${reason ? `，原因: ${reason}` : ''}`,
       });
     }
 
@@ -224,7 +224,7 @@ export class SalesDomainService {
         entityType: 'opportunity',
         entityId: opportunity.id,
         entityName: opportunity.title,
-        description: `销售机会 "${opportunity.title}" 从 ${result.oldStage.getLabel()} 变更为 ${result.newStage.getLabel()}`,
+        description: `商机 "${opportunity.title}" 从 ${result.oldStage.getLabel()} 变更为 ${result.newStage.getLabel()}`,
       });
     }
 

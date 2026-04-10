@@ -93,7 +93,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json(leads);
     }
     
-    // 销售机会 (opportunities)
+    // 商机 (opportunities)
     if (type === 'opportunities') {
       const customerId = searchParams.get('customerId');
       const excludeLead = searchParams.get('excludeLead') === 'true';
@@ -188,7 +188,7 @@ export async function POST(request: NextRequest) {
         // 更新线索状态
         await db.updateLead(data.leadId, { status: 'qualified' });
         
-        // 创建销售机会
+        // 创建商机
         const opportunity = await db.createOpportunity({
           id: `opp_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
           title: data.opportunityTitle || lead.title,
@@ -198,7 +198,7 @@ export async function POST(request: NextRequest) {
           contact_name: data.contactName || lead.contact_name,
           value: data.value || lead.estimated_value,
           stage: 'qualified',
-          probability: 30,
+          probability: 20,
           expected_close_date: data.expectedCloseDate,
           description: data.notes || lead.notes,
           source_lead_id: lead.id,
@@ -211,7 +211,7 @@ export async function POST(request: NextRequest) {
           entity_type: 'lead',
           entity_id: lead.id,
           entity_name: lead.title,
-          description: `销售线索 "${lead.title}" 已Qualified，转为销售机会`,
+          description: `销售线索 "${lead.title}" 已Qualified，转为商机`,
           timestamp: new Date(),
         });
         
@@ -221,7 +221,7 @@ export async function POST(request: NextRequest) {
           entity_type: 'opportunity',
           entity_id: opportunity.id,
           entity_name: opportunity.title,
-          description: `创建销售机会 "${opportunity.title}"，金额 ¥${Number(opportunity.value).toLocaleString()}`,
+          description: `创建商机 "${opportunity.title}"，金额 ¥${Number(opportunity.value).toLocaleString()}`,
           timestamp: new Date(),
         });
         
@@ -274,7 +274,7 @@ export async function POST(request: NextRequest) {
           entity_type: 'opportunity',
           entity_id: opportunity.id,
           entity_name: opportunity.title,
-          description: `创建销售机会 "${opportunity.title}"，金额 ¥${Number(opportunity.value).toLocaleString()}`,
+          description: `创建商机 "${opportunity.title}"，金额 ¥${Number(opportunity.value).toLocaleString()}`,
           timestamp: new Date(),
         });
         return NextResponse.json(opportunity);
@@ -380,9 +380,11 @@ export async function PUT(request: NextRequest) {
         // 如果阶段变更，记录活动
         if (oldOpp && data.stage && oldOpp.stage !== data.stage) {
           const stageLabels: Record<string, string> = {
-            qualified: '销售机会',
-            proposal: '提案',
-            negotiation: '谈判',
+            qualified: '商机确认',
+            discovery: '需求调研',
+            proposal: '方案报价',
+            negotiation: '商务洽谈',
+            contract: '合同签署',
             closed_won: '成交',
             closed_lost: '失败',
           };
@@ -394,10 +396,10 @@ export async function PUT(request: NextRequest) {
             entity_id: opportunity.id,
             entity_name: opportunity.title,
             description: data.stage === 'closed_won' 
-              ? `销售机会 "${opportunity.title}" 成交！金额: ¥${Number(opportunity.value).toLocaleString()}`
+              ? `商机 "${opportunity.title}" 成交！金额: ¥${Number(opportunity.value).toLocaleString()}`
               : data.stage === 'closed_lost'
-              ? `销售机会 "${opportunity.title}" 失败${data.reason ? `，原因: ${data.reason}` : ''}`
-              : `销售机会 "${opportunity.title}" 从 ${stageLabels[oldOpp.stage]} 变更为 ${stageLabels[data.stage]}`,
+              ? `商机 "${opportunity.title}" 失败${data.reason ? `，原因: ${data.reason}` : ''}`
+              : `商机 "${opportunity.title}" 从 ${stageLabels[oldOpp.stage]} 变更为 ${stageLabels[data.stage]}`,
             timestamp: new Date(),
           });
         }
@@ -414,9 +416,11 @@ export async function PUT(request: NextRequest) {
         
         // 验证阶段转换
         const validTransitions: Record<string, string[]> = {
-          qualified: ['proposal', 'closed_lost'],
+          qualified: ['discovery', 'closed_lost'],
+          discovery: ['proposal', 'closed_lost'],
           proposal: ['negotiation', 'closed_lost'],
-          negotiation: ['closed_won', 'closed_lost'],
+          negotiation: ['contract', 'closed_lost'],
+          contract: ['closed_won', 'closed_lost'],
           closed_won: [],
           closed_lost: [],
         };
@@ -428,17 +432,21 @@ export async function PUT(request: NextRequest) {
         }
         
         const stageLabels: Record<string, string> = {
-          qualified: '销售机会',
-          proposal: '提案',
-          negotiation: '谈判',
+          qualified: '商机确认',
+          discovery: '需求调研',
+          proposal: '方案报价',
+          negotiation: '商务洽谈',
+          contract: '合同签署',
           closed_won: '成交',
           closed_lost: '失败',
         };
         
         const defaultProbabilities: Record<string, number> = {
-          qualified: 30,
-          proposal: 50,
-          negotiation: 80,
+          qualified: 20,
+          discovery: 30,
+          proposal: 45,
+          negotiation: 65,
+          contract: 85,
           closed_won: 100,
           closed_lost: 0,
         };
@@ -458,10 +466,10 @@ export async function PUT(request: NextRequest) {
           entity_id: updated.id,
           entity_name: updated.title,
           description: data.stage === 'closed_won' 
-            ? `销售机会 "${updated.title}" 成交！金额: ¥${Number(updated.value).toLocaleString()}`
+            ? `商机 "${updated.title}" 成交！金额: ¥${Number(updated.value).toLocaleString()}`
             : data.stage === 'closed_lost'
-            ? `销售机会 "${updated.title}" 失败${data.reason ? `，原因: ${data.reason}` : ''}`
-            : `销售机会 "${updated.title}" 从 ${stageLabels[opportunity.stage]} 变更为 ${stageLabels[data.stage]}`,
+            ? `商机 "${updated.title}" 失败${data.reason ? `，原因: ${data.reason}` : ''}`
+            : `商机 "${updated.title}" 从 ${stageLabels[opportunity.stage]} 变更为 ${stageLabels[data.stage]}`,
           timestamp: new Date(),
         });
 
@@ -472,8 +480,8 @@ export async function PUT(request: NextRequest) {
             type: 'stage_change',
             title: data.stage === 'closed_won' ? '机会成交' : '机会失败',
             message: data.stage === 'closed_won' 
-              ? `销售机会 "${updated.title}" 已成交，金额 ¥${Number(updated.value).toLocaleString()}`
-              : `销售机会 "${updated.title}" 已失败${data.reason ? `，原因: ${data.reason}` : ''}`,
+              ? `商机 "${updated.title}" 已成交，金额 ¥${Number(updated.value).toLocaleString()}`
+              : `商机 "${updated.title}" 已失败${data.reason ? `，原因: ${data.reason}` : ''}`,
             entity_type: 'opportunity',
             entity_id: updated.id,
             is_read: false,
@@ -567,7 +575,7 @@ export async function DELETE(request: NextRequest) {
             entity_type: 'opportunity',
             entity_id: id,
             entity_name: opportunity.title,
-            description: `删除销售机会 ${opportunity.title}`,
+            description: `删除商机 ${opportunity.title}`,
             timestamp: new Date(),
           });
         }

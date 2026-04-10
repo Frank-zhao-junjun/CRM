@@ -1,20 +1,24 @@
-// 值对象: 销售机会阶段
-export type OpportunityStageType = 'qualified' | 'proposal' | 'negotiation' | 'closed_won' | 'closed_lost';
+// 值对象: 商机阶段
+export type OpportunityStageType = 'qualified' | 'discovery' | 'proposal' | 'negotiation' | 'contract' | 'closed_won' | 'closed_lost';
 
 // 阶段转换规则定义
 const VALID_TRANSITIONS: Record<OpportunityStageType, OpportunityStageType[]> = {
-  qualified: ['proposal', 'closed_lost'],
+  qualified: ['discovery', 'closed_lost'],
+  discovery: ['proposal', 'closed_lost'],
   proposal: ['negotiation', 'closed_lost'],
-  negotiation: ['closed_won', 'closed_lost'],
+  negotiation: ['contract', 'closed_lost'],
+  contract: ['closed_won', 'closed_lost'],
   closed_won: [], // 终态
   closed_lost: [], // 终态
 };
 
 // 各阶段默认概率
 const DEFAULT_PROBABILITY: Record<OpportunityStageType, number> = {
-  qualified: 30,
-  proposal: 50,
-  negotiation: 80,
+  qualified: 20,
+  discovery: 30,
+  proposal: 45,
+  negotiation: 65,
+  contract: 85,
   closed_won: 100,
   closed_lost: 0,
 };
@@ -30,12 +34,20 @@ export class OpportunityStage {
     return new OpportunityStage('qualified');
   }
 
+  static discovery(): OpportunityStage {
+    return new OpportunityStage('discovery');
+  }
+
   static proposal(): OpportunityStage {
     return new OpportunityStage('proposal');
   }
 
   static negotiation(): OpportunityStage {
     return new OpportunityStage('negotiation');
+  }
+
+  static contract(): OpportunityStage {
+    return new OpportunityStage('contract');
   }
 
   static closedWon(): OpportunityStage {
@@ -79,9 +91,11 @@ export class OpportunityStage {
 
   getLabel(): string {
     const labels: Record<OpportunityStageType, string> = {
-      qualified: '销售机会',
-      proposal: '提案',
-      negotiation: '谈判',
+      qualified: '商机确认',
+      discovery: '需求调研',
+      proposal: '方案报价',
+      negotiation: '商务洽谈',
+      contract: '合同签署',
       closed_won: '成交',
       closed_lost: '失败',
     };

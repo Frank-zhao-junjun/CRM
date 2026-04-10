@@ -86,7 +86,7 @@ export default function LeadDetailPage() {
             <>
               <Button onClick={handleQualify} className="gap-2 bg-gradient-to-r from-cyan-500 to-blue-500">
                 <ArrowRightLeft className="h-4 w-4" />
-                转为销售机会
+                转为商机
               </Button>
               <Button variant="outline" onClick={() => setShowDisqualifyDialog(true)} className="gap-2 text-yellow-600 border-yellow-300 hover:bg-yellow-50">
                 <XCircle className="h-4 w-4" />
@@ -96,7 +96,7 @@ export default function LeadDetailPage() {
           )}
           {isQualified && (
             <Badge className="bg-cyan-500/10 text-cyan-600 border-cyan-500/20 text-sm px-3 py-1">
-              <Sparkles className="h-4 w-4 mr-1" /> 已转为销售机会
+              <Sparkles className="h-4 w-4 mr-1" /> 已转为商机
             </Badge>
           )}
           {!isQualified && (

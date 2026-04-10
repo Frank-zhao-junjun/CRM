@@ -1,4 +1,4 @@
-// 仓储接口: 销售机会
+// 仓储接口: 商机
 import { SalesOpportunity } from '../aggregates/SalesOpportunityAggregate';
 
 export interface OpportunityFilter {

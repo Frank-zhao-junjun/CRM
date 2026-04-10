@@ -99,7 +99,7 @@ export class SalesLead {
     this.props.updatedAt = new Date();
   }
 
-  // Qualified 转换为销售机会
+  // Qualified 转换为商机
   qualify(data: QualifyData): { opportunityData: OpportunityData } {
     if (!this.props.status.canQualify()) {
       throw new Error('当前状态不能Qualified此线索');

@@ -238,10 +238,10 @@ export default function QuoteDetailPage() {
                 </div>
               )}
               <div>
-                <span className="text-muted-foreground">关联销售机会</span>
+                <span className="text-muted-foreground">关联商机</span>
                 <div className="mt-1">
                   <Link href={`/opportunities/${quote.opportunityId}`} className="text-primary hover:underline flex items-center gap-1">
-                    <Briefcase className="h-3.5 w-3.5" /> 查看销售机会
+                    <Briefcase className="h-3.5 w-3.5" /> 查看商机
                   </Link>
                 </div>
               </div>

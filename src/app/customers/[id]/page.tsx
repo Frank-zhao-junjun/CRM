@@ -195,10 +195,10 @@ export default function CustomerDetailPage() {
         </Card>
       </div>
 
-      {/* 销售机会 */}
+      {/* 商机 */}
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">
-          <CardTitle>销售机会</CardTitle>
+          <CardTitle>商机</CardTitle>
           <Button variant="ghost" size="sm" asChild>
             <Link href={`/opportunities/new?customerId=${customer.id}`}>
               添加
@@ -207,7 +207,7 @@ export default function CustomerDetailPage() {
         </CardHeader>
         <CardContent>
           {customerOpportunities.length === 0 ? (
-            <p className="text-sm text-muted-foreground text-center py-4">暂无销售机会</p>
+            <p className="text-sm text-muted-foreground text-center py-4">暂无商机</p>
           ) : (
             <div className="space-y-4">
               {customerOpportunities.map(opp => (
@@ -245,7 +245,7 @@ export default function CustomerDetailPage() {
           <DialogHeader>
             <DialogTitle>确认删除</DialogTitle>
             <DialogDescription>
-              确定要删除客户 &ldquo;{customer.name}&rdquo; 吗？此操作不可撤销，将同时删除相关的联系人和销售机会。
+              确定要删除客户 &ldquo;{customer.name}&rdquo; 吗？此操作不可撤销，将同时删除相关的联系人和商机。
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>

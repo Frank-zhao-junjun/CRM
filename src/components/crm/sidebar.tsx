@@ -41,7 +41,7 @@ const navigation = [
     badge: '线索',
   },
   { 
-    name: '销售机会', 
+    name: '商机',
     href: '/opportunities', 
     icon: Briefcase,
     gradient: 'from-orange-500 to-amber-500',

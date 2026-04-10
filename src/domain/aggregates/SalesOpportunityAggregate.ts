@@ -1,4 +1,4 @@
-// 聚合根: 销售机会
+// 聚合根: 商机
 import { Money, Percentage, OpportunityStage } from '../value-objects';
 
 // 机会数据（用于创建时传递）
@@ -149,14 +149,24 @@ export class SalesOpportunity {
     };
   }
 
-  // 推进到下一阶段（提案）
+  // 推进到需求调研阶段
+  moveToDiscovery(): StageChangeResult {
+    return this.changeStage(OpportunityStage.discovery());
+  }
+
+  // 推进到方案报价阶段
   moveToProposal(): StageChangeResult {
     return this.changeStage(OpportunityStage.proposal());
   }
 
-  // 推进到谈判阶段
+  // 推进到商务洽谈阶段
   moveToNegotiation(): StageChangeResult {
     return this.changeStage(OpportunityStage.negotiation());
+  }
+
+  // 推进到合同签署阶段
+  moveToContract(): StageChangeResult {
+    return this.changeStage(OpportunityStage.contract());
   }
 
   // 成交
@@ -216,8 +226,8 @@ export class SalesOpportunity {
       contactId: params.contactId,
       contactName: params.contactName,
       value: Money.create(params.value),
-      stage: OpportunityStage.qualified(), // 新机会默认从qualified开始
-      probability: Percentage.create(params.probability ?? 30),
+      stage: OpportunityStage.qualified(), // 新商机默认从商机确认开始
+      probability: Percentage.create(params.probability ?? 20),
       expectedCloseDate: new Date(params.expectedCloseDate),
       description: params.description,
       notes: params.notes,
@@ -242,7 +252,7 @@ export class SalesOpportunity {
       contactName: params.data.contactName,
       value: params.data.value,
       stage: OpportunityStage.qualified(),
-      probability: Percentage.create(30),
+      probability: Percentage.create(20),
       expectedCloseDate: new Date(params.data.expectedCloseDate),
       description: params.data.description,
       notes: params.data.notes,

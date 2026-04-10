@@ -41,22 +41,34 @@ import { Progress } from '@/components/ui/progress';
 const stageConfig: Record<OpportunityStage, { label: string; className: string; gradient: string; color: string }> = {
   // 注意: lead 阶段已移除，销售线索在独立页面管理
   qualified: { 
-    label: '销售机会', 
+    label: '商机确认', 
     className: 'bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20',
     gradient: 'from-blue-400 to-cyan-500',
     color: 'text-blue-600 dark:text-blue-400'
   },
+  discovery: { 
+    label: '需求调研', 
+    className: 'bg-sky-500/10 text-sky-600 dark:text-sky-400 border-sky-500/20',
+    gradient: 'from-sky-400 to-blue-500',
+    color: 'text-sky-600 dark:text-sky-400'
+  },
   proposal: { 
-    label: '提案', 
+    label: '方案报价', 
     className: 'bg-purple-500/10 text-purple-600 dark:text-purple-400 border-purple-500/20',
     gradient: 'from-purple-400 to-pink-500',
     color: 'text-purple-600 dark:text-purple-400'
   },
   negotiation: { 
-    label: '谈判', 
+    label: '商务洽谈', 
     className: 'bg-orange-500/10 text-orange-600 dark:text-orange-400 border-orange-500/20',
     gradient: 'from-orange-400 to-amber-500',
     color: 'text-orange-600 dark:text-orange-400'
+  },
+  contract: { 
+    label: '合同签署', 
+    className: 'bg-teal-500/10 text-teal-600 dark:text-teal-400 border-teal-500/20',
+    gradient: 'from-teal-400 to-emerald-500',
+    color: 'text-teal-600 dark:text-teal-400'
   },
   closed_won: { 
     label: '成交', 
@@ -118,9 +130,9 @@ export default function OpportunitiesPage() {
         <div className="absolute inset-0 bg-gradient-to-r from-orange-500/5 via-transparent to-amber-500/5 rounded-3xl -z-10" />
         <div className="flex flex-col sm:flex-row gap-4 justify-between">
           <div>
-            <h1 className="text-3xl font-bold tracking-tight gradient-text">销售机会</h1>
+            <h1 className="text-3xl font-bold tracking-tight gradient-text">商机</h1>
             <p className="text-muted-foreground mt-1">
-              共 {filteredOpportunities.length} 个机会，总价值 ¥{filteredOpportunities.reduce((sum, o) => sum + o.value, 0).toLocaleString()}
+              共 {filteredOpportunities.length} 个商机，总价值 ¥{filteredOpportunities.reduce((sum, o) => sum + o.value, 0).toLocaleString()}
             </p>
           </div>
           <Button 
@@ -140,7 +152,7 @@ export default function OpportunitiesPage() {
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
-                placeholder="搜索机会名称或客户..."
+                placeholder="搜索商机名称或客户..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 className="pl-10 h-11 bg-background/50"
@@ -152,9 +164,11 @@ export default function OpportunitiesPage() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">全部阶段</SelectItem>
-                <SelectItem value="qualified">销售机会</SelectItem>
-                <SelectItem value="proposal">提案</SelectItem>
-                <SelectItem value="negotiation">谈判</SelectItem>
+                <SelectItem value="qualified">商机确认</SelectItem>
+                <SelectItem value="discovery">需求调研</SelectItem>
+                <SelectItem value="proposal">方案报价</SelectItem>
+                <SelectItem value="negotiation">商务洽谈</SelectItem>
+                <SelectItem value="contract">合同签署</SelectItem>
                 <SelectItem value="closed_won">成交</SelectItem>
                 <SelectItem value="closed_lost">失败</SelectItem>
               </SelectContent>
@@ -171,8 +185,8 @@ export default function OpportunitiesPage() {
               <div className="w-20 h-20 rounded-3xl bg-gradient-to-br from-orange-500/10 to-amber-500/10 flex items-center justify-center mb-4">
                 <Briefcase className="h-10 w-10 text-muted-foreground/50" />
               </div>
-              <h3 className="text-lg font-semibold mb-1">暂无销售机会</h3>
-              <p className="text-sm text-muted-foreground mb-4">开始创建你的第一个销售机会</p>
+              <h3 className="text-lg font-semibold mb-1">暂无商机</h3>
+              <p className="text-sm text-muted-foreground mb-4">开始创建你的第一个商机</p>
               <Button 
                 onClick={() => router.push('/opportunities/new')}
                 className="gap-2 bg-gradient-to-r from-orange-500 to-amber-500"
@@ -185,7 +199,7 @@ export default function OpportunitiesPage() {
             <Table>
               <TableHeader>
                 <TableRow className="bg-muted/30">
-                  <TableHead className="font-semibold">机会</TableHead>
+                  <TableHead className="font-semibold">商机</TableHead>
                   <TableHead className="font-semibold">客户</TableHead>
                   <TableHead className="font-semibold">金额</TableHead>
                   <TableHead className="font-semibold">阶段</TableHead>
@@ -307,7 +321,7 @@ export default function OpportunitiesPage() {
               <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-orange-500/10 to-amber-500/10 flex items-center justify-center mb-4">
                 <Briefcase className="h-8 w-8 text-muted-foreground/50" />
               </div>
-              <p className="text-sm text-muted-foreground mb-4">暂无销售机会数据</p>
+              <p className="text-sm text-muted-foreground mb-4">暂无商机数据</p>
               <Button 
                 onClick={() => router.push('/opportunities/new')}
                 className="gap-2 bg-gradient-to-r from-orange-500 to-amber-500"
@@ -402,10 +416,10 @@ export default function OpportunitiesPage() {
               <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-destructive/10">
                 <Trash2 className="h-5 w-5 text-destructive" />
               </div>
-              确认删除销售机会
+              确认删除商机
             </DialogTitle>
             <DialogDescription>
-              确定要删除这个销售机会吗？此操作不可撤销。
+              确定要删除这个商机吗？此操作不可撤销。
             </DialogDescription>
           </DialogHeader>
           <DialogFooter className="gap-2">

@@ -322,7 +322,7 @@ export default function LeadsPage() {
                           {lead.status === 'qualified' ? (
                             <DropdownMenuItem disabled className="gap-2 text-muted-foreground cursor-not-allowed">
                               <Sparkles className="h-4 w-4" />
-                              已转为销售机会
+                              已转为商机
                             </DropdownMenuItem>
                           ) : (
                             <>
@@ -387,19 +387,19 @@ export default function LeadsPage() {
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <ArrowRightLeft className="h-5 w-5 text-cyan-500" />
-              线索转为销售机会
+              线索转为商机
             </DialogTitle>
             <DialogDescription>
-              将 &ldquo;{qualifyDialog.lead?.title}&rdquo; 转为正式的销售机会
+              将 &ldquo;{qualifyDialog.lead?.title}&rdquo; 转为正式的商机
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div className="space-y-2">
-              <label className="text-sm font-medium">机会标题</label>
+              <label className="text-sm font-medium">商机标题</label>
               <Input 
                 value={qualifyForm.opportunityTitle} 
                 onChange={(e) => setQualifyForm({...qualifyForm, opportunityTitle: e.target.value})}
-                placeholder="输入销售机会名称"
+                placeholder="输入商机名称"
               />
             </div>
             <div className="space-y-2">

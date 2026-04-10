@@ -238,7 +238,7 @@ export async function deleteLead(id: string): Promise<void> {
   if (error) throw new Error(`删除销售线索失败: ${error.message}`);
 }
 
-// ============ Opportunity 操作 (销售机会) ============
+// ============ Opportunity 操作 (商机) ============
 
 export async function getAllOpportunities(excludeLead: boolean = false): Promise<Opportunity[]> {
   const client = getSupabaseClient();
@@ -252,7 +252,7 @@ export async function getAllOpportunities(excludeLead: boolean = false): Promise
   }
   
   const { data, error } = await query;
-  if (error) throw new Error(`获取销售机会列表失败: ${error.message}`);
+  if (error) throw new Error(`获取商机列表失败: ${error.message}`);
   return data as Opportunity[];
 }
 
@@ -263,7 +263,7 @@ export async function getOpportunitiesByCustomerId(customerId: string): Promise<
     .select('*')
     .eq('customer_id', customerId)
     .order('updated_at', { ascending: false });
-  if (error) throw new Error(`获取客户销售机会失败: ${error.message}`);
+  if (error) throw new Error(`获取客户商机失败: ${error.message}`);
   return data as Opportunity[];
 }
 
@@ -274,7 +274,7 @@ export async function getOpportunityById(id: string): Promise<Opportunity | null
     .select('*')
     .eq('id', id)
     .maybeSingle();
-  if (error) throw new Error(`获取销售机会失败: ${error.message}`);
+  if (error) throw new Error(`获取商机失败: ${error.message}`);
   return data as Opportunity | null;
 }
 
@@ -285,7 +285,7 @@ export async function createOpportunity(opportunity: InsertOpportunity): Promise
     .insert(opportunity)
     .select()
     .single();
-  if (error) throw new Error(`创建销售机会失败: ${error.message}`);
+  if (error) throw new Error(`创建商机失败: ${error.message}`);
   return data as Opportunity;
 }
 
@@ -297,7 +297,7 @@ export async function updateOpportunity(id: string, updates: Partial<InsertOppor
     .eq('id', id)
     .select()
     .single();
-  if (error) throw new Error(`更新销售机会失败: ${error.message}`);
+  if (error) throw new Error(`更新商机失败: ${error.message}`);
   return data as Opportunity;
 }
 
@@ -307,7 +307,7 @@ export async function deleteOpportunity(id: string): Promise<void> {
     .from('opportunities')
     .delete()
     .eq('id', id);
-  if (error) throw new Error(`删除销售机会失败: ${error.message}`);
+  if (error) throw new Error(`删除商机失败: ${error.message}`);
 }
 
 // ============ Activity 操作 ============
@@ -762,7 +762,7 @@ export async function convertQuoteToOrder(quoteId: string): Promise<Order> {
     .select('customer_id')
     .eq('id', quoteData.opportunity_id)
     .maybeSingle();
-  if (!opp) throw new Error('关联销售机会不存在');
+  if (!opp) throw new Error('关联商机不存在');
 
   // Create order from quote
   const orderItems = (quoteItemsData || []).map((item: Record<string, unknown>) => ({

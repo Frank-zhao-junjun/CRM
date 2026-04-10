@@ -19,9 +19,11 @@ import Link from 'next/link';
 import { OpportunityStage } from '@/lib/crm-types';
 
 const stages: { value: OpportunityStage; label: string; probability: number }[] = [
-  { value: 'qualified', label: '销售机会', probability: 30 },
-  { value: 'proposal', label: '提案', probability: 50 },
-  { value: 'negotiation', label: '谈判', probability: 80 },
+  { value: 'qualified', label: '商机确认', probability: 20 },
+  { value: 'discovery', label: '需求调研', probability: 30 },
+  { value: 'proposal', label: '方案报价', probability: 45 },
+  { value: 'negotiation', label: '商务洽谈', probability: 65 },
+  { value: 'contract', label: '合同签署', probability: 85 },
   { value: 'closed_won', label: '成交', probability: 100 },
   { value: 'closed_lost', label: '失败', probability: 0 },
 ];
@@ -92,16 +94,16 @@ function NewOpportunityForm() {
     <form onSubmit={handleSubmit} className="space-y-6">
       <Card>
         <CardHeader>
-          <CardTitle>机会信息</CardTitle>
+          <CardTitle>商机信息</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="title">机会名称 *</Label>
+            <Label htmlFor="title">商机名称 *</Label>
             <Input
               id="title"
               value={formData.title}
               onChange={(e) => handleChange('title', e.target.value)}
-              placeholder="输入机会名称"
+              placeholder="输入商机名称"
               required
             />
           </div>
@@ -238,7 +240,7 @@ export default function NewOpportunityPage() {
             <ArrowLeft className="h-5 w-5" />
           </Link>
         </Button>
-        <h2 className="text-2xl font-bold">新建销售机会</h2>
+        <h2 className="text-2xl font-bold">新建商机</h2>
       </div>
 
       <Suspense fallback={<div className="text-center py-8">加载中...</div>}>

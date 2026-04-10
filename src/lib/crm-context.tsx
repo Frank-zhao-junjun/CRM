@@ -38,7 +38,7 @@ interface CRMContextType {
   }) => Promise<void>;
   disqualifyLead: (leadId: string, reason?: string) => Promise<void>;
   
-  // Opportunity operations (销售机会)
+  // Opportunity operations (商机)
   addOpportunity: (opportunity: Omit<SalesOpportunity, 'id' | 'createdAt' | 'updatedAt'>) => Promise<void>;
   updateOpportunity: (id: string, opportunity: Partial<SalesOpportunity>) => Promise<void>;
   deleteOpportunity: (id: string) => Promise<void>;
@@ -498,7 +498,7 @@ export function CRMProvider({ children }: { children: ReactNode }) {
     await loadData();
   }, [loadData]);
 
-  // Opportunity operations (销售机会)
+  // Opportunity operations (商机)
   const addOpportunity = useCallback(async (opportunity: Omit<SalesOpportunity, 'id' | 'createdAt' | 'updatedAt'>) => {
     const newOpp = await apiPost<DBOpportunity>('createOpportunity', {
       title: opportunity.title,
@@ -510,7 +510,7 @@ export function CRMProvider({ children }: { children: ReactNode }) {
       expected_close_date: opportunity.expectedCloseDate || null,
       description: opportunity.description || null,
     });
-    await addActivity('created', 'opportunity', newOpp.id, newOpp.title, `创建销售机会 ${newOpp.title}`);
+    await addActivity('created', 'opportunity', newOpp.id, newOpp.title, `创建商机 ${newOpp.title}`);
     await loadData();
   }, [addActivity, loadData]);
 
@@ -531,9 +531,11 @@ export function CRMProvider({ children }: { children: ReactNode }) {
     // 阶段变更记录
     if (oldOpp && updates.stage && oldOpp.stage !== updates.stage) {
       const stageLabels: Record<string, string> = {
-        qualified: '销售机会',
-        proposal: '提案',
-        negotiation: '谈判',
+        qualified: '商机确认',
+        discovery: '需求调研',
+        proposal: '方案报价',
+        negotiation: '商务洽谈',
+        contract: '合同签署',
         closed_won: '成交',
         closed_lost: '失败',
       };
@@ -543,11 +545,11 @@ export function CRMProvider({ children }: { children: ReactNode }) {
         id,
         updated.title,
         updates.stage === 'closed_won' 
-          ? `销售机会 "${updated.title}" 成交！`
+          ? `商机 "${updated.title}" 成交！`
           : `阶段变更为 ${stageLabels[updates.stage]}`
       );
     } else {
-      await addActivity('updated', 'opportunity', id, updated.title, `更新销售机会 ${updated.title}`);
+      await addActivity('updated', 'opportunity', id, updated.title, `更新商机 ${updated.title}`);
     }
     
     await loadData();
@@ -560,9 +562,11 @@ export function CRMProvider({ children }: { children: ReactNode }) {
     });
     
     const stageLabels: Record<string, string> = {
-      qualified: '销售机会',
-      proposal: '提案',
-      negotiation: '谈判',
+      qualified: '商机确认',
+      discovery: '需求调研',
+      proposal: '方案报价',
+      negotiation: '商务洽谈',
+      contract: '合同签署',
       closed_won: '成交',
       closed_lost: '失败',
     };
@@ -573,7 +577,7 @@ export function CRMProvider({ children }: { children: ReactNode }) {
       id,
       updated.title,
       newStage === 'closed_won' 
-        ? `销售机会 "${updated.title}" 成交！`
+        ? `商机 "${updated.title}" 成交！`
         : `阶段变更为 ${stageLabels[newStage]}`
     );
     
@@ -584,7 +588,7 @@ export function CRMProvider({ children }: { children: ReactNode }) {
     const opportunity = opportunities.find(o => o.id === id);
     if (opportunity) {
       await apiDelete('deleteOpportunity', id);
-      await addActivity('deleted', 'opportunity', id, opportunity.title, `删除销售机会 ${opportunity.title}`);
+      await addActivity('deleted', 'opportunity', id, opportunity.title, `删除商机 ${opportunity.title}`);
       await loadData();
     }
   }, [opportunities, addActivity, loadData]);

@@ -2,7 +2,7 @@
 
 ## 项目概览
 
-基于 Next.js 16 + shadcn/ui 的简易客户关系管理系统，采用 **DDD（领域驱动设计）** 架构，支持客户管理、销售线索管理、销售机会管理和联系人管理。集成 Supabase PostgreSQL 数据库实现数据持久化。
+基于 Next.js 16 + shadcn/ui 的简易客户关系管理系统，采用 **DDD（领域驱动设计）** 架构，支持客户管理、销售线索管理、商机管理和联系人管理。集成 Supabase PostgreSQL 数据库实现数据持久化。
 
 ---
 
@@ -85,7 +85,7 @@ src/
 │   ├── aggregates/                 # 聚合根
 │   │   ├── CustomerAggregate.ts    # 客户聚合根
 │   │   ├── SalesLeadAggregate.ts   # 销售线索聚合根
-│   │   └── SalesOpportunityAggregate.ts  # 销售机会聚合根
+│   │   └── SalesOpportunityAggregate.ts  # 商机聚合根
 │   │
 │   ├── repositories/               # 仓储接口
 │   │   ├── ICustomerRepository.ts
@@ -116,7 +116,7 @@ src/
 │   │   ├── dashboard/              # 仪表盘
 │   │   ├── customers/               # 客户管理
 │   │   ├── leads/                  # 销售线索
-│   │   ├── opportunities/           # 销售机会
+│   │   ├── opportunities/           # 商机
 │   │   └── contacts/                # 联系人
 │   │
 │   └── components/
@@ -139,7 +139,7 @@ src/
 │  │  (Customer)      │  │  (Sales)         │  │  (Activity)      │       │
 │  │                  │  │                  │  │                  │       │
 │  │  · 客户          │  │  · 销售线索      │  │  · 活动记录      │       │
-│  │  · 联系人        │  │  · 销售机会      │  │  · 审计日志      │       │
+│  │  · 联系人        │  │  · 商机      │  │  · 审计日志      │       │
 │  │  · 客户归属      │  │  · 销售漏斗      │  │                  │       │
 │  │                  │  │  · 阶段转换      │  │                  │       │
 │  └─────────────────┘  └─────────────────┘  └─────────────────┘       │
@@ -182,11 +182,11 @@ src/
 | status | LeadStatus | 状态 (new/contacted/qualified/disqualified) |
 
 **核心方法**：
-- `qualify(data)` - 将线索转为销售机会
+- `qualify(data)` - 将线索转为商机
 - `disqualify(reason)` - 放弃线索
 - `markContacted()` - 标记为已联系
 
-#### SalesOpportunityAggregate (销售机会聚合根)
+#### SalesOpportunityAggregate (商机聚合根)
 
 | 属性 | 类型 | 说明 |
 |------|------|------|
@@ -284,7 +284,7 @@ const DEFAULT_PROBABILITY = {
 | 事件 | 触发时机 | 说明 |
 |------|---------|------|
 | `LeadCreated` | 创建线索 | 记录活动日志 |
-| `LeadQualified` | 线索Qualified | 创建销售机会 |
+| `LeadQualified` | 线索Qualified | 创建商机 |
 | `LeadDisqualified` | 放弃线索 | 记录放弃原因 |
 | `OpportunityCreated` | 创建机会 | 记录活动日志 |
 | `OpportunityStageChanged` | 阶段变更 | 记录阶段转换 |
@@ -315,7 +315,7 @@ CREATE TABLE leads (
 );
 ```
 
-### 5.2 销售机会表 (opportunities)
+### 5.2 商机表 (opportunities)
 
 ```sql
 CREATE TABLE opportunities (
@@ -382,7 +382,7 @@ CREATE TABLE contacts (
 | 方法 | 端点 | 说明 |
 |------|------|------|
 | GET | `/api/crm?type=leads` | 获取销售线索列表 |
-| GET | `/api/crm?type=opportunities` | 获取销售机会列表 |
+| GET | `/api/crm?type=opportunities` | 获取商机列表 |
 | POST | `/api/crm` { action: 'createLead' } | 创建线索 |
 | POST | `/api/crm` { action: 'qualifyLead' } | 线索Qualified |
 | POST | `/api/crm` { action: 'disqualifyLead' } | 放弃线索 |
@@ -428,7 +428,7 @@ PUT /api/crm
 | 仪表盘 | `/` | 数据总览、销售漏斗、最近活动 |
 | 客户管理 | `/customers` | 客户列表、详情、新建、编辑 |
 | **销售线索** | `/leads` | 线索列表、新建 Qualified 转为机会 |
-| 销售机会 | `/opportunities` | 机会列表、阶段管理、详情 |
+| 商机 | `/opportunities` | 机会列表、阶段管理、详情 |
 | 联系人 | `/contacts` | 联系人列表、新建、编辑 |
 
 ---

@@ -121,7 +121,7 @@ export default function ContactDetailPage() {
           </CardContent>
         </Card>
 
-        {/* 销售机会 */}
+        {/* 商机 */}
         <Card>
           <CardHeader>
             <CardTitle>相关机会</CardTitle>

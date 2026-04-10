@@ -4,7 +4,7 @@
 export type CustomerStatus = 'active' | 'inactive' | 'prospect';
 export type LeadStatusType = 'new' | 'contacted' | 'qualified' | 'disqualified';
 export type LeadSourceType = 'referral' | 'website' | 'cold_call' | 'event' | 'advertisement' | 'other';
-export type OpportunityStage = 'qualified' | 'proposal' | 'negotiation' | 'closed_won' | 'closed_lost';
+export type OpportunityStage = 'qualified' | 'discovery' | 'proposal' | 'negotiation' | 'contract' | 'closed_won' | 'closed_lost';
 
 // ============ 实体类型 ============
 export interface Customer {
@@ -243,27 +243,47 @@ export const OPPORTUNITY_STAGE_CONFIG: Record<OpportunityStage, {
   gradient: string; 
   color: string;
   defaultProbability: number;
+  description: string;
 }> = {
   qualified: { 
-    label: '销售机会', 
+    label: '商机确认', 
     className: 'bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20',
     gradient: 'from-blue-400 to-cyan-500',
     color: 'text-blue-600 dark:text-blue-400',
+    defaultProbability: 20,
+    description: '商机已确认，待深入沟通',
+  },
+  discovery: { 
+    label: '需求调研', 
+    className: 'bg-sky-500/10 text-sky-600 dark:text-sky-400 border-sky-500/20',
+    gradient: 'from-sky-400 to-blue-500',
+    color: 'text-sky-600 dark:text-sky-400',
     defaultProbability: 30,
+    description: '了解客户需求，进行调研交流',
   },
   proposal: { 
-    label: '提案', 
+    label: '方案报价', 
     className: 'bg-purple-500/10 text-purple-600 dark:text-purple-400 border-purple-500/20',
     gradient: 'from-purple-400 to-pink-500',
     color: 'text-purple-600 dark:text-purple-400',
-    defaultProbability: 50,
+    defaultProbability: 45,
+    description: '已提交方案和报价',
   },
   negotiation: { 
-    label: '谈判', 
+    label: '商务洽谈', 
     className: 'bg-orange-500/10 text-orange-600 dark:text-orange-400 border-orange-500/20',
     gradient: 'from-orange-400 to-amber-500',
     color: 'text-orange-600 dark:text-orange-400',
-    defaultProbability: 80,
+    defaultProbability: 65,
+    description: '正在商务谈判',
+  },
+  contract: { 
+    label: '合同签署', 
+    className: 'bg-teal-500/10 text-teal-600 dark:text-teal-400 border-teal-500/20',
+    gradient: 'from-teal-400 to-emerald-500',
+    color: 'text-teal-600 dark:text-teal-400',
+    defaultProbability: 85,
+    description: '合同签署中',
   },
   closed_won: { 
     label: '成交', 
@@ -271,6 +291,7 @@ export const OPPORTUNITY_STAGE_CONFIG: Record<OpportunityStage, {
     gradient: 'from-green-400 to-emerald-500',
     color: 'text-green-600 dark:text-green-400',
     defaultProbability: 100,
+    description: '已成交',
   },
   closed_lost: { 
     label: '失败', 
@@ -278,6 +299,7 @@ export const OPPORTUNITY_STAGE_CONFIG: Record<OpportunityStage, {
     gradient: 'from-red-400 to-rose-500',
     color: 'text-red-600 dark:text-red-400',
     defaultProbability: 0,
+    description: '已失败',
   },
 };
 
@@ -327,17 +349,21 @@ export const LEAD_SOURCE_CONFIG: Record<LeadSourceType, { label: string; icon: s
 // ============ 销售漏斗配置 ============
 export const PIPELINE_STAGES: OpportunityStage[] = [
   'qualified',
+  'discovery',
   'proposal', 
   'negotiation',
+  'contract',
   'closed_won',
   'closed_lost',
 ];
 
 // ============ 阶段转换规则 ============
 export const STAGE_TRANSITIONS: Record<OpportunityStage, OpportunityStage[]> = {
-  qualified: ['proposal', 'closed_lost'],
+  qualified: ['discovery', 'closed_lost'],
+  discovery: ['proposal', 'closed_lost'],
   proposal: ['negotiation', 'closed_lost'],
-  negotiation: ['closed_won', 'closed_lost'],
+  negotiation: ['contract', 'closed_lost'],
+  contract: ['closed_won', 'closed_lost'],
   closed_won: [],
   closed_lost: [],
 };

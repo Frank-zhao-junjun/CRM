@@ -17,7 +17,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { ArrowLeft, Edit, Trash2, DollarSign, Building2, Calendar, User, FileText, Plus, Send, ArrowRight, X } from 'lucide-react';
+import { ArrowLeft, Edit, Trash2, DollarSign, Building2, Calendar, User, FileText, Plus, Send, ArrowRight, X, Activity } from 'lucide-react';
 import Link from 'next/link';
 import { OpportunityStage, QUOTE_STATUS_CONFIG, type Quote, type QuoteStatus } from '@/lib/crm-types';
 import { cn } from '@/lib/utils';
@@ -33,13 +33,16 @@ import { useState, useEffect, useCallback } from 'react';
 import { format } from 'date-fns';
 import { zhCN } from 'date-fns/locale';
 import { FollowUpTimeline } from '@/components/crm/follow-up-timeline';
+import { FOLLOW_UP_METHOD_CONFIG, type FollowUpMethod } from '@/lib/crm-types';
 
-const stageLabels: Record<OpportunityStage, { label: string; className: string }> = {
-  qualified: { label: '销售机会', className: 'bg-blue-500/10 text-blue-500 border-blue-500/20' },
-  proposal: { label: '提案', className: 'bg-purple-500/10 text-purple-500 border-purple-500/20' },
-  negotiation: { label: '谈判', className: 'bg-orange-500/10 text-orange-500 border-orange-500/20' },
-  closed_won: { label: '成交', className: 'bg-green-500/10 text-green-500 border-green-500/20' },
-  closed_lost: { label: '失败', className: 'bg-red-500/10 text-red-500 border-red-500/20' },
+const stageLabels: Record<OpportunityStage, { label: string; className: string; description: string }> = {
+  qualified: { label: '商机确认', className: 'bg-blue-500/10 text-blue-500 border-blue-500/20', description: '商机已确认，待深入沟通' },
+  discovery: { label: '需求调研', className: 'bg-sky-500/10 text-sky-500 border-sky-500/20', description: '了解客户需求，进行调研交流' },
+  proposal: { label: '方案报价', className: 'bg-purple-500/10 text-purple-500 border-purple-500/20', description: '已提交方案和报价' },
+  negotiation: { label: '商务洽谈', className: 'bg-orange-500/10 text-orange-500 border-orange-500/20', description: '正在商务谈判' },
+  contract: { label: '合同签署', className: 'bg-teal-500/10 text-teal-500 border-teal-500/20', description: '合同签署中' },
+  closed_won: { label: '成交', className: 'bg-green-500/10 text-green-500 border-green-500/20', description: '已成交' },
+  closed_lost: { label: '失败', className: 'bg-red-500/10 text-red-500 border-red-500/20', description: '已失败' },
 };
 
 interface QuoteItemForm {
@@ -73,6 +76,11 @@ export default function OpportunityDetailPage() {
     { productName: '', description: '', quantity: 1, unitPrice: 0, discount: 0, subtotal: 0 },
   ]);
   const [deleteQuoteId, setDeleteQuoteId] = useState<string | null>(null);
+
+  // Follow-up stats
+  const [followUpStats, setFollowUpStats] = useState<{ total: number; meetings: number; calls: number; lastFollowUp: string | null }>({
+    total: 0, meetings: 0, calls: 0, lastFollowUp: null,
+  });
 
   const opportunity = opportunities.find(o => o.id === params.id);
 
@@ -119,12 +127,35 @@ export default function OpportunityDetailPage() {
     finally { setQuotesLoading(false); }
   }, [params.id]);
 
-  useEffect(() => { fetchQuotes(); }, [fetchQuotes]);
+  const fetchFollowUpStats = useCallback(async () => {
+    if (!params.id) return;
+    try {
+      const res = await fetch(`/api/follow-ups?entityType=opportunity&entityId=${params.id}`);
+      if (res.ok) {
+        const data = await res.json();
+        const items = Array.isArray(data) ? data : (data.items || []);
+        const total = items.length;
+        const meetings = items.filter((f: Record<string, unknown>) => f.method === 'meeting').length;
+        const calls = items.filter((f: Record<string, unknown>) => f.method === 'phone').length;
+        const lastItem = items.sort((a: Record<string, unknown>, b: Record<string, unknown>) =>
+          new Date(b.created_at as string).getTime() - new Date(a.created_at as string).getTime()
+        )[0] as Record<string, unknown> | undefined;
+        setFollowUpStats({
+          total,
+          meetings,
+          calls,
+          lastFollowUp: lastItem ? (lastItem.created_at as string) : null,
+        });
+      }
+    } catch { /* silent */ }
+  }, [params.id]);
+
+  useEffect(() => { fetchQuotes(); fetchFollowUpStats(); }, [fetchQuotes, fetchFollowUpStats]);
 
   if (!opportunity) {
     return (
       <div className="flex items-center justify-center h-64">
-        <p className="text-muted-foreground">销售机会不存在</p>
+        <p className="text-muted-foreground">商机不存在</p>
       </div>
     );
   }
@@ -350,25 +381,30 @@ export default function OpportunityDetailPage() {
           <CardHeader>
             <CardTitle>销售漏斗</CardTitle>
           </CardHeader>
-          <CardContent className="space-y-4">
-            {['qualified', 'proposal', 'negotiation', 'closed_won'].map((stage, index) => {
+          <CardContent className="space-y-3">
+            {['qualified', 'discovery', 'proposal', 'negotiation', 'contract', 'closed_won'].map((stage, index) => {
               const stageData = stageLabels[stage as OpportunityStage];
               const isActive = opportunity.stage === stage;
+              const isPast = ['qualified', 'discovery', 'proposal', 'negotiation', 'contract', 'closed_won'].indexOf(opportunity.stage) > index;
               return (
                 <div key={stage} className="flex items-center gap-3">
                   <div className={cn(
-                    "w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium",
-                    isActive ? "bg-primary text-primary-foreground" : "bg-muted"
+                    "w-7 h-7 rounded-full flex items-center justify-center text-xs font-medium",
+                    isActive ? "bg-primary text-primary-foreground" : isPast ? "bg-green-100 text-green-600 dark:bg-green-900 dark:text-green-400" : "bg-muted"
                   )}>
-                    {index + 1}
+                    {isPast ? '✓' : index + 1}
                   </div>
                   <div className="flex-1">
                     <p className={cn(
                       "text-sm font-medium",
-                      isActive && "text-primary"
+                      isActive && "text-primary",
+                      isPast && "text-green-600 dark:text-green-400"
                     )}>
                       {stageData.label}
                     </p>
+                    {isActive && (
+                      <p className="text-xs text-muted-foreground">{stageData.description}</p>
+                    )}
                   </div>
                   {isActive && (
                     <Badge variant="secondary">当前</Badge>
@@ -379,6 +415,65 @@ export default function OpportunityDetailPage() {
           </CardContent>
         </Card>
       </div>
+
+      {/* 进度摘要 */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Activity className="h-4 w-4" />
+            进度摘要
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+            <div className="flex items-center gap-3 p-3 rounded-lg bg-purple-500/5 border border-purple-500/10">
+              <div className="flex items-center justify-center w-9 h-9 rounded-lg bg-purple-500/10">
+                <FileText className="h-4 w-4 text-purple-500" />
+              </div>
+              <div>
+                <p className="text-2xl font-bold">{quotes.length}</p>
+                <p className="text-xs text-muted-foreground">报价次数</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-3 p-3 rounded-lg bg-blue-500/5 border border-blue-500/10">
+              <div className="flex items-center justify-center w-9 h-9 rounded-lg bg-blue-500/10">
+                <DollarSign className="h-4 w-4 text-blue-500" />
+              </div>
+              <div>
+                <p className="text-2xl font-bold">{followUpStats.calls}</p>
+                <p className="text-xs text-muted-foreground">电话沟通</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-3 p-3 rounded-lg bg-green-500/5 border border-green-500/10">
+              <div className="flex items-center justify-center w-9 h-9 rounded-lg bg-green-500/10">
+                <User className="h-4 w-4 text-green-500" />
+              </div>
+              <div>
+                <p className="text-2xl font-bold">{followUpStats.meetings}</p>
+                <p className="text-xs text-muted-foreground">面谈拜访</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-3 p-3 rounded-lg bg-orange-500/5 border border-orange-500/10">
+              <div className="flex items-center justify-center w-9 h-9 rounded-lg bg-orange-500/10">
+                <Calendar className="h-4 w-4 text-orange-500" />
+              </div>
+              <div>
+                <p className="text-lg font-bold">
+                  {followUpStats.lastFollowUp
+                    ? format(new Date(followUpStats.lastFollowUp), 'MM/dd', { locale: zhCN })
+                    : '-'}
+                </p>
+                <p className="text-xs text-muted-foreground">最近跟进</p>
+              </div>
+            </div>
+          </div>
+          {followUpStats.total > 0 && (
+            <div className="mt-3 text-xs text-muted-foreground">
+              累计跟进 <span className="font-medium text-foreground">{followUpStats.total}</span> 次
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
       {/* 元信息 */}
       <Card>
@@ -548,7 +643,7 @@ export default function OpportunityDetailPage() {
           <DialogHeader>
             <DialogTitle>确认删除</DialogTitle>
             <DialogDescription>
-              确定要删除销售机会 &ldquo;{opportunity.title}&rdquo; 吗？此操作不可撤销。
+              确定要删除商机 &ldquo;{opportunity.title}&rdquo; 吗？此操作不可撤销。
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
@@ -571,8 +666,8 @@ export default function OpportunityDetailPage() {
             </DialogTitle>
             <DialogDescription>
               {quotes.length > 0
-                ? `为销售机会「${opportunity.title}」创建新版报价单（当前最新版本: V${Math.max(...quotes.map(q => q.version))}）`
-                : `为销售机会「${opportunity.title}」创建报价单`}
+                ? `为商机「${opportunity.title}」创建新版报价单（当前最新版本: V${Math.max(...quotes.map(q => q.version))}）`
+                : `为商机「${opportunity.title}」创建报价单`}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">

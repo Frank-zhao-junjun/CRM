@@ -19,9 +19,11 @@ import Link from 'next/link';
 import { OpportunityStage } from '@/lib/crm-types';
 
 const stages: { value: OpportunityStage; label: string; probability: number }[] = [
-  { value: 'qualified', label: '销售机会', probability: 30 },
-  { value: 'proposal', label: '提案', probability: 50 },
-  { value: 'negotiation', label: '谈判', probability: 80 },
+  { value: 'qualified', label: '商机确认', probability: 20 },
+  { value: 'discovery', label: '需求调研', probability: 30 },
+  { value: 'proposal', label: '方案报价', probability: 45 },
+  { value: 'negotiation', label: '商务洽谈', probability: 65 },
+  { value: 'contract', label: '合同签署', probability: 85 },
   { value: 'closed_won', label: '成交', probability: 100 },
   { value: 'closed_lost', label: '失败', probability: 0 },
 ];
@@ -62,7 +64,7 @@ export default function EditOpportunityPage() {
   if (!opportunity) {
     return (
       <div className="flex items-center justify-center h-64">
-        <p className="text-muted-foreground">销售机会不存在</p>
+        <p className="text-muted-foreground">商机不存在</p>
       </div>
     );
   }
@@ -114,7 +116,7 @@ export default function EditOpportunityPage() {
             <ArrowLeft className="h-5 w-5" />
           </Link>
         </Button>
-        <h2 className="text-2xl font-bold">编辑销售机会</h2>
+        <h2 className="text-2xl font-bold">编辑商机</h2>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-6">

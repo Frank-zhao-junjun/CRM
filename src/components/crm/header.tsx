@@ -10,7 +10,7 @@ const pageTitles: Record<string, string> = {
   '/': '仪表盘',
   '/customers': '客户管理',
   '/customers/new': '新建客户',
-  '/opportunities': '销售机会',
+  '/opportunities': '商机',
   '/opportunities/new': '新建机会',
   '/contacts': '联系人',
   '/contacts/new': '新建联系人',

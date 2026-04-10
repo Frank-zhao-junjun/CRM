@@ -103,7 +103,7 @@ export function SalesFunnel({ data, className }: SalesFunnelProps) {
         </div>
         <div className="text-center p-2 rounded-lg bg-accent/50">
           <p className="text-lg font-bold">{data.reduce((s, d) => s + d.count, 0)}</p>
-          <p className="text-xs text-muted-foreground">总机会数</p>
+          <p className="text-xs text-muted-foreground">总商机数</p>
         </div>
         <div className="text-center p-2 rounded-lg bg-accent/50">
           <p className="text-lg font-bold text-green-600 dark:text-green-400">{overallConversion}%</p>

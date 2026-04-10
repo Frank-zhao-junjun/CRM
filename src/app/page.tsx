@@ -55,7 +55,7 @@ const statCards = [
   },
   { 
     key: 'totalOpportunities', 
-    label: '销售机会', 
+    label: '商机',
     icon: Briefcase, 
     gradient: 'from-purple-500 to-pink-500',
     bgGradient: 'bg-gradient-to-br from-purple-500/10 to-pink-500/5',
@@ -90,11 +90,13 @@ export default function DashboardPage() {
     open: false, entityType: 'opportunity', entityId: '', entityName: '',
   });
 
-  // 计算销售漏斗数据（仅销售机会，不含线索）
+  // 计算销售漏斗数据（仅商机，不含线索）
   const funnelData: { stage: OpportunityStage; count: number; value: number }[] = [
     { stage: 'qualified', count: opportunities.filter(o => o.stage === 'qualified').length, value: opportunities.filter(o => o.stage === 'qualified').reduce((sum, o) => sum + o.value, 0) },
+    { stage: 'discovery', count: opportunities.filter(o => o.stage === 'discovery').length, value: opportunities.filter(o => o.stage === 'discovery').reduce((sum, o) => sum + o.value, 0) },
     { stage: 'proposal', count: opportunities.filter(o => o.stage === 'proposal').length, value: opportunities.filter(o => o.stage === 'proposal').reduce((sum, o) => sum + o.value, 0) },
     { stage: 'negotiation', count: opportunities.filter(o => o.stage === 'negotiation').length, value: opportunities.filter(o => o.stage === 'negotiation').reduce((sum, o) => sum + o.value, 0) },
+    { stage: 'contract', count: opportunities.filter(o => o.stage === 'contract').length, value: opportunities.filter(o => o.stage === 'contract').reduce((sum, o) => sum + o.value, 0) },
     { stage: 'closed_won', count: opportunities.filter(o => o.stage === 'closed_won').length, value: opportunities.filter(o => o.stage === 'closed_won').reduce((sum, o) => sum + o.value, 0) },
   ];
 
@@ -223,7 +225,7 @@ export default function DashboardPage() {
                     <Clock className="h-8 w-8 text-muted-foreground/50" />
                   </div>
                   <p className="text-sm text-muted-foreground">暂无活动记录</p>
-                  <p className="text-xs text-muted-foreground/60 mt-1">开始创建客户或销售机会来跟踪活动</p>
+                  <p className="text-xs text-muted-foreground/60 mt-1">开始创建客户或商机来跟踪活动</p>
                 </div>
               ) : (
                 activities.slice(0, 6).map((activity, index) => {
@@ -278,7 +280,7 @@ export default function DashboardPage() {
             <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-gradient-to-br from-orange-500/10 to-amber-500/10">
               <Briefcase className="h-4 w-4 text-orange-600 dark:text-orange-400" />
             </div>
-            最近销售机会
+            最近商机
             <Badge variant="secondary" className="ml-auto">{opportunities.length}</Badge>
           </CardTitle>
         </CardHeader>
@@ -288,8 +290,8 @@ export default function DashboardPage() {
               <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-muted to-muted/50 flex items-center justify-center mb-4">
                 <Briefcase className="h-8 w-8 text-muted-foreground/50" />
               </div>
-              <p className="text-sm text-muted-foreground">暂无销售机会</p>
-              <p className="text-xs text-muted-foreground/60 mt-1">创建销售机会开始跟踪你的业务</p>
+              <p className="text-sm text-muted-foreground">暂无商机</p>
+              <p className="text-xs text-muted-foreground/60 mt-1">创建商机开始跟踪你的业务</p>
             </div>
           ) : (
             <div className="grid gap-3">
@@ -317,9 +319,11 @@ export default function DashboardPage() {
                         <Badge variant="outline" className="text-xs capitalize">
                           {opp.stage === 'closed_won' ? '已成交' : 
                            opp.stage === 'closed_lost' ? '已失败' :
-                           opp.stage === 'qualified' ? '已Qualified' :
-                           opp.stage === 'proposal' ? '提案' :
-                           opp.stage === 'negotiation' ? '谈判' : opp.stage}
+                           opp.stage === 'qualified' ? '商机确认' :
+                           opp.stage === 'discovery' ? '需求调研' :
+                           opp.stage === 'proposal' ? '方案报价' :
+                           opp.stage === 'negotiation' ? '商务洽谈' :
+                           opp.stage === 'contract' ? '合同签署' : opp.stage}
                         </Badge>
                       </div>
                     </div>
@@ -429,7 +433,7 @@ export default function DashboardPage() {
               {[
                 { label: '客户数据', desc: '导出所有客户信息', type: 'customers' },
                 { label: '销售线索', desc: '导出所有线索数据', type: 'leads' },
-                { label: '销售机会', desc: '导出所有机会数据', type: 'opportunities' },
+                { label: '商机', desc: '导出所有商机数据', type: 'opportunities' },
                 { label: '联系人', desc: '导出所有联系人信息', type: 'contacts' },
               ].map((item) => (
                 <div key={item.type} className="flex items-center justify-between p-3 rounded-lg border hover:border-primary/30 hover:bg-accent/30 transition-all cursor-pointer group"

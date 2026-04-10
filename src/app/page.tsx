@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { useCRM } from '@/lib/crm-context';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { 
@@ -34,6 +35,7 @@ const statCards = [
     icon: Users, 
     gradient: 'from-blue-500 to-cyan-500',
     bgGradient: 'bg-gradient-to-br from-blue-500/10 to-cyan-500/5',
+    link: '/customers',
   },
   { 
     key: 'totalContacts', 
@@ -41,6 +43,7 @@ const statCards = [
     icon: Contact2, 
     gradient: 'from-green-500 to-emerald-500',
     bgGradient: 'bg-gradient-to-br from-green-500/10 to-emerald-500/5',
+    link: '/contacts',
   },
   { 
     key: 'totalLeads', 
@@ -65,6 +68,7 @@ const statCards = [
     gradient: 'from-orange-500 to-amber-500',
     bgGradient: 'bg-gradient-to-br from-orange-500/10 to-amber-500/5',
     prefix: '¥',
+    link: '/orders',
   },
 ];
 
@@ -80,6 +84,7 @@ const activityColors = {
 };
 
 export default function DashboardPage() {
+  const router = useRouter();
   const { stats, opportunities, activities } = useCRM();
   const [quickFollowUp, setQuickFollowUp] = useState<{ open: boolean; entityType: 'customer' | 'lead' | 'opportunity'; entityId: string; entityName: string }>({
     open: false, entityType: 'opportunity', entityId: '', entityName: '',
@@ -141,10 +146,11 @@ export default function DashboardPage() {
             <Card 
               key={stat.key} 
               className={cn(
-                "card-hover relative overflow-hidden",
+                "card-hover relative overflow-hidden cursor-pointer",
                 "animate-in slide-in-from-bottom-4",
               )}
               style={{ animationDelay: `${index * 100}ms` }}
+              onClick={() => stat.link && router.push(stat.link)}
             >
               {/* Background gradient */}
               <div className={cn("absolute inset-0", stat.bgGradient)} />

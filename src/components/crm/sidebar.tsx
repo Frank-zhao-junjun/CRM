@@ -6,14 +6,13 @@ import { cn } from '@/lib/utils';
 import { 
   LayoutDashboard, 
   Users, 
-  Briefcase, 
+  Briefcase,
   Contact2, 
   Settings,
   ChevronLeft,
   Menu,
   Zap,
   Lightbulb,
-  FileText,
   Package,
   Clock,
 } from 'lucide-react';
@@ -53,12 +52,7 @@ const navigation = [
     icon: Contact2,
     gradient: 'from-green-500 to-emerald-500',
   },
-  { 
-    name: '报价单', 
-    href: '/quotes', 
-    icon: FileText,
-    gradient: 'from-indigo-500 to-blue-500',
-  },
+
   { 
     name: '成交订单', 
     href: '/orders', 

@@ -138,8 +138,8 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      {/* 统计卡片 */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+      {/* 统计卡片 - 5个指标排一行 */}
+      <div className="grid gap-3 grid-cols-5">
         {statCards.map((stat, index) => {
           const value = stats[stat.key as keyof typeof stats] as number;
           return (
@@ -149,37 +149,30 @@ export default function DashboardPage() {
                 "card-hover relative overflow-hidden cursor-pointer",
                 "animate-in slide-in-from-bottom-4",
               )}
-              style={{ animationDelay: `${index * 100}ms` }}
+              style={{ animationDelay: `${index * 80}ms` }}
               onClick={() => stat.link && router.push(stat.link)}
             >
-              {/* Background gradient */}
               <div className={cn("absolute inset-0", stat.bgGradient)} />
-              <div className="absolute -right-8 -top-8 w-32 h-32 rounded-full bg-gradient-to-br from-primary/5 to-transparent blur-2xl" />
-              
-              <CardHeader className="relative flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground">
-                  {stat.label}
-                </CardTitle>
-                <div className={cn(
-                  "relative flex items-center justify-center w-10 h-10 rounded-xl",
-                  "bg-gradient-to-br shadow-lg",
-                  stat.gradient
-                )}>
-                  <stat.icon className="h-5 w-5 text-white" />
-                </div>
-              </CardHeader>
-              <CardContent className="relative">
-                <div className="text-3xl font-bold tracking-tight">
-                  <span className={cn(
-                    "bg-gradient-to-r bg-clip-text text-transparent",
+              <CardContent className="relative p-4">
+                <div className="flex items-center gap-3">
+                  <div className={cn(
+                    "relative flex items-center justify-center w-9 h-9 rounded-lg shrink-0",
+                    "bg-gradient-to-br shadow-md",
                     stat.gradient
                   )}>
-                    {stat.prefix || ''}{typeof value === 'number' ? value.toLocaleString() : value}
-                  </span>
-                </div>
-                <div className="flex items-center gap-1 mt-1 text-xs text-muted-foreground">
-                  <ArrowUpRight className="h-3 w-3 text-green-500" />
-                  <span>较上月 +12%</span>
+                    <stat.icon className="h-4 w-4 text-white" />
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-xs text-muted-foreground truncate">{stat.label}</p>
+                    <div className="text-xl font-bold tracking-tight">
+                      <span className={cn(
+                        "bg-gradient-to-r bg-clip-text text-transparent",
+                        stat.gradient
+                      )}>
+                        {stat.prefix || ''}{typeof value === 'number' ? value.toLocaleString() : value}
+                      </span>
+                    </div>
+                  </div>
                 </div>
               </CardContent>
             </Card>

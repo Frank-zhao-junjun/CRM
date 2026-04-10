@@ -12,6 +12,7 @@ import {
   ArrowUpRight,
   Sparkles,
   Lightbulb,
+  Clock,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { format, formatDistanceToNow } from 'date-fns';
@@ -213,7 +214,7 @@ export default function DashboardPage() {
             <div className="absolute -left-4 top-0 bottom-0 w-1 bg-gradient-to-b from-green-500 to-emerald-500 rounded-full" />
             <CardTitle className="flex items-center gap-2">
               <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-gradient-to-br from-green-500/10 to-emerald-500/10">
-                <Activity className="h-4 w-4 text-green-600 dark:text-green-400" />
+                <ActivityIcon className="h-4 w-4 text-green-600 dark:text-green-400" />
               </div>
               最近活动
               <Badge variant="secondary" className="ml-auto">{activities.length}</Badge>

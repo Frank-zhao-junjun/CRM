@@ -119,6 +119,45 @@ export const activities = pgTable(
   ]
 );
 
+// 跟进记录表
+export const followUps = pgTable(
+  "follow_ups",
+  {
+    id: varchar("id", { length: 36 }).primaryKey().default(sql`gen_random_uuid()`),
+    entity_type: varchar("entity_type", { length: 20 }).notNull(), // lead, opportunity
+    entity_id: varchar("entity_id", { length: 36 }).notNull(),
+    entity_name: varchar("entity_name", { length: 255 }).notNull(),
+    type: varchar("type", { length: 30 }).notNull().default("note"), // call, email, meeting, note
+    content: text("content").notNull(),
+    scheduled_at: timestamp("scheduled_at", { withTimezone: true }),
+    completed_at: timestamp("completed_at", { withTimezone: true }),
+    created_at: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+    updated_at: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => [
+    index("follow_ups_entity_idx").on(table.entity_type, table.entity_id),
+    index("follow_ups_scheduled_idx").on(table.scheduled_at),
+  ]
+);
+
+// 通知表
+export const notifications = pgTable(
+  "notifications",
+  {
+    id: varchar("id", { length: 36 }).primaryKey().default(sql`gen_random_uuid()`),
+    type: varchar("type", { length: 30 }).notNull(), // overdue, reminder, stage_change, info
+    title: varchar("title", { length: 255 }).notNull(),
+    message: text("message").notNull(),
+    entity_type: varchar("entity_type", { length: 20 }),
+    entity_id: varchar("entity_id", { length: 36 }),
+    is_read: boolean("is_read").default(false).notNull(),
+    created_at: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => [
+    index("notifications_read_idx").on(table.is_read),
+  ]
+);
+
 // 类型导出
 export type Customer = typeof customers.$inferSelect;
 export type InsertCustomer = typeof customers.$inferInsert;
@@ -130,3 +169,7 @@ export type Opportunity = typeof opportunities.$inferSelect;
 export type InsertOpportunity = typeof opportunities.$inferInsert;
 export type Activity = typeof activities.$inferSelect;
 export type InsertActivity = typeof activities.$inferInsert;
+export type FollowUp = typeof followUps.$inferSelect;
+export type InsertFollowUp = typeof followUps.$inferInsert;
+export type Notification = typeof notifications.$inferSelect;
+export type InsertNotification = typeof notifications.$inferInsert;

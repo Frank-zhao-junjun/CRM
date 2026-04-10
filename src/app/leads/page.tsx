@@ -37,9 +37,10 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Plus, Search, Building2, DollarSign, Lightbulb, MoreVertical, ArrowRightLeft, XCircle, Trash2, Sparkles } from 'lucide-react';
+import { Plus, Search, Building2, DollarSign, Lightbulb, MoreVertical, ArrowRightLeft, XCircle, Trash2, Sparkles, Clock } from 'lucide-react';
 import { LEAD_STATUS_CONFIG, LEAD_SOURCE_CONFIG } from '@/lib/crm-types';
 import { format } from 'date-fns';
+import { QuickFollowUp } from '@/components/crm/quick-follow-up';
 
 const statusConfig = LEAD_STATUS_CONFIG;
 const sourceConfig = LEAD_SOURCE_CONFIG;
@@ -57,6 +58,9 @@ export default function LeadsPage() {
     contactId: '',
     expectedCloseDate: '',
     notes: '',
+  });
+  const [quickFollowUp, setQuickFollowUp] = useState<{ open: boolean; entityId: string; entityName: string }>({
+    open: false, entityId: '', entityName: '',
   });
 
   // 过滤线索（排除已放弃的）
@@ -302,6 +306,10 @@ export default function LeadsPage() {
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
+                          <DropdownMenuItem onClick={() => setQuickFollowUp({ open: true, entityId: lead.id, entityName: lead.title })} className="gap-2">
+                            <Clock className="h-4 w-4" />
+                            快捷跟进
+                          </DropdownMenuItem>
                           <DropdownMenuItem onClick={() => openQualifyDialog(lead)} className="gap-2">
                             <ArrowRightLeft className="h-4 w-4" />
                             转为机会
@@ -425,6 +433,15 @@ export default function LeadsPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* 快捷跟进对话框 */}
+      <QuickFollowUp
+        open={quickFollowUp.open}
+        onOpenChange={(open) => setQuickFollowUp(prev => ({ ...prev, open }))}
+        entityType="lead"
+        entityId={quickFollowUp.entityId}
+        entityName={quickFollowUp.entityName}
+      />
     </div>
   );
 }

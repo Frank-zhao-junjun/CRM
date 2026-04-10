@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import { useCRM } from '@/lib/crm-context';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { 
@@ -13,11 +14,17 @@ import {
   Sparkles,
   Lightbulb,
   Clock,
+  Download,
+  AlertTriangle,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { format, formatDistanceToNow } from 'date-fns';
 import { zhCN } from 'date-fns/locale';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { SalesFunnel } from '@/components/crm/sales-funnel';
+import { QuickFollowUp } from '@/components/crm/quick-follow-up';
+import type { OpportunityStage } from '@/lib/crm-types';
 
 const statCards = [
   { 
@@ -73,21 +80,36 @@ const activityColors = {
 
 export default function DashboardPage() {
   const { stats, opportunities, activities } = useCRM();
+  const [quickFollowUp, setQuickFollowUp] = useState<{ open: boolean; entityType: 'lead' | 'opportunity'; entityId: string; entityName: string }>({
+    open: false, entityType: 'opportunity', entityId: '', entityName: '',
+  });
 
   // 计算销售漏斗数据（仅销售机会，不含线索）
-  const funnelData = [
-    { stage: '销售机会', key: 'qualified', count: opportunities.filter(o => o.stage === 'qualified').length, value: opportunities.filter(o => o.stage === 'qualified').reduce((sum, o) => sum + o.value, 0), gradient: 'from-blue-400 to-cyan-500' },
-    { stage: '提案', key: 'proposal', count: opportunities.filter(o => o.stage === 'proposal').length, value: opportunities.filter(o => o.stage === 'proposal').reduce((sum, o) => sum + o.value, 0), gradient: 'from-purple-400 to-pink-500' },
-    { stage: '谈判', key: 'negotiation', count: opportunities.filter(o => o.stage === 'negotiation').length, value: opportunities.filter(o => o.stage === 'negotiation').reduce((sum, o) => sum + o.value, 0), gradient: 'from-orange-400 to-amber-500' },
-    { stage: '成交', key: 'closed_won', count: opportunities.filter(o => o.stage === 'closed_won').length, value: opportunities.filter(o => o.stage === 'closed_won').reduce((sum, o) => sum + o.value, 0), gradient: 'from-emerald-400 to-green-500' },
+  const funnelData: { stage: OpportunityStage; count: number; value: number }[] = [
+    { stage: 'qualified', count: opportunities.filter(o => o.stage === 'qualified').length, value: opportunities.filter(o => o.stage === 'qualified').reduce((sum, o) => sum + o.value, 0) },
+    { stage: 'proposal', count: opportunities.filter(o => o.stage === 'proposal').length, value: opportunities.filter(o => o.stage === 'proposal').reduce((sum, o) => sum + o.value, 0) },
+    { stage: 'negotiation', count: opportunities.filter(o => o.stage === 'negotiation').length, value: opportunities.filter(o => o.stage === 'negotiation').reduce((sum, o) => sum + o.value, 0) },
+    { stage: 'closed_won', count: opportunities.filter(o => o.stage === 'closed_won').length, value: opportunities.filter(o => o.stage === 'closed_won').reduce((sum, o) => sum + o.value, 0) },
   ];
-
-  const maxCount = Math.max(...funnelData.map(d => d.count), 1);
 
   // 最近的机会（不含线索）
   const recentOpportunities = [...opportunities]
     .sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())
     .slice(0, 5);
+
+  // 逾期机会（预计成交日期已过但未成交）
+  const now = new Date();
+  const overdueOpportunities = opportunities
+    .filter(o => 
+      o.stage !== 'closed_won' && o.stage !== 'closed_lost' && 
+      o.expectedCloseDate && new Date(o.expectedCloseDate) < now
+    )
+    .map(o => ({
+      ...o,
+      overdueDays: o.expectedCloseDate 
+        ? Math.ceil((now.getTime() - new Date(o.expectedCloseDate).getTime()) / (1000 * 60 * 60 * 24))
+        : 0,
+    }));
 
   return (
     <div className="space-y-8">
@@ -171,35 +193,7 @@ export default function DashboardPage() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="space-y-5">
-              {funnelData.map((item) => (
-                <div key={item.stage} className="space-y-2">
-                  <div className="flex items-center justify-between text-sm group">
-                    <span className="font-medium text-foreground">{item.stage}</span>
-                    <div className="flex items-center gap-2">
-                      <span className="text-muted-foreground">{item.count} 个</span>
-                      {item.value > 0 && (
-                        <Badge variant="secondary" className="text-xs">
-                          ¥{item.value.toLocaleString()}
-                        </Badge>
-                      )}
-                    </div>
-                  </div>
-                  <div className="h-3 bg-muted/50 rounded-full overflow-hidden p-0.5">
-                    <div
-                      className={cn(
-                        "h-full rounded-full transition-all duration-700 ease-out",
-                        "bg-gradient-to-r shadow-lg",
-                        item.gradient
-                      )}
-                      style={{ 
-                        width: `${Math.max((item.count / maxCount) * 100, item.count > 0 ? 10 : 0)}%`,
-                      }}
-                    />
-                  </div>
-                </div>
-              ))}
-            </div>
+            <SalesFunnel data={funnelData} />
           </CardContent>
         </Card>
 
@@ -324,15 +318,29 @@ export default function DashboardPage() {
                       </div>
                     </div>
                   </div>
-                  <div className="text-right ml-4">
-                    <p className="text-lg font-bold bg-gradient-to-r from-orange-500 to-amber-500 bg-clip-text text-transparent">
-                      ¥{opp.value.toLocaleString()}
-                    </p>
-                    {opp.expectedCloseDate && (
-                      <p className="text-xs text-muted-foreground mt-1">
-                        预计 {format(new Date(opp.expectedCloseDate), 'MM/dd', { locale: zhCN })} 成交
+                  <div className="flex items-center gap-3">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-8 text-xs gap-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setQuickFollowUp({ open: true, entityType: 'opportunity', entityId: opp.id, entityName: opp.title });
+                      }}
+                    >
+                      <Clock className="h-3 w-3" />
+                      跟进
+                    </Button>
+                    <div className="text-right">
+                      <p className="text-lg font-bold bg-gradient-to-r from-orange-500 to-amber-500 bg-clip-text text-transparent">
+                        ¥{opp.value.toLocaleString()}
                       </p>
-                    )}
+                      {opp.expectedCloseDate && (
+                        <p className="text-xs text-muted-foreground mt-1">
+                          预计 {format(new Date(opp.expectedCloseDate), 'MM/dd', { locale: zhCN })} 成交
+                        </p>
+                      )}
+                    </div>
                   </div>
                 </div>
               ))}
@@ -340,6 +348,112 @@ export default function DashboardPage() {
           )}
         </CardContent>
       </Card>
+
+      {/* 逾期提醒 & 数据导出 */}
+      <div className="grid gap-6 lg:grid-cols-2">
+        {/* 逾期提醒 */}
+        <Card className="card-hover animate-in slide-in-from-left-4 duration-500">
+          <CardHeader className="relative">
+            <div className="absolute -left-4 top-0 bottom-0 w-1 bg-gradient-to-b from-red-500 to-orange-500 rounded-full" />
+            <CardTitle className="flex items-center gap-2">
+              <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-gradient-to-br from-red-500/10 to-orange-500/10">
+                <AlertTriangle className="h-4 w-4 text-red-600 dark:text-red-400" />
+              </div>
+              逾期提醒
+              {overdueOpportunities.length > 0 && (
+                <Badge variant="destructive" className="ml-2">{overdueOpportunities.length}</Badge>
+              )}
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {overdueOpportunities.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-8 text-center">
+                <div className="w-12 h-12 rounded-xl bg-emerald-500/10 flex items-center justify-center mb-3">
+                  <Sparkles className="h-6 w-6 text-emerald-500" />
+                </div>
+                <p className="text-sm text-muted-foreground">暂无逾期机会</p>
+                <p className="text-xs text-muted-foreground/60 mt-1">所有机会都在预计时间内</p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {overdueOpportunities.map((opp) => (
+                  <div key={opp.id} className="flex items-center justify-between p-3 rounded-lg border border-red-200 dark:border-red-900/50 bg-red-50/50 dark:bg-red-950/20">
+                    <div className="flex-1 min-w-0">
+                      <p className="font-medium text-sm truncate">{opp.title}</p>
+                      <div className="flex items-center gap-2 mt-1">
+                        <span className="text-xs text-muted-foreground">{opp.customerName}</span>
+                        <Badge variant="outline" className="text-xs">
+                          ¥{opp.value.toLocaleString()}
+                        </Badge>
+                      </div>
+                    </div>
+                    <div className="text-right ml-3">
+                      <p className="text-xs font-medium text-red-600 dark:text-red-400">
+                        已逾期 {opp.overdueDays} 天
+                      </p>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-7 text-xs mt-1"
+                        onClick={() => setQuickFollowUp({ open: true, entityType: 'opportunity', entityId: opp.id, entityName: opp.title })}
+                      >
+                        立即跟进
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* 数据导出 */}
+        <Card className="card-hover animate-in slide-in-from-right-4 duration-500">
+          <CardHeader className="relative">
+            <div className="absolute -left-4 top-0 bottom-0 w-1 bg-gradient-to-b from-indigo-500 to-blue-500 rounded-full" />
+            <CardTitle className="flex items-center gap-2">
+              <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-gradient-to-br from-indigo-500/10 to-blue-500/10">
+                <Download className="h-4 w-4 text-indigo-600 dark:text-indigo-400" />
+              </div>
+              数据导出
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid gap-3">
+              {[
+                { label: '客户数据', desc: '导出所有客户信息', type: 'customers' },
+                { label: '销售线索', desc: '导出所有线索数据', type: 'leads' },
+                { label: '销售机会', desc: '导出所有机会数据', type: 'opportunities' },
+                { label: '联系人', desc: '导出所有联系人信息', type: 'contacts' },
+              ].map((item) => (
+                <div key={item.type} className="flex items-center justify-between p-3 rounded-lg border hover:border-primary/30 hover:bg-accent/30 transition-all cursor-pointer group"
+                  onClick={() => {
+                    window.open(`/api/export?type=${item.type}`, '_blank');
+                  }}
+                >
+                  <div>
+                    <p className="font-medium text-sm group-hover:text-primary transition-colors">{item.label}</p>
+                    <p className="text-xs text-muted-foreground">{item.desc}</p>
+                  </div>
+                  <Button variant="outline" size="sm" className="h-8 gap-1">
+                    <Download className="h-3 w-3" />
+                    CSV
+                  </Button>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* 快捷跟进对话框 */}
+      <QuickFollowUp
+        open={quickFollowUp.open}
+        onOpenChange={(open) => setQuickFollowUp(prev => ({ ...prev, open }))}
+        entityType={quickFollowUp.entityType}
+        entityId={quickFollowUp.entityId}
+        entityName={quickFollowUp.entityName}
+      />
     </div>
   );
 }

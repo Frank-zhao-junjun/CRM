@@ -22,9 +22,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Plus, Search, DollarSign, Building2, Calendar, Briefcase, ChevronRight, Trash2, TrendingUp } from 'lucide-react';
+import { Plus, Search, DollarSign, Building2, Calendar, Briefcase, ChevronRight, Trash2, TrendingUp, Clock } from 'lucide-react';
 import { OpportunityStage } from '@/lib/crm-types';
 import { cn } from '@/lib/utils';
+import { QuickFollowUp } from '@/components/crm/quick-follow-up';
 import {
   Dialog,
   DialogContent,
@@ -91,6 +92,9 @@ export default function OpportunitiesPage() {
   const [search, setSearch] = useState('');
   const [stageFilter, setStageFilter] = useState<string>('all');
   const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [quickFollowUp, setQuickFollowUp] = useState<{ open: boolean; entityId: string; entityName: string }>({
+    open: false, entityId: '', entityName: '',
+  });
 
   const filteredOpportunities = opportunities.filter(opp => {
     const matchesSearch = 
@@ -261,17 +265,30 @@ export default function OpportunitiesPage() {
                         </div>
                       </TableCell>
                       <TableCell>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="opacity-0 group-hover:opacity-100 transition-opacity h-8 w-8"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setDeleteId(opp.id);
-                          }}
-                        >
-                          <Trash2 className="h-4 w-4 text-destructive" />
-                        </Button>
+                        <div className="flex items-center gap-1">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="opacity-0 group-hover:opacity-100 transition-opacity h-8 w-8"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setQuickFollowUp({ open: true, entityId: opp.id, entityName: opp.title });
+                            }}
+                          >
+                            <Clock className="h-4 w-4 text-muted-foreground" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="opacity-0 group-hover:opacity-100 transition-opacity h-8 w-8"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setDeleteId(opp.id);
+                            }}
+                          >
+                            <Trash2 className="h-4 w-4 text-destructive" />
+                          </Button>
+                        </div>
                       </TableCell>
                     </TableRow>
                   );
@@ -405,6 +422,15 @@ export default function OpportunitiesPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* 快捷跟进对话框 */}
+      <QuickFollowUp
+        open={quickFollowUp.open}
+        onOpenChange={(open) => setQuickFollowUp(prev => ({ ...prev, open }))}
+        entityType="opportunity"
+        entityId={quickFollowUp.entityId}
+        entityName={quickFollowUp.entityName}
+      />
     </div>
   );
 }

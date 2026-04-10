@@ -19,6 +19,46 @@ export async function GET(request: NextRequest) {
       return NextResponse.json(activities);
     }
     
+    // 通知 (V3.0)
+    if (type === 'notifications') {
+      const notifications = await db.getAllNotifications();
+      return NextResponse.json(notifications);
+    }
+    
+    if (type === 'unreadNotifications') {
+      const notifications = await db.getUnreadNotifications();
+      return NextResponse.json(notifications);
+    }
+    
+    // 跟进记录 (V3.0)
+    if (type === 'followUps') {
+      const entityType = searchParams.get('entityType');
+      const entityId = searchParams.get('entityId');
+      const filter = searchParams.get('filter');
+      
+      if (filter === 'overdue') {
+        const followUps = await db.getOverdueFollowUps();
+        return NextResponse.json(followUps);
+      }
+      if (filter === 'upcoming') {
+        const hours = parseInt(searchParams.get('hours') || '24');
+        const followUps = await db.getUpcomingFollowUps(hours);
+        return NextResponse.json(followUps);
+      }
+      if (entityType && entityId) {
+        const followUps = await db.getFollowUpsByEntity(entityType, entityId);
+        return NextResponse.json(followUps);
+      }
+      const followUps = await db.getAllFollowUps();
+      return NextResponse.json(followUps);
+    }
+    
+    // 逾期提醒检查 (V3.0)
+    if (type === 'checkOverdue') {
+      const created = await db.generateOverdueNotifications();
+      return NextResponse.json({ created });
+    }
+    
     if (type === 'contacts') {
       const customerId = searchParams.get('customerId');
       if (customerId) {
@@ -239,6 +279,50 @@ export async function POST(request: NextRequest) {
         return NextResponse.json(activity);
       }
       
+      // FollowUp (V3.0)
+      case 'createFollowUp': {
+        const followUp = await db.createFollowUp({
+          id: `fu_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
+          entity_type: data.entityType,
+          entity_id: data.entityId,
+          entity_name: data.entityName,
+          type: data.type || 'note',
+          content: data.content,
+          scheduled_at: data.scheduledAt || null,
+          completed_at: data.completedAt || null,
+        });
+        await db.createActivity({
+          id: `act_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
+          type: 'follow_up',
+          entity_type: data.entityType,
+          entity_id: data.entityId,
+          entity_name: data.entityName,
+          description: `添加跟进记录: ${data.content?.substring(0, 50)}`,
+          timestamp: new Date(),
+        });
+        return NextResponse.json(followUp);
+      }
+      
+      // Complete FollowUp (V3.0)
+      case 'completeFollowUp': {
+        const followUp = await db.completeFollowUp(data.followUpId);
+        return NextResponse.json(followUp);
+      }
+      
+      // Notification (V3.0)
+      case 'createNotification': {
+        const notification = await db.createNotification({
+          id: `notif_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
+          type: data.type,
+          title: data.title,
+          message: data.message,
+          entity_type: data.entityType || null,
+          entity_id: data.entityId || null,
+          is_read: false,
+        });
+        return NextResponse.json(notification);
+      }
+      
       default:
         return NextResponse.json({ error: 'Unknown action' }, { status: 400 });
     }
@@ -373,8 +457,35 @@ export async function PUT(request: NextRequest) {
             : `销售机会 "${updated.title}" 从 ${stageLabels[opportunity.stage]} 变更为 ${stageLabels[data.stage]}`,
           timestamp: new Date(),
         });
+
+        // 阶段变更通知 (V3.0)
+        if (data.stage === 'closed_won' || data.stage === 'closed_lost') {
+          await db.createNotification({
+            id: `notif_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
+            type: 'stage_change',
+            title: data.stage === 'closed_won' ? '机会成交' : '机会失败',
+            message: data.stage === 'closed_won' 
+              ? `销售机会 "${updated.title}" 已成交，金额 ¥${Number(updated.value).toLocaleString()}`
+              : `销售机会 "${updated.title}" 已失败${data.reason ? `，原因: ${data.reason}` : ''}`,
+            entity_type: 'opportunity',
+            entity_id: updated.id,
+            is_read: false,
+          });
+        }
         
         return NextResponse.json(updated);
+      }
+      
+      // Mark Notification Read (V3.0)
+      case 'markNotificationRead': {
+        await db.markNotificationRead(id);
+        return NextResponse.json({ success: true });
+      }
+      
+      // Mark All Notifications Read (V3.0)
+      case 'markAllNotificationsRead': {
+        await db.markAllNotificationsRead();
+        return NextResponse.json({ success: true });
       }
       
       default:

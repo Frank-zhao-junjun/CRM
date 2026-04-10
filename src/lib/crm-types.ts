@@ -74,12 +74,43 @@ export interface SalesOpportunity {
 // ============ 活动记录 ============
 export interface Activity {
   id: string;
-  type: 'created' | 'updated' | 'deleted' | 'stage_change' | 'closed_won' | 'closed_lost' | 'qualified' | 'disqualified';
+  type: 'created' | 'updated' | 'deleted' | 'stage_change' | 'closed_won' | 'closed_lost' | 'qualified' | 'disqualified' | 'follow_up';
   entityType: 'customer' | 'contact' | 'lead' | 'opportunity';
   entityId: string;
   entityName: string;
   description: string;
   timestamp: string;
+}
+
+// ============ 跟进记录 (V3.0) ============
+export type FollowUpType = 'call' | 'email' | 'meeting' | 'note';
+
+export interface FollowUp {
+  id: string;
+  entityType: 'lead' | 'opportunity';
+  entityId: string;
+  entityName: string;
+  type: FollowUpType;
+  content: string;
+  scheduledAt: string | null;
+  completedAt: string | null;
+  isOverdue: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+// ============ 通知 (V3.0) ============
+export type NotificationType = 'overdue' | 'reminder' | 'stage_change' | 'info';
+
+export interface CRMNotification {
+  id: string;
+  type: NotificationType;
+  title: string;
+  message: string;
+  entityType?: 'lead' | 'opportunity';
+  entityId?: string;
+  isRead: boolean;
+  createdAt: string;
 }
 
 // ============ 统计数据 ============

@@ -1,11 +1,10 @@
 'use client';
 
-import { Bell, User } from 'lucide-react';
+import { User } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Badge } from '@/components/ui/badge';
-import { useCRM } from '@/lib/crm-context';
 import { usePathname } from 'next/navigation';
+import { NotificationBell } from './notification-bell';
 
 const pageTitles: Record<string, string> = {
   '/': '仪表盘',
@@ -16,11 +15,12 @@ const pageTitles: Record<string, string> = {
   '/contacts': '联系人',
   '/contacts/new': '新建联系人',
   '/settings': '系统设置',
+  '/leads': '销售线索',
+  '/leads/new': '新建线索',
 };
 
 export function Header() {
   const pathname = usePathname();
-  const { activities } = useCRM();
   
   const title = pageTitles[pathname] || 'CRM系统';
   
@@ -32,6 +32,7 @@ export function Header() {
     if (pathname.match(/^\/opportunities\/[^/]+\/edit$/)) return '编辑机会';
     if (pathname.match(/^\/contacts\/[^/]+$/)) return '联系人详情';
     if (pathname.match(/^\/contacts\/[^/]+\/edit$/)) return '编辑联系人';
+    if (pathname.match(/^\/leads\/[^/]+$/)) return '线索详情';
     return title;
   };
 
@@ -51,17 +52,7 @@ export function Header() {
             />
           </div>
           
-          <Button variant="ghost" size="icon" className="relative">
-            <Bell className="h-5 w-5" />
-            {activities.length > 0 && (
-              <Badge 
-                variant="destructive" 
-                className="absolute -top-1 -right-1 h-5 w-5 p-0 flex items-center justify-center text-xs"
-              >
-                {activities.length > 9 ? '9+' : activities.length}
-              </Badge>
-            )}
-          </Button>
+          <NotificationBell />
           
           <Button variant="ghost" size="icon">
             <User className="h-5 w-5" />

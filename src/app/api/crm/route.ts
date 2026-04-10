@@ -307,6 +307,26 @@ export async function POST(request: NextRequest) {
           description: `添加跟进记录: ${data.content?.substring(0, 50)}`,
           timestamp: new Date(),
         });
+
+        // 自动流转：如果跟进对象是线索且状态为「新建」，自动变为「已联系」
+        if (data.entityType === 'lead') {
+          try {
+            const lead = await db.getLeadById(data.entityId);
+            if (lead && lead.status === 'new') {
+              await db.updateLead(data.entityId, { status: 'contacted' });
+              await db.createActivity({
+                id: `act_${Date.now()}_auto_${Math.random().toString(36).substring(2, 9)}`,
+                type: 'updated',
+                entity_type: 'lead',
+                entity_id: data.entityId,
+                entity_name: data.entityName,
+                description: `线索首次跟进，状态自动从「新建」变为「已联系」`,
+                timestamp: new Date(),
+              });
+            }
+          } catch { /* 静默处理，不影响跟进记录创建 */ }
+        }
+
         return NextResponse.json(followUp);
       }
       

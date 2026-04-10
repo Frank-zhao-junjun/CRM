@@ -26,7 +26,7 @@ import { FollowUpTimeline } from '@/components/crm/follow-up-timeline';
 export default function LeadDetailPage() {
   const params = useParams();
   const router = useRouter();
-  const { leads, deleteLead, qualifyLead, disqualifyLead } = useCRM();
+  const { leads, deleteLead, qualifyLead, disqualifyLead, refreshData } = useCRM();
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [showDisqualifyDialog, setShowDisqualifyDialog] = useState(false);
 
@@ -265,6 +265,7 @@ export default function LeadDetailPage() {
           entityType="lead"
           entityId={lead.id}
           entityName={lead.title}
+          onChange={refreshData}
         />
       )}
 

@@ -26,9 +26,10 @@ interface FollowUpTimelineProps {
   entityType: 'customer' | 'lead' | 'opportunity';
   entityId: string;
   entityName: string;
+  onChange?: () => void;
 }
 
-export function FollowUpTimeline({ entityType, entityId, entityName }: FollowUpTimelineProps) {
+export function FollowUpTimeline({ entityType, entityId, entityName, onChange }: FollowUpTimelineProps) {
   const [followUps, setFollowUps] = useState<FollowUp[]>([]);
   const [loading, setLoading] = useState(true);
   const [showCreate, setShowCreate] = useState(false);
@@ -91,6 +92,7 @@ export function FollowUpTimeline({ entityType, entityId, entityName }: FollowUpT
       setShowCreate(false);
       setCreateForm({ method: 'phone', content: '', nextFollowUpAt: '' });
       fetchFollowUps();
+      onChange?.();
     } catch { /* silent */ }
   };
 

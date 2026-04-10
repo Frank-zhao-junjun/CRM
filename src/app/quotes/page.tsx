@@ -167,7 +167,7 @@ export default function QuotesPage() {
       const res = await fetch('/api/quotes', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action, data: { id } }),
+        body: JSON.stringify({ action, id }),
       });
       if (res.ok) {
         if (action === 'convertToOrder') {

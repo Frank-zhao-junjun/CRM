@@ -15,6 +15,7 @@ import {
   Lightbulb,
   FileText,
   Package,
+  Clock,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
@@ -63,6 +64,12 @@ const navigation = [
     href: '/orders', 
     icon: Package,
     gradient: 'from-teal-500 to-cyan-500',
+  },
+  { 
+    name: '跟进记录', 
+    href: '/follow-ups', 
+    icon: Clock,
+    gradient: 'from-rose-500 to-pink-500',
   },
 ];
 

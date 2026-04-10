@@ -6,9 +6,21 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
-import { ArrowLeft, Edit, Trash2, DollarSign, Building2, Calendar, User, FileText } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { Label } from '@/components/ui/label';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { ArrowLeft, Edit, Trash2, DollarSign, Building2, Calendar, User, FileText, Plus, Send, ArrowRight, X } from 'lucide-react';
 import Link from 'next/link';
-import { OpportunityStage } from '@/lib/crm-types';
+import { OpportunityStage, QUOTE_STATUS_CONFIG, type Quote, type QuoteStatus } from '@/lib/crm-types';
 import { cn } from '@/lib/utils';
 import {
   Dialog,
@@ -18,9 +30,10 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { format } from 'date-fns';
 import { zhCN } from 'date-fns/locale';
+import { FollowUpTimeline } from '@/components/crm/follow-up-timeline';
 
 const stageLabels: Record<OpportunityStage, { label: string; className: string }> = {
   qualified: { label: '销售机会', className: 'bg-blue-500/10 text-blue-500 border-blue-500/20' },
@@ -30,13 +43,80 @@ const stageLabels: Record<OpportunityStage, { label: string; className: string }
   closed_lost: { label: '失败', className: 'bg-red-500/10 text-red-500 border-red-500/20' },
 };
 
+interface QuoteItemForm {
+  productName: string;
+  description: string;
+  quantity: number;
+  unitPrice: number;
+  discount: number;
+  subtotal: number;
+}
+
 export default function OpportunityDetailPage() {
   const params = useParams();
   const router = useRouter();
   const { opportunities, deleteOpportunity } = useCRM();
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [activeTab, setActiveTab] = useState('detail');
+
+  // Quotes state
+  const [quotes, setQuotes] = useState<Quote[]>([]);
+  const [quotesLoading, setQuotesLoading] = useState(false);
+  const [showCreateQuote, setShowCreateQuote] = useState(false);
+  const [createQuoteForm, setCreateQuoteForm] = useState({
+    title: '',
+    validFrom: '',
+    validUntil: '',
+    terms: '',
+    notes: '',
+  });
+  const [createQuoteItems, setCreateQuoteItems] = useState<QuoteItemForm[]>([
+    { productName: '', description: '', quantity: 1, unitPrice: 0, discount: 0, subtotal: 0 },
+  ]);
+  const [deleteQuoteId, setDeleteQuoteId] = useState<string | null>(null);
 
   const opportunity = opportunities.find(o => o.id === params.id);
+
+  const fetchQuotes = useCallback(async () => {
+    if (!params.id) return;
+    setQuotesLoading(true);
+    try {
+      const res = await fetch(`/api/quotes?opportunityId=${params.id}`);
+      if (res.ok) {
+        const data = await res.json();
+        setQuotes(data.map((q: Record<string, unknown>) => ({
+          id: q.id as string,
+          opportunityId: q.opportunity_id as string,
+          title: q.title as string,
+          status: q.status as QuoteStatus,
+          validFrom: q.valid_from as string | undefined,
+          validUntil: q.valid_until as string | undefined,
+          subtotal: Number(q.subtotal),
+          discount: Number(q.discount),
+          tax: Number(q.tax),
+          total: Number(q.total),
+          terms: q.terms as string | undefined,
+          notes: q.notes as string | undefined,
+          items: ((q.items || []) as Record<string, unknown>[]).map((i) => ({
+            id: i.id as string,
+            quoteId: i.quote_id as string,
+            productName: i.product_name as string,
+            description: i.description as string | undefined,
+            quantity: Number(i.quantity),
+            unitPrice: Number(i.unit_price),
+            discount: Number(i.discount),
+            subtotal: Number(i.subtotal),
+            sortOrder: i.sort_order as number,
+          })),
+          createdAt: q.created_at as string,
+          updatedAt: q.updated_at as string,
+        })));
+      }
+    } catch { /* silent */ }
+    finally { setQuotesLoading(false); }
+  }, [params.id]);
+
+  useEffect(() => { fetchQuotes(); }, [fetchQuotes]);
 
   if (!opportunity) {
     return (
@@ -51,8 +131,90 @@ export default function OpportunityDetailPage() {
     router.push('/opportunities');
   };
 
+  // Quote creation
+  const updateItem = (index: number, field: keyof QuoteItemForm, value: string | number) => {
+    setCreateQuoteItems(prev => {
+      const updated = [...prev];
+      updated[index] = { ...updated[index], [field]: value };
+      if (['quantity', 'unitPrice', 'discount'].includes(field)) {
+        const q = field === 'quantity' ? Number(value) : updated[index].quantity;
+        const p = field === 'unitPrice' ? Number(value) : updated[index].unitPrice;
+        const d = field === 'discount' ? Number(value) : updated[index].discount;
+        updated[index].subtotal = q * p - d;
+      }
+      return updated;
+    });
+  };
+
+  const handleCreateQuote = async () => {
+    const subtotal = createQuoteItems.reduce((sum, i) => sum + i.subtotal, 0);
+    const discount = createQuoteItems.reduce((sum, i) => sum + i.discount, 0);
+    const taxRate = 0.06;
+    const tax = (subtotal - discount) * taxRate;
+    const total = subtotal - discount + tax;
+
+    try {
+      const res = await fetch('/api/quotes', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'create',
+          data: {
+            opportunityId: opportunity.id,
+            title: createQuoteForm.title,
+            validFrom: createQuoteForm.validFrom || null,
+            validUntil: createQuoteForm.validUntil || null,
+            subtotal,
+            discount,
+            tax,
+            total,
+            terms: createQuoteForm.terms,
+            notes: createQuoteForm.notes,
+            items: createQuoteItems.filter(i => i.productName).map(i => ({
+              productName: i.productName,
+              description: i.description,
+              quantity: i.quantity,
+              unitPrice: i.unitPrice,
+              discount: i.discount,
+              subtotal: i.subtotal,
+            })),
+          },
+        }),
+      });
+      if (res.ok) {
+        setShowCreateQuote(false);
+        setCreateQuoteForm({ title: '', validFrom: '', validUntil: '', terms: '', notes: '' });
+        setCreateQuoteItems([{ productName: '', description: '', quantity: 1, unitPrice: 0, discount: 0, subtotal: 0 }]);
+        fetchQuotes();
+      }
+    } catch { /* silent */ }
+  };
+
+  const handleQuoteAction = async (action: string, quoteId: string) => {
+    try {
+      const res = await fetch('/api/quotes', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action, id: quoteId }),
+      });
+      if (res.ok) {
+        fetchQuotes();
+      }
+    } catch { /* silent */ }
+  };
+
+  const handleDeleteQuote = async () => {
+    if (!deleteQuoteId) return;
+    try {
+      await fetch(`/api/quotes?id=${deleteQuoteId}`, { method: 'DELETE' });
+      setDeleteQuoteId(null);
+      fetchQuotes();
+    } catch { /* silent */ }
+  };
+
   return (
     <div className="space-y-6">
+      {/* Header with action buttons */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
           <Button variant="ghost" size="icon" asChild>
@@ -66,6 +228,10 @@ export default function OpportunityDetailPage() {
           </div>
         </div>
         <div className="flex gap-2">
+          <Button onClick={() => setShowCreateQuote(true)} className="gap-2">
+            <FileText className="h-4 w-4" />
+            新建报价单
+          </Button>
           <Button variant="outline" asChild>
             <Link href={`/opportunities/${opportunity.id}/edit`}>
               <Edit className="h-4 w-4 mr-2" />
@@ -79,145 +245,294 @@ export default function OpportunityDetailPage() {
         </div>
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-3">
-        {/* 机会详情 */}
-        <Card className="lg:col-span-2">
-          <CardHeader>
-            <CardTitle>机会详情</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid gap-4 sm:grid-cols-2">
-              <div className="space-y-1">
-                <p className="text-sm text-muted-foreground">机会名称</p>
-                <p className="font-medium">{opportunity.title}</p>
-              </div>
-              <div className="space-y-1">
-                <p className="text-sm text-muted-foreground">当前阶段</p>
-                <Badge variant="outline" className={cn(stageLabels[opportunity.stage].className)}>
-                  {stageLabels[opportunity.stage].label}
-                </Badge>
-              </div>
-            </div>
-
-            <Separator />
-
-            <div className="grid gap-4 sm:grid-cols-3">
-              <div className="flex items-center gap-3">
-                <DollarSign className="h-5 w-5 text-muted-foreground" />
-                <div>
-                  <p className="text-sm text-muted-foreground">金额</p>
-                  <p className="font-medium">¥{opportunity.value.toLocaleString()}</p>
-                </div>
-              </div>
-              <div className="flex items-center gap-3">
-                <Calendar className="h-5 w-5 text-muted-foreground" />
-                <div>
-                  <p className="text-sm text-muted-foreground">预计成交</p>
-                  <p className="font-medium">
-                    {format(new Date(opportunity.expectedCloseDate), 'yyyy/MM/dd', { locale: zhCN })}
-                  </p>
-                </div>
-              </div>
-              <div>
-                <p className="text-sm text-muted-foreground mb-1">成交概率</p>
-                <div className="flex items-center gap-2">
-                  <div className="flex-1 h-2 bg-muted rounded-full overflow-hidden">
-                    <div
-                      className="h-full bg-primary rounded-full"
-                      style={{ width: `${opportunity.probability}%` }}
-                    />
-                  </div>
-                  <span className="text-sm font-medium">{opportunity.probability}%</span>
-                </div>
-              </div>
-            </div>
-
-            <Separator />
-
-            <div className="flex items-center gap-3">
-              <Building2 className="h-5 w-5 text-muted-foreground" />
-              <div>
-                <p className="text-sm text-muted-foreground">客户</p>
-                <Link 
-                  href={`/customers/${opportunity.customerId}`}
-                  className="text-sm text-primary hover:underline"
-                >
-                  {opportunity.customerName}
-                </Link>
-              </div>
-            </div>
-
-            {opportunity.contactName && (
-              <div className="flex items-center gap-3">
-                <User className="h-5 w-5 text-muted-foreground" />
-                <div>
-                  <p className="text-sm text-muted-foreground">联系人</p>
-                  <p className="text-sm">{opportunity.contactName}</p>
-                </div>
-              </div>
+      {/* Tab layout: 详情 | 报价单 | 跟进记录 */}
+      <Tabs value={activeTab} onValueChange={setActiveTab}>
+        <TabsList>
+          <TabsTrigger value="detail">详情</TabsTrigger>
+          <TabsTrigger value="quotes" className="gap-1">
+            报价单
+            {quotes.length > 0 && (
+              <Badge variant="secondary" className="ml-1 h-5 px-1.5 text-xs">{quotes.length}</Badge>
             )}
+          </TabsTrigger>
+          <TabsTrigger value="followups">跟进记录</TabsTrigger>
+        </TabsList>
 
-            {opportunity.description && (
-              <>
+        {/* ====== 详情 Tab ====== */}
+        <TabsContent value="detail" className="space-y-6 mt-6">
+          <div className="grid gap-6 lg:grid-cols-3">
+            {/* 机会详情 */}
+            <Card className="lg:col-span-2">
+              <CardHeader>
+                <CardTitle>机会详情</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div className="space-y-1">
+                    <p className="text-sm text-muted-foreground">机会名称</p>
+                    <p className="font-medium">{opportunity.title}</p>
+                  </div>
+                  <div className="space-y-1">
+                    <p className="text-sm text-muted-foreground">当前阶段</p>
+                    <Badge variant="outline" className={cn(stageLabels[opportunity.stage].className)}>
+                      {stageLabels[opportunity.stage].label}
+                    </Badge>
+                  </div>
+                </div>
+
                 <Separator />
-                <div className="space-y-2">
-                  <div className="flex items-center gap-2">
-                    <FileText className="h-4 w-4 text-muted-foreground" />
-                    <p className="text-sm text-muted-foreground">描述</p>
-                  </div>
-                  <p className="text-sm whitespace-pre-wrap">{opportunity.description}</p>
-                </div>
-              </>
-            )}
-          </CardContent>
-        </Card>
 
-        {/* 销售漏斗进度 */}
-        <Card>
-          <CardHeader>
-            <CardTitle>销售漏斗</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {['lead', 'qualified', 'proposal', 'negotiation', 'closed_won'].map((stage, index) => {
-              const stageData = stageLabels[stage as OpportunityStage];
-              const isActive = opportunity.stage === stage;
-              return (
-                <div key={stage} className="flex items-center gap-3">
-                  <div className={cn(
-                    "w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium",
-                    isActive ? "bg-primary text-primary-foreground" : "bg-muted"
-                  )}>
-                    {index + 1}
+                <div className="grid gap-4 sm:grid-cols-3">
+                  <div className="flex items-center gap-3">
+                    <DollarSign className="h-5 w-5 text-muted-foreground" />
+                    <div>
+                      <p className="text-sm text-muted-foreground">金额</p>
+                      <p className="font-medium">¥{opportunity.value.toLocaleString()}</p>
+                    </div>
                   </div>
-                  <div className="flex-1">
-                    <p className={cn(
-                      "text-sm font-medium",
-                      isActive && "text-primary"
-                    )}>
-                      {stageData.label}
-                    </p>
+                  <div className="flex items-center gap-3">
+                    <Calendar className="h-5 w-5 text-muted-foreground" />
+                    <div>
+                      <p className="text-sm text-muted-foreground">预计成交</p>
+                      <p className="font-medium">
+                        {opportunity.expectedCloseDate
+                          ? format(new Date(opportunity.expectedCloseDate), 'yyyy/MM/dd', { locale: zhCN })
+                          : '-'}
+                      </p>
+                    </div>
                   </div>
-                  {isActive && (
-                    <Badge variant="secondary">当前</Badge>
-                  )}
+                  <div>
+                    <p className="text-sm text-muted-foreground mb-1">成交概率</p>
+                    <div className="flex items-center gap-2">
+                      <div className="flex-1 h-2 bg-muted rounded-full overflow-hidden">
+                        <div
+                          className="h-full bg-primary rounded-full"
+                          style={{ width: `${opportunity.probability}%` }}
+                        />
+                      </div>
+                      <span className="text-sm font-medium">{opportunity.probability}%</span>
+                    </div>
+                  </div>
                 </div>
-              );
-            })}
-          </CardContent>
-        </Card>
-      </div>
 
-      {/* 元信息 */}
-      <Card>
-        <CardContent className="py-4">
-          <div className="flex justify-between text-sm text-muted-foreground">
-            <span>创建时间: {format(new Date(opportunity.createdAt), 'yyyy-MM-dd HH:mm', { locale: zhCN })}</span>
-            <span>更新时间: {format(new Date(opportunity.updatedAt), 'yyyy-MM-dd HH:mm', { locale: zhCN })}</span>
+                <Separator />
+
+                <div className="flex items-center gap-3">
+                  <Building2 className="h-5 w-5 text-muted-foreground" />
+                  <div>
+                    <p className="text-sm text-muted-foreground">客户</p>
+                    <Link
+                      href={`/customers/${opportunity.customerId}`}
+                      className="text-sm text-primary hover:underline"
+                    >
+                      {opportunity.customerName}
+                    </Link>
+                  </div>
+                </div>
+
+                {opportunity.contactName && (
+                  <div className="flex items-center gap-3">
+                    <User className="h-5 w-5 text-muted-foreground" />
+                    <div>
+                      <p className="text-sm text-muted-foreground">联系人</p>
+                      <p className="text-sm">{opportunity.contactName}</p>
+                    </div>
+                  </div>
+                )}
+
+                {opportunity.description && (
+                  <>
+                    <Separator />
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-2">
+                        <FileText className="h-4 w-4 text-muted-foreground" />
+                        <p className="text-sm text-muted-foreground">描述</p>
+                      </div>
+                      <p className="text-sm whitespace-pre-wrap">{opportunity.description}</p>
+                    </div>
+                  </>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* 销售漏斗进度 */}
+            <Card>
+              <CardHeader>
+                <CardTitle>销售漏斗</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {['qualified', 'proposal', 'negotiation', 'closed_won'].map((stage, index) => {
+                  const stageData = stageLabels[stage as OpportunityStage];
+                  const isActive = opportunity.stage === stage;
+                  return (
+                    <div key={stage} className="flex items-center gap-3">
+                      <div className={cn(
+                        "w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium",
+                        isActive ? "bg-primary text-primary-foreground" : "bg-muted"
+                      )}>
+                        {index + 1}
+                      </div>
+                      <div className="flex-1">
+                        <p className={cn(
+                          "text-sm font-medium",
+                          isActive && "text-primary"
+                        )}>
+                          {stageData.label}
+                        </p>
+                      </div>
+                      {isActive && (
+                        <Badge variant="secondary">当前</Badge>
+                      )}
+                    </div>
+                  );
+                })}
+              </CardContent>
+            </Card>
           </div>
-        </CardContent>
-      </Card>
 
-      {/* Delete Dialog */}
+          {/* 元信息 */}
+          <Card>
+            <CardContent className="py-4">
+              <div className="flex justify-between text-sm text-muted-foreground">
+                <span>创建时间: {format(new Date(opportunity.createdAt), 'yyyy-MM-dd HH:mm', { locale: zhCN })}</span>
+                <span>更新时间: {format(new Date(opportunity.updatedAt), 'yyyy-MM-dd HH:mm', { locale: zhCN })}</span>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* ====== 报价单 Tab ====== */}
+        <TabsContent value="quotes" className="space-y-6 mt-6">
+          <div className="flex items-center justify-between">
+            <h3 className="text-lg font-semibold">关联报价单</h3>
+            <Button onClick={() => setShowCreateQuote(true)} className="gap-2">
+              <Plus className="h-4 w-4" /> 新建报价单
+            </Button>
+          </div>
+
+          {quotesLoading ? (
+            <div className="flex items-center justify-center py-12">
+              <div className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+            </div>
+          ) : quotes.length === 0 ? (
+            <Card>
+              <CardContent className="flex flex-col items-center justify-center py-12">
+                <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-primary/10 to-purple-500/10 flex items-center justify-center mb-4">
+                  <FileText className="h-8 w-8 text-muted-foreground/50" />
+                </div>
+                <p className="text-sm text-muted-foreground">暂无关联报价单</p>
+                <Button variant="outline" className="mt-4 gap-2" onClick={() => setShowCreateQuote(true)}>
+                  <Plus className="h-4 w-4" /> 新建报价单
+                </Button>
+              </CardContent>
+            </Card>
+          ) : (
+            <div className="space-y-4">
+              {quotes.map((quote) => {
+                const statusConf = QUOTE_STATUS_CONFIG[quote.status];
+                return (
+                  <Card key={quote.id} className="overflow-hidden">
+                    <CardContent className="p-0">
+                      {/* Quote header */}
+                      <div
+                        className="flex items-center justify-between p-4 cursor-pointer hover:bg-muted/50 transition-colors"
+                        onClick={() => router.push(`/quotes/${quote.id}`)}
+                      >
+                        <div className="flex items-center gap-3">
+                          <FileText className="h-5 w-5 text-muted-foreground" />
+                          <div>
+                            <p className="font-medium">{quote.title}</p>
+                            <p className="text-xs text-muted-foreground">
+                              创建于 {format(new Date(quote.createdAt), 'yyyy-MM-dd')}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-3">
+                          <span className="text-lg font-bold text-primary">¥{quote.total.toLocaleString()}</span>
+                          <Badge className={statusConf.className}>{statusConf.label}</Badge>
+                          <div className="flex gap-1">
+                            {quote.status === 'draft' && (
+                              <Button size="sm" variant="outline" className="gap-1 h-7 text-xs" onClick={(e) => { e.stopPropagation(); handleQuoteAction('send', quote.id); }}>
+                                <Send className="h-3 w-3" /> 发送
+                              </Button>
+                            )}
+                            {quote.status === 'active' && (
+                              <>
+                                <Button size="sm" variant="outline" className="gap-1 h-7 text-xs text-green-600" onClick={(e) => { e.stopPropagation(); handleQuoteAction('accept', quote.id); }}>
+                                  接受
+                                </Button>
+                                <Button size="sm" variant="outline" className="gap-1 h-7 text-xs text-red-600" onClick={(e) => { e.stopPropagation(); handleQuoteAction('reject', quote.id); }}>
+                                  拒绝
+                                </Button>
+                              </>
+                            )}
+                            {quote.status === 'accepted' && (
+                              <Button size="sm" className="gap-1 h-7 text-xs bg-green-600 hover:bg-green-700" onClick={(e) => { e.stopPropagation(); handleQuoteAction('convertToOrder', quote.id); }}>
+                                <ArrowRight className="h-3 w-3" /> 转订单
+                              </Button>
+                            )}
+                            <Button size="sm" variant="ghost" className="h-7 text-xs text-red-500" onClick={(e) => { e.stopPropagation(); setDeleteQuoteId(quote.id); }}>
+                              <Trash2 className="h-3 w-3" />
+                            </Button>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Quote items preview */}
+                      {quote.items && quote.items.length > 0 && (
+                        <div className="border-t">
+                          <Table>
+                            <TableHeader>
+                              <TableRow>
+                                <TableHead>产品名称</TableHead>
+                                <TableHead className="text-right w-[80px]">数量</TableHead>
+                                <TableHead className="text-right w-[120px]">单价</TableHead>
+                                <TableHead className="text-right w-[100px]">小计</TableHead>
+                              </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                              {quote.items.map((item) => (
+                                <TableRow key={item.id}>
+                                  <TableCell>
+                                    <div>
+                                      <p className="text-sm">{item.productName}</p>
+                                      {item.description && <p className="text-xs text-muted-foreground">{item.description}</p>}
+                                    </div>
+                                  </TableCell>
+                                  <TableCell className="text-right text-sm">{item.quantity}</TableCell>
+                                  <TableCell className="text-right text-sm">¥{item.unitPrice.toLocaleString()}</TableCell>
+                                  <TableCell className="text-right text-sm font-medium">¥{item.subtotal.toLocaleString()}</TableCell>
+                                </TableRow>
+                              ))}
+                            </TableBody>
+                          </Table>
+                          <div className="flex justify-end p-3 border-t bg-muted/30 text-sm space-x-6">
+                            <span>小计: ¥{quote.subtotal.toLocaleString()}</span>
+                            <span>折扣: -¥{quote.discount.toLocaleString()}</span>
+                            <span>税额: ¥{quote.tax.toLocaleString()}</span>
+                            <span className="font-bold text-primary">总计: ¥{quote.total.toLocaleString()}</span>
+                          </div>
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+                );
+              })}
+            </div>
+          )}
+        </TabsContent>
+
+        {/* ====== 跟进记录 Tab ====== */}
+        <TabsContent value="followups" className="mt-6">
+          <FollowUpTimeline
+            entityType="opportunity"
+            entityId={opportunity.id}
+            entityName={opportunity.title}
+          />
+        </TabsContent>
+      </Tabs>
+
+      {/* Delete Opportunity Dialog */}
       <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
         <DialogContent>
           <DialogHeader>
@@ -233,6 +548,134 @@ export default function OpportunityDetailPage() {
             <Button variant="destructive" onClick={handleDelete}>
               删除
             </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Create Quote Dialog */}
+      <Dialog open={showCreateQuote} onOpenChange={setShowCreateQuote}>
+        <DialogContent className="sm:max-w-2xl max-h-[85vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>新建报价单</DialogTitle>
+            <DialogDescription>为销售机会「{opportunity.title}」创建报价单</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>关联机会</Label>
+                <Input value={opportunity.title} disabled className="bg-muted" />
+              </div>
+              <div className="space-y-2">
+                <Label>报价单标题 *</Label>
+                <Input
+                  value={createQuoteForm.title}
+                  onChange={e => setCreateQuoteForm(prev => ({ ...prev, title: e.target.value }))}
+                  placeholder="输入报价单标题"
+                />
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>有效开始日期</Label>
+                <Input
+                  type="date"
+                  value={createQuoteForm.validFrom}
+                  onChange={e => setCreateQuoteForm(prev => ({ ...prev, validFrom: e.target.value }))}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>有效结束日期</Label>
+                <Input
+                  type="date"
+                  value={createQuoteForm.validUntil}
+                  onChange={e => setCreateQuoteForm(prev => ({ ...prev, validUntil: e.target.value }))}
+                />
+              </div>
+            </div>
+
+            {/* Line Items */}
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <Label>报价明细</Label>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="gap-1"
+                  onClick={() => setCreateQuoteItems(prev => [...prev, { productName: '', description: '', quantity: 1, unitPrice: 0, discount: 0, subtotal: 0 }])}
+                >
+                  <Plus className="h-3 w-3" /> 添加
+                </Button>
+              </div>
+              <div className="border rounded-lg overflow-hidden">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>产品名称</TableHead>
+                      <TableHead className="w-[80px]">数量</TableHead>
+                      <TableHead className="w-[120px]">单价</TableHead>
+                      <TableHead className="w-[80px]">折扣</TableHead>
+                      <TableHead className="w-[100px]">小计</TableHead>
+                      <TableHead className="w-[40px]"></TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {createQuoteItems.map((item, idx) => (
+                      <TableRow key={idx}>
+                        <TableCell><Input value={item.productName} onChange={e => updateItem(idx, 'productName', e.target.value)} placeholder="产品名称" className="h-8" /></TableCell>
+                        <TableCell><Input type="number" value={item.quantity} onChange={e => updateItem(idx, 'quantity', Number(e.target.value))} className="h-8" min={1} /></TableCell>
+                        <TableCell><Input type="number" value={item.unitPrice} onChange={e => updateItem(idx, 'unitPrice', Number(e.target.value))} className="h-8" min={0} /></TableCell>
+                        <TableCell><Input type="number" value={item.discount} onChange={e => updateItem(idx, 'discount', Number(e.target.value))} className="h-8" min={0} /></TableCell>
+                        <TableCell className="font-medium">¥{item.subtotal.toLocaleString()}</TableCell>
+                        <TableCell>
+                          {createQuoteItems.length > 1 && (
+                            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setCreateQuoteItems(prev => prev.filter((_, i) => i !== idx))}>
+                              <X className="h-3 w-3" />
+                            </Button>
+                          )}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+              <div className="text-right text-sm space-y-1">
+                <p>小计: ¥{createQuoteItems.reduce((s, i) => s + i.subtotal, 0).toLocaleString()}</p>
+                <p>折扣: -¥{createQuoteItems.reduce((s, i) => s + i.discount, 0).toLocaleString()}</p>
+                <p>税额(6%): ¥{((createQuoteItems.reduce((s, i) => s + i.subtotal, 0) - createQuoteItems.reduce((s, i) => s + i.discount, 0)) * 0.06).toFixed(2)}</p>
+                <p className="text-lg font-bold">总计: ¥{((createQuoteItems.reduce((s, i) => s + i.subtotal, 0) - createQuoteItems.reduce((s, i) => s + i.discount, 0)) * 1.06).toFixed(2)}</p>
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label>条款说明</Label>
+              <Textarea value={createQuoteForm.terms} onChange={e => setCreateQuoteForm(prev => ({ ...prev, terms: e.target.value }))} placeholder="付款条款、交付方式等" rows={3} />
+            </div>
+            <div className="space-y-2">
+              <Label>备注</Label>
+              <Textarea value={createQuoteForm.notes} onChange={e => setCreateQuoteForm(prev => ({ ...prev, notes: e.target.value }))} placeholder="备注信息" rows={2} />
+            </div>
+          </div>
+          <DialogFooter className="gap-2">
+            <Button variant="outline" onClick={() => setShowCreateQuote(false)}>取消</Button>
+            <Button onClick={handleCreateQuote} disabled={!createQuoteForm.title} className="bg-gradient-to-r from-primary to-purple-600">
+              保存草稿
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Quote Dialog */}
+      <Dialog open={!!deleteQuoteId} onOpenChange={() => setDeleteQuoteId(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Trash2 className="h-5 w-5 text-red-500" /> 确认删除
+            </DialogTitle>
+            <DialogDescription>确定要删除这个报价单吗？此操作不可撤销。</DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDeleteQuoteId(null)}>取消</Button>
+            <Button variant="destructive" onClick={handleDeleteQuote}>确认删除</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

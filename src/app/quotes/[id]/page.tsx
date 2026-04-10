@@ -13,7 +13,8 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { ArrowLeft, Send, ArrowRight, FileText } from 'lucide-react';
+import { ArrowLeft, Send, ArrowRight, FileText, Briefcase } from 'lucide-react';
+import Link from 'next/link';
 import { QUOTE_STATUS_CONFIG, type Quote, type QuoteStatus } from '@/lib/crm-types';
 import { format } from 'date-fns';
 
@@ -67,7 +68,7 @@ export default function QuoteDetailPage() {
       const res = await fetch('/api/quotes', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action, data: { id } }),
+        body: JSON.stringify({ action, id }),
       });
       if (res.ok) {
         if (action === 'convertToOrder') {
@@ -185,6 +186,14 @@ export default function QuoteDetailPage() {
             <CardHeader><CardTitle>详细信息</CardTitle></CardHeader>
             <CardContent className="space-y-3 text-sm">
               <div><span className="text-muted-foreground">状态</span><div className="mt-1"><Badge className={statusConf.className}>{statusConf.label}</Badge></div></div>
+              <div>
+                <span className="text-muted-foreground">关联销售机会</span>
+                <div className="mt-1">
+                  <Link href={`/opportunities/${quote.opportunityId}`} className="text-primary hover:underline flex items-center gap-1">
+                    <Briefcase className="h-3.5 w-3.5" /> 查看销售机会
+                  </Link>
+                </div>
+              </div>
               {quote.validFrom && <div><span className="text-muted-foreground">有效期开始</span><div className="mt-1">{format(new Date(quote.validFrom), 'yyyy-MM-dd')}</div></div>}
               {quote.validUntil && <div><span className="text-muted-foreground">有效期结束</span><div className="mt-1">{format(new Date(quote.validUntil), 'yyyy-MM-dd')}</div></div>}
               {quote.notes && <div><span className="text-muted-foreground">备注</span><div className="mt-1 whitespace-pre-wrap">{quote.notes}</div></div>}

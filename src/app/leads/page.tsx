@@ -55,7 +55,7 @@ export default function LeadsPage() {
   const [qualifyForm, setQualifyForm] = useState({
     opportunityTitle: '',
     value: '',
-    contactId: '',
+    contactId: 'none',
     expectedCloseDate: '',
     notes: '',
   });
@@ -93,7 +93,7 @@ export default function LeadsPage() {
       qualifyLead(qualifyDialog.lead.id, {
         opportunityTitle: qualifyForm.opportunityTitle || qualifyDialog.lead.title,
         value: Number(qualifyForm.value) || qualifyDialog.lead.estimatedValue,
-        contactId: qualifyForm.contactId || undefined,
+        contactId: qualifyForm.contactId === 'none' ? undefined : qualifyForm.contactId,
         expectedCloseDate: qualifyForm.expectedCloseDate,
         notes: qualifyForm.notes,
       });
@@ -107,7 +107,7 @@ export default function LeadsPage() {
     setQualifyForm({
       opportunityTitle: lead.title,
       value: lead.estimatedValue.toString(),
-      contactId: lead.contactId || '',
+      contactId: lead.contactId || 'none',
       expectedCloseDate: '',
       notes: lead.notes || '',
     });
@@ -396,6 +396,7 @@ export default function LeadsPage() {
                   <SelectValue placeholder="选择联系人（可选）" />
                 </SelectTrigger>
                 <SelectContent>
+                  <SelectItem value="none">不选择联系人</SelectItem>
                   {qualifyDialog.lead && getContactsByCustomer(qualifyDialog.lead.customerId).map(contact => (
                     <SelectItem key={contact.id} value={contact.id}>
                       {contact.firstName} {contact.lastName} - {contact.position}

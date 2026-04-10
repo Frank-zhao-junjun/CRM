@@ -34,7 +34,7 @@ function NewOpportunityForm() {
   const [formData, setFormData] = useState({
     title: '',
     customerId: '',
-    contactId: '',
+    contactId: 'none',
     value: '',
     stage: 'qualified' as OpportunityStage,
     probability: 10,
@@ -74,9 +74,10 @@ function NewOpportunityForm() {
     setLoading(true);
     
     try {
-      const selectedContact = contacts.find(c => c.id === formData.contactId);
+      const selectedContact = formData.contactId !== 'none' ? contacts.find(c => c.id === formData.contactId) : undefined;
       addOpportunity({
         ...formData,
+        contactId: formData.contactId === 'none' ? undefined : formData.contactId,
         value: parseFloat(formData.value) || 0,
         customerName: selectedCustomer.company,
         contactName: selectedContact ? `${selectedContact.lastName}${selectedContact.firstName}` : undefined,
@@ -135,6 +136,7 @@ function NewOpportunityForm() {
                   <SelectValue placeholder="选择联系人" />
                 </SelectTrigger>
                 <SelectContent>
+                  <SelectItem value="none">不选择联系人</SelectItem>
                   {customerContacts.map(contact => (
                     <SelectItem key={contact.id} value={contact.id}>
                       {contact.lastName}{contact.firstName} - {contact.position}

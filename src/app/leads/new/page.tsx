@@ -26,7 +26,7 @@ export default function NewLeadPage() {
     title: '',
     source: 'website',
     customerId: '',
-    contactId: '',
+    contactId: 'none',
     estimatedValue: '',
     notes: '',
   });
@@ -48,8 +48,8 @@ export default function NewLeadPage() {
         source: form.source as LeadSourceType,
         customerId: form.customerId,
         customerName: customer.company,
-        contactId: form.contactId || undefined,
-        contactName: form.contactId ? getContactName(form.contactId) : undefined,
+        contactId: form.contactId === 'none' ? undefined : form.contactId,
+        contactName: form.contactId !== 'none' ? getContactName(form.contactId) : undefined,
         estimatedValue: Number(form.estimatedValue) || 0,
         status: 'new',
         probability: 10,
@@ -127,7 +127,7 @@ export default function NewLeadPage() {
                 <Building2 className="h-4 w-4 text-blue-500" />
                 关联客户 <span className="text-red-500">*</span>
               </Label>
-              <Select value={form.customerId} onValueChange={(v) => setForm({...form, customerId: v, contactId: ''})}>
+              <Select value={form.customerId} onValueChange={(v) => setForm({...form, customerId: v, contactId: 'none'})}>
                 <SelectTrigger>
                   <SelectValue placeholder="选择客户" />
                 </SelectTrigger>
@@ -152,7 +152,7 @@ export default function NewLeadPage() {
                   <SelectValue placeholder="选择联系人（可选）" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">无</SelectItem>
+                  <SelectItem value="none">无</SelectItem>
                 </SelectContent>
               </Select>
             </div>

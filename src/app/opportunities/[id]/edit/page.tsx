@@ -34,7 +34,7 @@ export default function EditOpportunityPage() {
   const [formData, setFormData] = useState({
     title: '',
     customerId: '',
-    contactId: '',
+    contactId: 'none',
     value: '',
     stage: 'qualified' as OpportunityStage,
     probability: 10,
@@ -49,7 +49,7 @@ export default function EditOpportunityPage() {
       setFormData({
         title: opportunity.title,
         customerId: opportunity.customerId,
-        contactId: opportunity.contactId || '',
+        contactId: opportunity.contactId || 'none',
         value: opportunity.value.toString(),
         stage: opportunity.stage,
         probability: opportunity.probability,
@@ -92,9 +92,10 @@ export default function EditOpportunityPage() {
     setLoading(true);
     
     try {
-      const selectedContact = contacts.find(c => c.id === formData.contactId);
+      const selectedContact = formData.contactId !== 'none' ? contacts.find(c => c.id === formData.contactId) : undefined;
       updateOpportunity(opportunity.id, {
         ...formData,
+        contactId: formData.contactId === 'none' ? undefined : formData.contactId,
         value: parseFloat(formData.value) || 0,
         customerName: selectedCustomer.company,
         contactName: selectedContact ? `${selectedContact.lastName}${selectedContact.firstName}` : undefined,
@@ -163,6 +164,7 @@ export default function EditOpportunityPage() {
                     <SelectValue placeholder="选择联系人" />
                   </SelectTrigger>
                   <SelectContent>
+                    <SelectItem value="none">不选择联系人</SelectItem>
                     {customerContacts.map(contact => (
                       <SelectItem key={contact.id} value={contact.id}>
                         {contact.lastName}{contact.firstName} - {contact.position}

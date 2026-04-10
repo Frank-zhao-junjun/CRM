@@ -1,6 +1,6 @@
 import 'server-only';
 import { getSupabaseClient } from '@/storage/database/supabase-client';
-import type { Customer, InsertCustomer, Contact, InsertContact, Opportunity, InsertOpportunity, Activity, InsertActivity, FollowUp, InsertFollowUp, Notification, InsertNotification } from '@/storage/database/shared/schema';
+import type { Customer, InsertCustomer, Contact, InsertContact, Opportunity, InsertOpportunity, Activity, InsertActivity, FollowUp, InsertFollowUp, Notification, InsertNotification, Quote, InsertQuote, QuoteItem, InsertQuoteItem, Order, InsertOrder, OrderItem, InsertOrderItem } from '@/storage/database/shared/schema';
 
 // CRM 数据库服务 - 支持线索管理
 
@@ -539,4 +539,299 @@ export async function generateOverdueNotifications(): Promise<number> {
     created++;
   }
   return created;
+}
+
+// ============ Quote 操作 ============
+
+export async function getAllQuotes(): Promise<Quote[]> {
+  const client = getSupabaseClient();
+  const { data, error } = await client
+    .from('quotes')
+    .select('*')
+    .order('created_at', { ascending: false });
+  if (error) throw new Error(`获取报价单列表失败: ${error.message}`);
+  return data as Quote[];
+}
+
+export async function getQuoteById(id: string): Promise<Quote | null> {
+  const client = getSupabaseClient();
+  const { data, error } = await client
+    .from('quotes')
+    .select('*')
+    .eq('id', id)
+    .maybeSingle();
+  if (error) throw new Error(`获取报价单失败: ${error.message}`);
+  if (!data) return null;
+
+  // Fetch items
+  const { data: items } = await client
+    .from('quote_items')
+    .select('*')
+    .eq('quote_id', id)
+    .order('sort_order', { ascending: true });
+
+  return { ...data, items: (items || []) as QuoteItem[] } as Quote & { items: QuoteItem[] };
+}
+
+export async function getQuotesByOpportunity(opportunityId: string): Promise<Quote[]> {
+  const client = getSupabaseClient();
+  const { data, error } = await client
+    .from('quotes')
+    .select('*')
+    .eq('opportunity_id', opportunityId)
+    .order('created_at', { ascending: false });
+  if (error) throw new Error(`获取报价单失败: ${error.message}`);
+  return data as Quote[];
+}
+
+export async function createQuote(quote: InsertQuote, items?: Omit<InsertQuoteItem, 'quote_id'>[]): Promise<Quote> {
+  const client = getSupabaseClient();
+  const { data, error } = await client
+    .from('quotes')
+    .insert(quote)
+    .select()
+    .single();
+  if (error) throw new Error(`创建报价单失败: ${error.message}`);
+
+  const createdQuote = data as Quote;
+
+  // Insert items if provided
+  if (items && items.length > 0) {
+    const itemsWithQuoteId = items.map((item, index) => ({
+      ...item,
+      quote_id: createdQuote.id,
+      sort_order: index,
+    }));
+    const { error: itemsError } = await client
+      .from('quote_items')
+      .insert(itemsWithQuoteId);
+    if (itemsError) throw new Error(`创建报价明细失败: ${itemsError.message}`);
+  }
+
+  return createdQuote;
+}
+
+export async function updateQuote(id: string, updates: Partial<InsertQuote>): Promise<Quote> {
+  const client = getSupabaseClient();
+  const { data, error } = await client
+    .from('quotes')
+    .update({ ...updates, updated_at: new Date().toISOString() })
+    .eq('id', id)
+    .select()
+    .single();
+  if (error) throw new Error(`更新报价单失败: ${error.message}`);
+  return data as Quote;
+}
+
+export async function deleteQuote(id: string): Promise<void> {
+  const client = getSupabaseClient();
+  const { error } = await client
+    .from('quotes')
+    .delete()
+    .eq('id', id);
+  if (error) throw new Error(`删除报价单失败: ${error.message}`);
+}
+
+export async function updateQuoteItems(quoteId: string, items: Omit<InsertQuoteItem, 'quote_id'>[]): Promise<QuoteItem[]> {
+  const client = getSupabaseClient();
+  // Delete existing items
+  await client.from('quote_items').delete().eq('quote_id', quoteId);
+  // Insert new items
+  const itemsWithQuoteId = items.map((item, index) => ({
+    ...item,
+    quote_id: quoteId,
+    sort_order: index,
+  }));
+  const { data, error } = await client
+    .from('quote_items')
+    .insert(itemsWithQuoteId)
+    .select();
+  if (error) throw new Error(`更新报价明细失败: ${error.message}`);
+  return data as QuoteItem[];
+}
+
+// ============ Order 操作 ============
+
+function generateOrderNumber(): string {
+  const now = new Date();
+  const dateStr = `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}${String(now.getDate()).padStart(2, '0')}`;
+  const seq = String(Math.floor(Math.random() * 10000)).padStart(4, '0');
+  return `ORD-${dateStr}-${seq}`;
+}
+
+export async function getAllOrders(): Promise<Order[]> {
+  const client = getSupabaseClient();
+  const { data, error } = await client
+    .from('orders')
+    .select('*')
+    .order('created_at', { ascending: false });
+  if (error) throw new Error(`获取订单列表失败: ${error.message}`);
+  return data as Order[];
+}
+
+export async function getOrderById(id: string): Promise<Order | null> {
+  const client = getSupabaseClient();
+  const { data, error } = await client
+    .from('orders')
+    .select('*')
+    .eq('id', id)
+    .maybeSingle();
+  if (error) throw new Error(`获取订单失败: ${error.message}`);
+  if (!data) return null;
+
+  // Fetch items
+  const { data: items } = await client
+    .from('order_items')
+    .select('*')
+    .eq('order_id', id)
+    .order('sort_order', { ascending: true });
+
+  return { ...data, items: (items || []) as OrderItem[] } as Order & { items: OrderItem[] };
+}
+
+export async function createOrder(order: Omit<InsertOrder, 'order_number'>, items?: Omit<InsertOrderItem, 'order_id'>[]): Promise<Order> {
+  const client = getSupabaseClient();
+  const orderNumber = generateOrderNumber();
+  const { data, error } = await client
+    .from('orders')
+    .insert({ ...order, order_number: orderNumber })
+    .select()
+    .single();
+  if (error) throw new Error(`创建订单失败: ${error.message}`);
+
+  const createdOrder = data as Order;
+
+  // Insert items if provided
+  if (items && items.length > 0) {
+    const itemsWithOrderId = items.map((item, index) => ({
+      ...item,
+      order_id: createdOrder.id,
+      sort_order: index,
+    }));
+    const { error: itemsError } = await client
+      .from('order_items')
+      .insert(itemsWithOrderId);
+    if (itemsError) throw new Error(`创建订单明细失败: ${itemsError.message}`);
+  }
+
+  return createdOrder;
+}
+
+export async function updateOrder(id: string, updates: Partial<InsertOrder>): Promise<Order> {
+  const client = getSupabaseClient();
+  const { data, error } = await client
+    .from('orders')
+    .update({ ...updates, updated_at: new Date().toISOString() })
+    .eq('id', id)
+    .select()
+    .single();
+  if (error) throw new Error(`更新订单失败: ${error.message}`);
+  return data as Order;
+}
+
+export async function deleteOrder(id: string): Promise<void> {
+  const client = getSupabaseClient();
+  const { error } = await client
+    .from('orders')
+    .delete()
+    .eq('id', id);
+  if (error) throw new Error(`删除订单失败: ${error.message}`);
+}
+
+export async function convertQuoteToOrder(quoteId: string): Promise<Order> {
+  const client = getSupabaseClient();
+  
+  // Fetch quote
+  const { data: quoteData, error: quoteError } = await client
+    .from('quotes')
+    .select('*')
+    .eq('id', quoteId)
+    .single();
+  if (quoteError || !quoteData) throw new Error('报价单不存在');
+  if (quoteData.status !== 'accepted') throw new Error('仅已接受的报价单可转为订单');
+
+  // Fetch quote items
+  const { data: quoteItemsData } = await client
+    .from('quote_items')
+    .select('*')
+    .eq('quote_id', quoteId);
+
+  // Get opportunity to find customer_id
+  const { data: opp } = await client
+    .from('opportunities')
+    .select('customer_id')
+    .eq('id', quoteData.opportunity_id)
+    .maybeSingle();
+  if (!opp) throw new Error('关联销售机会不存在');
+
+  // Create order from quote
+  const orderItems = (quoteItemsData || []).map((item: Record<string, unknown>) => ({
+    product_name: item.product_name as string,
+    description: item.description as string | null,
+    quantity: item.quantity as number,
+    unit_price: item.unit_price as string,
+    subtotal: item.subtotal as string,
+  }));
+
+  const order = await createOrder(
+    {
+      quote_id: quoteId,
+      opportunity_id: quoteData.opportunity_id,
+      customer_id: opp.customer_id,
+      status: 'pending',
+      subtotal: quoteData.subtotal,
+      tax: quoteData.tax,
+      total: quoteData.total,
+      notes: quoteData.notes,
+    },
+    orderItems
+  );
+
+  // Update quote status (already accepted since we validated above)
+
+  return order;
+}
+
+// ============ 今日待办 ============
+
+export async function getTodayTodos(overdueDays: number = 7): Promise<{
+  todayClosing: Opportunity[];
+  todayFollowUps: FollowUp[];
+  overdueFollowUps: FollowUp[];
+}> {
+  const client = getSupabaseClient();
+  const today = new Date().toISOString().split('T')[0];
+
+  // 今日应成交: expected_close_date = today and not closed
+  const { data: closingData } = await client
+    .from('opportunities')
+    .select('*')
+    .gte('expected_close_date', `${today}T00:00:00`)
+    .lte('expected_close_date', `${today}T23:59:59`)
+    .not('stage', 'in', '("closed_won","closed_lost")');
+
+  // 今日应跟进: next_follow_up_at = today and not completed
+  const { data: followUpData } = await client
+    .from('follow_ups')
+    .select('*')
+    .is('completed_at', null)
+    .is('deleted_at', null)
+    .gte('next_follow_up_at', `${today}T00:00:00`)
+    .lte('next_follow_up_at', `${today}T23:59:59`);
+
+  // 逾期未跟进: next_follow_up_at < today - overdueDays
+  const overdueDate = new Date();
+  overdueDate.setDate(overdueDate.getDate() - overdueDays);
+  const { data: overdueData } = await client
+    .from('follow_ups')
+    .select('*')
+    .is('completed_at', null)
+    .is('deleted_at', null)
+    .lt('next_follow_up_at', overdueDate.toISOString());
+
+  return {
+    todayClosing: (closingData || []) as Opportunity[],
+    todayFollowUps: (followUpData || []) as FollowUp[],
+    overdueFollowUps: (overdueData || []) as FollowUp[],
+  };
 }

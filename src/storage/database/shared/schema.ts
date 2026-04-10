@@ -124,13 +124,17 @@ export const followUps = pgTable(
   "follow_ups",
   {
     id: varchar("id", { length: 36 }).primaryKey().default(sql`gen_random_uuid()`),
-    entity_type: varchar("entity_type", { length: 20 }).notNull(), // lead, opportunity
+    entity_type: varchar("entity_type", { length: 20 }).notNull(), // customer, lead, opportunity
     entity_id: varchar("entity_id", { length: 36 }).notNull(),
     entity_name: varchar("entity_name", { length: 255 }).notNull(),
     type: varchar("type", { length: 30 }).notNull().default("note"), // call, email, meeting, note
+    method: varchar("method", { length: 30 }).default("note"), // phone, wechat, email, meeting, other
     content: text("content").notNull(),
     scheduled_at: timestamp("scheduled_at", { withTimezone: true }),
     completed_at: timestamp("completed_at", { withTimezone: true }),
+    next_follow_up_at: timestamp("next_follow_up_at", { withTimezone: true }),
+    created_by: varchar("created_by", { length: 100 }).default("sales_a"),
+    deleted_at: timestamp("deleted_at", { withTimezone: true }),
     created_at: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
     updated_at: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
   },
@@ -158,6 +162,94 @@ export const notifications = pgTable(
   ]
 );
 
+// 报价单表
+export const quotes = pgTable(
+  "quotes",
+  {
+    id: varchar("id", { length: 36 }).primaryKey().default(sql`gen_random_uuid()`),
+    opportunity_id: varchar("opportunity_id", { length: 36 }).notNull().references(() => opportunities.id, { onDelete: "cascade" }),
+    title: varchar("title", { length: 255 }).notNull(),
+    status: varchar("status", { length: 20 }).notNull().default("draft"), // draft, active, accepted, rejected, expired
+    valid_from: timestamp("valid_from"),
+    valid_until: timestamp("valid_until"),
+    subtotal: numeric("subtotal", { precision: 15, scale: 2 }).notNull().default("0"),
+    discount: numeric("discount", { precision: 15, scale: 2 }).notNull().default("0"),
+    tax: numeric("tax", { precision: 15, scale: 2 }).notNull().default("0"),
+    total: numeric("total", { precision: 15, scale: 2 }).notNull().default("0"),
+    terms: text("terms"),
+    notes: text("notes"),
+    created_at: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+    updated_at: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => [
+    index("quotes_opportunity_id_idx").on(table.opportunity_id),
+    index("quotes_status_idx").on(table.status),
+  ]
+);
+
+// 报价单明细表
+export const quoteItems = pgTable(
+  "quote_items",
+  {
+    id: varchar("id", { length: 36 }).primaryKey().default(sql`gen_random_uuid()`),
+    quote_id: varchar("quote_id", { length: 36 }).notNull().references(() => quotes.id, { onDelete: "cascade" }),
+    product_name: varchar("product_name", { length: 255 }).notNull(),
+    description: text("description"),
+    quantity: integer("quantity").notNull().default(1),
+    unit_price: numeric("unit_price", { precision: 15, scale: 2 }).notNull().default("0"),
+    discount: numeric("discount", { precision: 15, scale: 2 }).notNull().default("0"),
+    subtotal: numeric("subtotal", { precision: 15, scale: 2 }).notNull().default("0"),
+    sort_order: integer("sort_order").notNull().default(0),
+  },
+  (table) => [
+    index("quote_items_quote_id_idx").on(table.quote_id),
+  ]
+);
+
+// 成交订单表
+export const orders = pgTable(
+  "orders",
+  {
+    id: varchar("id", { length: 36 }).primaryKey().default(sql`gen_random_uuid()`),
+    quote_id: varchar("quote_id", { length: 36 }).references(() => quotes.id, { onDelete: "set null" }),
+    opportunity_id: varchar("opportunity_id", { length: 36 }).notNull().references(() => opportunities.id, { onDelete: "cascade" }),
+    customer_id: varchar("customer_id", { length: 36 }).notNull().references(() => customers.id, { onDelete: "cascade" }),
+    order_number: varchar("order_number", { length: 50 }).notNull().unique(),
+    status: varchar("status", { length: 20 }).notNull().default("pending"), // pending, confirmed, fulfilled, cancelled
+    order_date: timestamp("order_date"),
+    delivery_date: timestamp("delivery_date"),
+    subtotal: numeric("subtotal", { precision: 15, scale: 2 }).notNull().default("0"),
+    tax: numeric("tax", { precision: 15, scale: 2 }).notNull().default("0"),
+    total: numeric("total", { precision: 15, scale: 2 }).notNull().default("0"),
+    notes: text("notes"),
+    created_at: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+    updated_at: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => [
+    index("orders_opportunity_id_idx").on(table.opportunity_id),
+    index("orders_customer_id_idx").on(table.customer_id),
+    index("orders_status_idx").on(table.status),
+  ]
+);
+
+// 订单明细表
+export const orderItems = pgTable(
+  "order_items",
+  {
+    id: varchar("id", { length: 36 }).primaryKey().default(sql`gen_random_uuid()`),
+    order_id: varchar("order_id", { length: 36 }).notNull().references(() => orders.id, { onDelete: "cascade" }),
+    product_name: varchar("product_name", { length: 255 }).notNull(),
+    description: text("description"),
+    quantity: integer("quantity").notNull().default(1),
+    unit_price: numeric("unit_price", { precision: 15, scale: 2 }).notNull().default("0"),
+    subtotal: numeric("subtotal", { precision: 15, scale: 2 }).notNull().default("0"),
+    sort_order: integer("sort_order").notNull().default(0),
+  },
+  (table) => [
+    index("order_items_order_id_idx").on(table.order_id),
+  ]
+);
+
 // 类型导出
 export type Customer = typeof customers.$inferSelect;
 export type InsertCustomer = typeof customers.$inferInsert;
@@ -173,3 +265,11 @@ export type FollowUp = typeof followUps.$inferSelect;
 export type InsertFollowUp = typeof followUps.$inferInsert;
 export type Notification = typeof notifications.$inferSelect;
 export type InsertNotification = typeof notifications.$inferInsert;
+export type Quote = typeof quotes.$inferSelect;
+export type InsertQuote = typeof quotes.$inferInsert;
+export type QuoteItem = typeof quoteItems.$inferSelect;
+export type InsertQuoteItem = typeof quoteItems.$inferInsert;
+export type Order = typeof orders.$inferSelect;
+export type InsertOrder = typeof orders.$inferInsert;
+export type OrderItem = typeof orderItems.$inferSelect;
+export type InsertOrderItem = typeof orderItems.$inferInsert;

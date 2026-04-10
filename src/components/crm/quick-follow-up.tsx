@@ -17,7 +17,7 @@ import {
 import type { FollowUpType } from '@/lib/crm-types';
 
 interface QuickFollowUpProps {
-  entityType: 'lead' | 'opportunity';
+  entityType: 'customer' | 'lead' | 'opportunity';
   entityId: string;
   entityName: string;
   open: boolean;

@@ -59,6 +59,13 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ created });
     }
     
+    // 今日待办 (V4.0)
+    if (type === 'todayTodos') {
+      const overdueDays = parseInt(searchParams.get('overdueDays') || '7');
+      const todos = await db.getTodayTodos(overdueDays);
+      return NextResponse.json(todos);
+    }
+    
     if (type === 'contacts') {
       const customerId = searchParams.get('customerId');
       if (customerId) {

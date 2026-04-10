@@ -24,6 +24,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { SalesFunnel } from '@/components/crm/sales-funnel';
 import { QuickFollowUp } from '@/components/crm/quick-follow-up';
+import { TodayTodoCard } from '@/components/crm/today-todo';
 import type { OpportunityStage } from '@/lib/crm-types';
 
 const statCards = [
@@ -80,7 +81,7 @@ const activityColors = {
 
 export default function DashboardPage() {
   const { stats, opportunities, activities } = useCRM();
-  const [quickFollowUp, setQuickFollowUp] = useState<{ open: boolean; entityType: 'lead' | 'opportunity'; entityId: string; entityName: string }>({
+  const [quickFollowUp, setQuickFollowUp] = useState<{ open: boolean; entityType: 'customer' | 'lead' | 'opportunity'; entityId: string; entityName: string }>({
     open: false, entityType: 'opportunity', entityId: '', entityName: '',
   });
 
@@ -179,6 +180,12 @@ export default function DashboardPage() {
           );
         })}
       </div>
+
+      {/* 今日待办 */}
+      <TodayTodoCard
+        className="animate-in slide-in-from-bottom-4 duration-500"
+        onFollowUp={(entityType, entityId, entityName) => setQuickFollowUp({ open: true, entityType, entityId, entityName })}
+      />
 
       <div className="grid gap-6 lg:grid-cols-2">
         {/* 销售漏斗 */}

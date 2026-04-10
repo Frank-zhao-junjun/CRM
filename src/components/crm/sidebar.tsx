@@ -17,7 +17,7 @@ import {
   Package,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
+import { Sheet, SheetContent, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { useState } from 'react';
 
 const navigation = [
@@ -146,6 +146,7 @@ export function Sidebar() {
           </Button>
         </SheetTrigger>
         <SheetContent side="left" className="w-72 p-0 glass">
+          <SheetTitle className="sr-only">导航菜单</SheetTitle>
           <div className="flex flex-col h-full">
             {/* Logo Section */}
             <div className="relative h-20 flex items-center px-6 border-b/50 overflow-hidden">

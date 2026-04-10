@@ -11,16 +11,37 @@ import {
   Settings,
   ChevronLeft,
   Menu,
+  Zap,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { useState } from 'react';
 
 const navigation = [
-  { name: '仪表盘', href: '/', icon: LayoutDashboard },
-  { name: '客户管理', href: '/customers', icon: Users },
-  { name: '销售机会', href: '/opportunities', icon: Briefcase },
-  { name: '联系人', href: '/contacts', icon: Contact2 },
+  { 
+    name: '仪表盘', 
+    href: '/', 
+    icon: LayoutDashboard,
+    gradient: 'from-blue-500 to-cyan-500',
+  },
+  { 
+    name: '客户管理', 
+    href: '/customers', 
+    icon: Users,
+    gradient: 'from-purple-500 to-pink-500',
+  },
+  { 
+    name: '销售机会', 
+    href: '/opportunities', 
+    icon: Briefcase,
+    gradient: 'from-orange-500 to-amber-500',
+  },
+  { 
+    name: '联系人', 
+    href: '/contacts', 
+    icon: Contact2,
+    gradient: 'from-green-500 to-emerald-500',
+  },
 ];
 
 interface NavItemProps {
@@ -29,24 +50,52 @@ interface NavItemProps {
   icon: React.ComponentType<{ className?: string }>;
   label: string;
   collapsed: boolean;
+  gradient: string;
   onClick?: () => void;
 }
 
-function NavItem({ href, isActive, icon: Icon, label, collapsed, onClick }: NavItemProps) {
+function NavItem({ href, isActive, icon: Icon, label, collapsed, gradient, onClick }: NavItemProps) {
   return (
     <Link
       href={href}
       onClick={onClick}
       className={cn(
-        "flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors",
+        "group relative flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-300",
         isActive
-          ? "bg-primary text-primary-foreground"
-          : "text-muted-foreground hover:bg-muted hover:text-foreground",
-        collapsed && "justify-center"
+          ? "bg-primary text-primary-foreground shadow-lg shadow-primary/25"
+          : "text-muted-foreground hover:bg-accent hover:text-foreground",
+        collapsed && "justify-center px-2"
       )}
     >
-      <Icon className="h-5 w-5 shrink-0" />
-      {!collapsed && <span>{label}</span>}
+      {/* Active indicator */}
+      {isActive && (
+        <div className={cn(
+          "absolute inset-0 rounded-xl bg-gradient-to-r opacity-20",
+          gradient
+        )} />
+      )}
+      
+      {/* Icon container */}
+      <div className={cn(
+        "relative flex items-center justify-center w-9 h-9 rounded-lg transition-all duration-300",
+        isActive 
+          ? "bg-white/20" 
+          : "bg-accent group-hover:bg-primary/10"
+      )}>
+        <Icon className={cn(
+          "h-5 w-5 transition-transform duration-300",
+          !isActive && "group-hover:scale-110"
+        )} />
+      </div>
+      
+      {!collapsed && (
+        <span className="relative flex-1">{label}</span>
+      )}
+      
+      {/* Hover glow effect */}
+      {!isActive && (
+        <div className="absolute inset-0 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300 bg-gradient-to-r from-primary/5 to-transparent pointer-events-none" />
+      )}
     </Link>
   );
 }
@@ -66,17 +115,35 @@ export function Sidebar() {
       {/* Mobile */}
       <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
         <SheetTrigger asChild className="lg:hidden fixed top-4 left-4 z-50">
-          <Button variant="outline" size="icon">
+          <Button 
+            variant="outline" 
+            size="icon"
+            className="glass shadow-lg hover:shadow-xl transition-all duration-300"
+          >
             <Menu className="h-5 w-5" />
           </Button>
         </SheetTrigger>
-        <SheetContent side="left" className="w-64 p-0">
+        <SheetContent side="left" className="w-72 p-0 glass">
           <div className="flex flex-col h-full">
-            <div className="flex items-center justify-between h-16 px-4 border-b">
-              <h1 className="text-lg font-bold text-primary">简易CRM</h1>
+            {/* Logo Section */}
+            <div className="relative h-20 flex items-center px-6 border-b/50 overflow-hidden">
+              {/* Background decoration */}
+              <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent" />
+              <div className="absolute right-0 top-0 w-24 h-24 bg-gradient-to-br from-primary/10 rounded-full blur-2xl" />
+              
+              <div className="relative flex items-center gap-3">
+                <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-gradient-to-br from-primary to-purple-600 shadow-lg shadow-primary/30">
+                  <Zap className="h-5 w-5 text-white" />
+                </div>
+                <div>
+                  <h1 className="text-lg font-bold gradient-text">简易CRM</h1>
+                  <p className="text-xs text-muted-foreground">客户关系管理</p>
+                </div>
+              </div>
             </div>
             
-            <nav className="flex-1 px-2 py-4 space-y-1">
+            {/* Navigation */}
+            <nav className="flex-1 px-3 py-4 space-y-1">
               {navigation.map((item) => (
                 <NavItem
                   key={item.name}
@@ -85,20 +152,31 @@ export function Sidebar() {
                   label={item.name}
                   isActive={isActive(item.href)}
                   collapsed={false}
+                  gradient={item.gradient}
                   onClick={() => setMobileOpen(false)}
                 />
               ))}
             </nav>
 
-            <div className="px-2 py-4 border-t">
+            {/* Footer */}
+            <div className="px-3 py-4 border-t/50">
               <NavItem
                 href="/settings"
                 icon={Settings}
-                label="设置"
+                label="系统设置"
                 isActive={pathname === '/settings'}
                 collapsed={false}
+                gradient="from-gray-500 to-slate-500"
                 onClick={() => setMobileOpen(false)}
               />
+              
+              {/* Version info */}
+              <div className="mt-4 px-3 text-xs text-muted-foreground/60">
+                <div className="flex items-center gap-2">
+                  <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+                  <span>系统运行正常</span>
+                </div>
+              </div>
             </div>
           </div>
         </SheetContent>
@@ -107,29 +185,43 @@ export function Sidebar() {
       {/* Desktop */}
       <aside
         className={cn(
-          "hidden lg:flex flex-col bg-card border-r h-screen sticky top-0 transition-all duration-300",
-          collapsed ? "w-16" : "w-64"
+          "hidden lg:flex flex-col bg-sidebar border-r h-screen sticky top-0 transition-all duration-300 ease-out",
+          collapsed ? "w-20" : "w-64"
         )}
       >
         <div className="flex flex-col h-full">
+          {/* Logo Section */}
           <div className={cn(
-            "flex items-center h-16 px-4 border-b",
-            collapsed ? "justify-center" : "justify-between"
+            "relative h-20 flex items-center border-b/50 overflow-hidden transition-all duration-300",
+            collapsed ? "justify-center px-2" : "px-6"
           )}>
-            {!collapsed && (
-              <h1 className="text-lg font-bold text-primary">简易CRM</h1>
-            )}
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => setCollapsed(!collapsed)}
-              className="hidden lg:flex"
-            >
-              <ChevronLeft className={cn("h-4 w-4 transition-transform", collapsed && "rotate-180")} />
-            </Button>
+            {/* Background decoration */}
+            <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-transparent" />
+            <div className={cn(
+              "absolute transition-all duration-300",
+              collapsed ? "right-0 top-0 w-12 h-12" : "right-0 top-0 w-24 h-24"
+            )}>
+              <div className="w-full h-full bg-gradient-to-br from-primary/10 to-purple-500/5 rounded-full blur-2xl" />
+            </div>
+            
+            <div className={cn(
+              "relative flex items-center gap-3 transition-all duration-300",
+              collapsed && "flex-col"
+            )}>
+              <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-gradient-to-br from-primary to-purple-600 shadow-lg shadow-primary/30 float">
+                <Zap className="h-5 w-5 text-white" />
+              </div>
+              {!collapsed && (
+                <div className="animate-in slide-in-from-left-2 duration-300">
+                  <h1 className="text-lg font-bold gradient-text">简易CRM</h1>
+                  <p className="text-xs text-muted-foreground">客户关系管理</p>
+                </div>
+              )}
+            </div>
           </div>
           
-          <nav className="flex-1 px-2 py-4 space-y-1">
+          {/* Navigation */}
+          <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto scrollbar-thin">
             {navigation.map((item) => (
               <NavItem
                 key={item.name}
@@ -138,18 +230,48 @@ export function Sidebar() {
                 label={item.name}
                 isActive={isActive(item.href)}
                 collapsed={collapsed}
+                gradient={item.gradient}
               />
             ))}
           </nav>
 
-          <div className="px-2 py-4 border-t">
+          {/* Footer */}
+          <div className="px-3 py-4 border-t/50">
             <NavItem
               href="/settings"
               icon={Settings}
-              label="设置"
+              label="系统设置"
               isActive={pathname === '/settings'}
               collapsed={collapsed}
+              gradient="from-gray-500 to-slate-500"
             />
+            
+            {/* Collapse Button */}
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setCollapsed(!collapsed)}
+              className={cn(
+                "w-full mt-2 justify-center gap-2 text-muted-foreground hover:text-foreground transition-all duration-300",
+                !collapsed && "justify-between px-3"
+              )}
+            >
+              {!collapsed && <span className="text-xs">收起侧边栏</span>}
+              <ChevronLeft className={cn(
+                "h-4 w-4 transition-transform duration-300 shrink-0",
+                collapsed && "rotate-180"
+              )} />
+            </Button>
+            
+            {/* Version info */}
+            {!collapsed && (
+              <div className="mt-4 px-3 text-xs text-muted-foreground/60 animate-in fade-in slide-in-from-bottom-2 duration-300">
+                <div className="flex items-center gap-2">
+                  <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+                  <span>v1.0.0</span>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </aside>

@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useCRM } from '@/lib/crm-context';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import {
   Table,
@@ -15,7 +15,8 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { Plus, Search, Mail, Phone, User } from 'lucide-react';
+import { Plus, Search, Mail, Phone, ChevronRight, Trash2, Contact2 } from 'lucide-react';
+import { cn } from '@/lib/utils';
 import {
   Dialog,
   DialogContent,
@@ -24,6 +25,30 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+
+function ContactAvatar({ firstName, lastName, className }: { firstName: string; lastName: string; className?: string }) {
+  const initials = `${lastName}${firstName}`.slice(0, 2).toUpperCase();
+  const gradients = [
+    'from-green-400 to-emerald-500',
+    'from-blue-400 to-cyan-500',
+    'from-purple-400 to-pink-500',
+    'from-orange-400 to-amber-500',
+    'from-rose-400 to-red-500',
+  ];
+  const gradient = gradients[initials.charCodeAt(0) % gradients.length];
+  
+  return (
+    <Avatar className={cn("ring-2 ring-offset-2 ring-primary/10", className)}>
+      <AvatarFallback className={cn(
+        "bg-gradient-to-br text-white font-semibold",
+        gradient
+      )}>
+        {initials}
+      </AvatarFallback>
+    </Avatar>
+  );
+}
 
 export default function ContactsPage() {
   const router = useRouter();
@@ -48,123 +73,216 @@ export default function ContactsPage() {
   };
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row gap-4 justify-between">
-        <div className="relative flex-1 max-w-sm">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input
-            placeholder="搜索联系人..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="pl-9"
-          />
+    <div className="space-y-8">
+      {/* Header */}
+      <div className="relative">
+        <div className="absolute inset-0 bg-gradient-to-r from-green-500/5 via-transparent to-emerald-500/5 rounded-3xl -z-10" />
+        <div className="flex flex-col sm:flex-row gap-4 justify-between">
+          <div>
+            <h1 className="text-3xl font-bold tracking-tight gradient-text">联系人</h1>
+            <p className="text-muted-foreground mt-1">
+              共 {filteredContacts.length} 个联系人
+            </p>
+          </div>
+          <Button 
+            onClick={() => router.push('/contacts/new')}
+            className="gap-2 bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 shadow-lg shadow-green-500/25 transition-all duration-300"
+          >
+            <Plus className="h-4 w-4" />
+            新建联系人
+          </Button>
         </div>
-        <Button onClick={() => router.push('/contacts/new')}>
-          <Plus className="h-4 w-4 mr-2" />
-          新建联系人
-        </Button>
       </div>
 
+      {/* Filters */}
+      <Card className="card-hover">
+        <CardContent className="p-4">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="搜索联系人姓名、邮箱或客户..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="pl-10 h-11 bg-background/50"
+            />
+          </div>
+        </CardContent>
+      </Card>
+
       {/* Desktop Table */}
-      <Card className="hidden md:block">
+      <Card className="hidden md:block card-hover">
         <CardContent className="p-0">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>姓名</TableHead>
-                <TableHead>职位</TableHead>
-                <TableHead>所属客户</TableHead>
-                <TableHead>邮箱</TableHead>
-                <TableHead>电话</TableHead>
-                <TableHead>主要联系人</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filteredContacts.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
-                    暂无联系人数据
-                  </TableCell>
+          {filteredContacts.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-16">
+              <div className="w-20 h-20 rounded-3xl bg-gradient-to-br from-green-500/10 to-emerald-500/10 flex items-center justify-center mb-4">
+                <Contact2 className="h-10 w-10 text-muted-foreground/50" />
+              </div>
+              <h3 className="text-lg font-semibold mb-1">暂无联系人</h3>
+              <p className="text-sm text-muted-foreground mb-4">开始添加你的第一个联系人</p>
+              <Button 
+                onClick={() => router.push('/contacts/new')}
+                className="gap-2 bg-gradient-to-r from-green-500 to-emerald-500"
+              >
+                <Plus className="h-4 w-4" />
+                新建联系人
+              </Button>
+            </div>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow className="bg-muted/30">
+                  <TableHead className="font-semibold">联系人</TableHead>
+                  <TableHead className="font-semibold">职位</TableHead>
+                  <TableHead className="font-semibold">所属客户</TableHead>
+                  <TableHead className="font-semibold">联系方式</TableHead>
+                  <TableHead className="font-semibold">主要联系人</TableHead>
+                  <TableHead className="w-10"></TableHead>
                 </TableRow>
-              ) : (
-                filteredContacts.map((contact) => (
+              </TableHeader>
+              <TableBody>
+                {filteredContacts.map((contact, index) => (
                   <TableRow 
                     key={contact.id}
-                    className="cursor-pointer"
+                    className={cn(
+                      "group cursor-pointer transition-all duration-200",
+                      "hover:bg-accent/50"
+                    )}
                     onClick={() => router.push(`/contacts/${contact.id}`)}
+                    style={{ animationDelay: `${index * 30}ms` }}
                   >
                     <TableCell>
                       <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
-                          <User className="h-4 w-4 text-primary" />
+                        <ContactAvatar 
+                          firstName={contact.firstName} 
+                          lastName={contact.lastName}
+                          className="w-9 h-9"
+                        />
+                        <span className="font-medium group-hover:text-primary transition-colors">
+                          {contact.lastName}{contact.firstName}
+                        </span>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <span className="text-muted-foreground">{contact.position || '-'}</span>
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant="secondary" className="font-normal">
+                        {contact.customerName}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      <div className="space-y-1">
+                        <div className="flex items-center gap-2 text-sm">
+                          <Mail className="h-3.5 w-3.5 text-muted-foreground" />
+                          <span className="text-muted-foreground">{contact.email || '-'}</span>
                         </div>
-                        <span className="font-medium">{contact.lastName}{contact.firstName}</span>
-                      </div>
-                    </TableCell>
-                    <TableCell>{contact.position}</TableCell>
-                    <TableCell>{contact.customerName}</TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-2">
-                        <Mail className="h-4 w-4 text-muted-foreground" />
-                        {contact.email}
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-2">
-                        <Phone className="h-4 w-4 text-muted-foreground" />
-                        {contact.phone}
+                        <div className="flex items-center gap-2 text-sm">
+                          <Phone className="h-3.5 w-3.5 text-muted-foreground" />
+                          <span className="text-muted-foreground">{contact.phone || '-'}</span>
+                        </div>
                       </div>
                     </TableCell>
                     <TableCell>
                       {contact.isPrimary && (
-                        <Badge variant="secondary">主要</Badge>
+                        <Badge className="bg-gradient-to-r from-green-500 to-emerald-500 text-white border-0">
+                          主要联系人
+                        </Badge>
                       )}
                     </TableCell>
+                    <TableCell>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="opacity-0 group-hover:opacity-100 transition-opacity h-8 w-8"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setDeleteId(contact.id);
+                        }}
+                      >
+                        <Trash2 className="h-4 w-4 text-destructive" />
+                      </Button>
+                    </TableCell>
                   </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
+                ))}
+              </TableBody>
+            </Table>
+          )}
         </CardContent>
       </Card>
 
       {/* Mobile Cards */}
       <div className="grid gap-4 md:hidden">
         {filteredContacts.length === 0 ? (
-          <Card>
-            <CardContent className="text-center py-8 text-muted-foreground">
-              暂无联系人数据
+          <Card className="card-hover">
+            <CardContent className="flex flex-col items-center justify-center py-12">
+              <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-green-500/10 to-emerald-500/10 flex items-center justify-center mb-4">
+                <Contact2 className="h-8 w-8 text-muted-foreground/50" />
+              </div>
+              <p className="text-sm text-muted-foreground mb-4">暂无联系人数据</p>
+              <Button 
+                onClick={() => router.push('/contacts/new')}
+                className="gap-2 bg-gradient-to-r from-green-500 to-emerald-500"
+              >
+                <Plus className="h-4 w-4" />
+                新建联系人
+              </Button>
             </CardContent>
           </Card>
         ) : (
-          filteredContacts.map((contact) => (
+          filteredContacts.map((contact, index) => (
             <Card 
               key={contact.id}
-              className="cursor-pointer hover:shadow-md transition-shadow"
+              className={cn(
+                "cursor-pointer card-hover",
+                "animate-in slide-in-from-bottom-2",
+              )}
+              style={{ animationDelay: `${index * 50}ms` }}
               onClick={() => router.push(`/contacts/${contact.id}`)}
             >
-              <CardHeader className="pb-2">
-                <div className="flex items-center justify-between">
-                  <CardTitle className="text-lg flex items-center gap-2">
-                    <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
-                      <User className="h-4 w-4 text-primary" />
+              <CardContent className="p-4">
+                <div className="flex items-start justify-between mb-3">
+                  <div className="flex items-center gap-3">
+                    <ContactAvatar 
+                      firstName={contact.firstName} 
+                      lastName={contact.lastName}
+                      className="w-12 h-12"
+                    />
+                    <div>
+                      <h3 className="font-semibold">{contact.lastName}{contact.firstName}</h3>
+                      <p className="text-sm text-muted-foreground">{contact.position || '未设置职位'}</p>
                     </div>
-                    {contact.lastName}{contact.firstName}
-                  </CardTitle>
+                  </div>
                   {contact.isPrimary && (
-                    <Badge variant="secondary">主要</Badge>
+                    <Badge className="bg-gradient-to-r from-green-500 to-emerald-500 text-white border-0">
+                      主要
+                    </Badge>
                   )}
                 </div>
-              </CardHeader>
-              <CardContent className="space-y-2">
-                <p className="text-sm text-muted-foreground">{contact.position} - {contact.customerName}</p>
-                <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                  <Mail className="h-4 w-4" />
-                  {contact.email}
+                
+                <div className="space-y-2 text-sm">
+                  <Badge variant="secondary" className="font-normal mr-2">
+                    {contact.customerName}
+                  </Badge>
                 </div>
-                <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                  <Phone className="h-4 w-4" />
-                  {contact.phone}
+                
+                <div className="flex items-center gap-4 mt-3 text-sm text-muted-foreground">
+                  {contact.email && (
+                    <div className="flex items-center gap-1.5">
+                      <Mail className="h-3.5 w-3.5" />
+                      <span className="truncate max-w-[140px]">{contact.email}</span>
+                    </div>
+                  )}
+                  {contact.phone && (
+                    <div className="flex items-center gap-1.5">
+                      <Phone className="h-3.5 w-3.5" />
+                      <span>{contact.phone}</span>
+                    </div>
+                  )}
+                </div>
+                
+                <div className="flex items-center justify-between mt-3 pt-3 border-t">
+                  <span className="text-xs text-muted-foreground">查看详情</span>
+                  <ChevronRight className="h-4 w-4 text-muted-foreground" />
                 </div>
               </CardContent>
             </Card>
@@ -174,19 +292,28 @@ export default function ContactsPage() {
 
       {/* Delete Confirmation Dialog */}
       <Dialog open={!!deleteId} onOpenChange={() => setDeleteId(null)}>
-        <DialogContent>
+        <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>确认删除</DialogTitle>
+            <DialogTitle className="flex items-center gap-2">
+              <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-destructive/10">
+                <Trash2 className="h-5 w-5 text-destructive" />
+              </div>
+              确认删除联系人
+            </DialogTitle>
             <DialogDescription>
               确定要删除这个联系人吗？此操作不可撤销。
             </DialogDescription>
           </DialogHeader>
-          <DialogFooter>
+          <DialogFooter className="gap-2">
             <Button variant="outline" onClick={() => setDeleteId(null)}>
               取消
             </Button>
-            <Button variant="destructive" onClick={handleDelete}>
-              删除
+            <Button 
+              variant="destructive" 
+              onClick={handleDelete}
+              className="bg-gradient-to-r from-red-500 to-rose-500 hover:from-red-600 hover:to-rose-600"
+            >
+              确认删除
             </Button>
           </DialogFooter>
         </DialogContent>

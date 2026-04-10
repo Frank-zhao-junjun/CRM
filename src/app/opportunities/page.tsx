@@ -22,7 +22,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Plus, Search, DollarSign, Building2, Calendar } from 'lucide-react';
+import { Plus, Search, DollarSign, Building2, Calendar, Briefcase, ChevronRight, Trash2, TrendingUp } from 'lucide-react';
 import { OpportunityStage } from '@/lib/crm-types';
 import { cn } from '@/lib/utils';
 import {
@@ -35,15 +35,60 @@ import {
 } from '@/components/ui/dialog';
 import { format } from 'date-fns';
 import { zhCN } from 'date-fns/locale';
+import { Progress } from '@/components/ui/progress';
 
-const stageLabels: Record<OpportunityStage, { label: string; className: string }> = {
-  lead: { label: '线索', className: 'bg-gray-500/10 text-gray-500 border-gray-500/20' },
-  qualified: { label: 'qualified', className: 'bg-blue-500/10 text-blue-500 border-blue-500/20' },
-  proposal: { label: '提案', className: 'bg-purple-500/10 text-purple-500 border-purple-500/20' },
-  negotiation: { label: '谈判', className: 'bg-orange-500/10 text-orange-500 border-orange-500/20' },
-  closed_won: { label: '成交', className: 'bg-green-500/10 text-green-500 border-green-500/20' },
-  closed_lost: { label: '失败', className: 'bg-red-500/10 text-red-500 border-red-500/20' },
+const stageConfig: Record<OpportunityStage, { label: string; className: string; gradient: string; color: string }> = {
+  lead: { 
+    label: '线索', 
+    className: 'bg-gray-500/10 text-gray-600 dark:text-gray-400 border-gray-500/20',
+    gradient: 'from-gray-400 to-slate-500',
+    color: 'text-gray-600 dark:text-gray-400'
+  },
+  qualified: { 
+    label: '已Qualified', 
+    className: 'bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20',
+    gradient: 'from-blue-400 to-cyan-500',
+    color: 'text-blue-600 dark:text-blue-400'
+  },
+  proposal: { 
+    label: '提案', 
+    className: 'bg-purple-500/10 text-purple-600 dark:text-purple-400 border-purple-500/20',
+    gradient: 'from-purple-400 to-pink-500',
+    color: 'text-purple-600 dark:text-purple-400'
+  },
+  negotiation: { 
+    label: '谈判', 
+    className: 'bg-orange-500/10 text-orange-600 dark:text-orange-400 border-orange-500/20',
+    gradient: 'from-orange-400 to-amber-500',
+    color: 'text-orange-600 dark:text-orange-400'
+  },
+  closed_won: { 
+    label: '已成交', 
+    className: 'bg-green-500/10 text-green-600 dark:text-green-400 border-green-500/20',
+    gradient: 'from-green-400 to-emerald-500',
+    color: 'text-green-600 dark:text-green-400'
+  },
+  closed_lost: { 
+    label: '已失败', 
+    className: 'bg-red-500/10 text-red-600 dark:text-red-400 border-red-500/20',
+    gradient: 'from-red-400 to-rose-500',
+    color: 'text-red-600 dark:text-red-400'
+  },
 };
+
+function StageIcon({ stage, className }: { stage: OpportunityStage; className?: string }) {
+  const config = stageConfig[stage];
+  return (
+    <div className={cn(
+      "w-10 h-10 rounded-xl flex items-center justify-center",
+      "bg-gradient-to-br shadow-lg",
+      config.gradient,
+      className
+    )}>
+      <Briefcase className="h-5 w-5 text-white" />
+    </div>
+  );
+}
 
 export default function OpportunitiesPage() {
   const router = useRouter();
@@ -68,160 +113,300 @@ export default function OpportunitiesPage() {
   };
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row gap-4 justify-between">
-        <div className="flex flex-col sm:flex-row gap-2 flex-1">
-          <div className="relative flex-1 max-w-sm">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="搜索机会..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="pl-9"
-            />
+    <div className="space-y-8">
+      {/* Header */}
+      <div className="relative">
+        <div className="absolute inset-0 bg-gradient-to-r from-orange-500/5 via-transparent to-amber-500/5 rounded-3xl -z-10" />
+        <div className="flex flex-col sm:flex-row gap-4 justify-between">
+          <div>
+            <h1 className="text-3xl font-bold tracking-tight gradient-text">销售机会</h1>
+            <p className="text-muted-foreground mt-1">
+              共 {filteredOpportunities.length} 个机会，总价值 ¥{filteredOpportunities.reduce((sum, o) => sum + o.value, 0).toLocaleString()}
+            </p>
           </div>
-          <Select value={stageFilter} onValueChange={setStageFilter}>
-            <SelectTrigger className="w-[160px]">
-              <SelectValue placeholder="筛选阶段" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">全部阶段</SelectItem>
-              <SelectItem value="lead">线索</SelectItem>
-              <SelectItem value="qualified">qualified</SelectItem>
-              <SelectItem value="proposal">提案</SelectItem>
-              <SelectItem value="negotiation">谈判</SelectItem>
-              <SelectItem value="closed_won">成交</SelectItem>
-              <SelectItem value="closed_lost">失败</SelectItem>
-            </SelectContent>
-          </Select>
+          <Button 
+            onClick={() => router.push('/opportunities/new')}
+            className="gap-2 bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 shadow-lg shadow-orange-500/25 transition-all duration-300"
+          >
+            <Plus className="h-4 w-4" />
+            新建机会
+          </Button>
         </div>
-        <Button onClick={() => router.push('/opportunities/new')}>
-          <Plus className="h-4 w-4 mr-2" />
-          新建机会
-        </Button>
       </div>
 
+      {/* Filters */}
+      <Card className="card-hover">
+        <CardContent className="p-4">
+          <div className="flex flex-col sm:flex-row gap-4">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="搜索机会名称或客户..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="pl-10 h-11 bg-background/50"
+              />
+            </div>
+            <Select value={stageFilter} onValueChange={setStageFilter}>
+              <SelectTrigger className="w-full sm:w-[180px] h-11">
+                <SelectValue placeholder="筛选阶段" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">全部阶段</SelectItem>
+                <SelectItem value="lead">线索</SelectItem>
+                <SelectItem value="qualified">已Qualified</SelectItem>
+                <SelectItem value="proposal">提案</SelectItem>
+                <SelectItem value="negotiation">谈判</SelectItem>
+                <SelectItem value="closed_won">已成交</SelectItem>
+                <SelectItem value="closed_lost">已失败</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </CardContent>
+      </Card>
+
       {/* Desktop Table */}
-      <Card className="hidden md:block">
+      <Card className="hidden md:block card-hover">
         <CardContent className="p-0">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>机会名称</TableHead>
-                <TableHead>客户</TableHead>
-                <TableHead>金额</TableHead>
-                <TableHead>阶段</TableHead>
-                <TableHead>概率</TableHead>
-                <TableHead>预计成交</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filteredOpportunities.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
-                    暂无销售机会数据
-                  </TableCell>
+          {filteredOpportunities.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-16">
+              <div className="w-20 h-20 rounded-3xl bg-gradient-to-br from-orange-500/10 to-amber-500/10 flex items-center justify-center mb-4">
+                <Briefcase className="h-10 w-10 text-muted-foreground/50" />
+              </div>
+              <h3 className="text-lg font-semibold mb-1">暂无销售机会</h3>
+              <p className="text-sm text-muted-foreground mb-4">开始创建你的第一个销售机会</p>
+              <Button 
+                onClick={() => router.push('/opportunities/new')}
+                className="gap-2 bg-gradient-to-r from-orange-500 to-amber-500"
+              >
+                <Plus className="h-4 w-4" />
+                新建机会
+              </Button>
+            </div>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow className="bg-muted/30">
+                  <TableHead className="font-semibold">机会</TableHead>
+                  <TableHead className="font-semibold">客户</TableHead>
+                  <TableHead className="font-semibold">金额</TableHead>
+                  <TableHead className="font-semibold">阶段</TableHead>
+                  <TableHead className="font-semibold w-[200px]">概率</TableHead>
+                  <TableHead className="font-semibold">预计成交</TableHead>
+                  <TableHead className="w-10"></TableHead>
                 </TableRow>
-              ) : (
-                filteredOpportunities.map((opp) => (
-                  <TableRow 
-                    key={opp.id}
-                    className="cursor-pointer"
-                    onClick={() => router.push(`/opportunities/${opp.id}`)}
-                  >
-                    <TableCell className="font-medium">{opp.title}</TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-2">
-                        <Building2 className="h-4 w-4 text-muted-foreground" />
-                        {opp.customerName}
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-2">
-                        <DollarSign className="h-4 w-4 text-muted-foreground" />
-                        ¥{opp.value.toLocaleString()}
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant="outline" className={cn(stageLabels[opp.stage].className)}>
-                        {stageLabels[opp.stage].label}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>{opp.probability}%</TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-2">
-                        <Calendar className="h-4 w-4 text-muted-foreground" />
-                        {format(new Date(opp.expectedCloseDate), 'yyyy/MM/dd', { locale: zhCN })}
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
+              </TableHeader>
+              <TableBody>
+                {filteredOpportunities.map((opp, index) => {
+                  const stage = stageConfig[opp.stage];
+                  return (
+                    <TableRow 
+                      key={opp.id}
+                      className={cn(
+                        "group cursor-pointer transition-all duration-200",
+                        "hover:bg-accent/50"
+                      )}
+                      onClick={() => router.push(`/opportunities/${opp.id}`)}
+                      style={{ animationDelay: `${index * 30}ms` }}
+                    >
+                      <TableCell>
+                        <div className="flex items-center gap-3">
+                          <StageIcon stage={opp.stage} />
+                          <span className="font-medium group-hover:text-primary transition-colors">
+                            {opp.title}
+                          </span>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-2 text-muted-foreground">
+                          <Building2 className="h-4 w-4" />
+                          {opp.customerName}
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-1.5">
+                          <DollarSign className="h-4 w-4 text-orange-500" />
+                          <span className="font-semibold bg-gradient-to-r from-orange-500 to-amber-500 bg-clip-text text-transparent">
+                            ¥{opp.value.toLocaleString()}
+                          </span>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant="outline" className={cn(stage.className)}>
+                          <span className={cn(
+                            "w-1.5 h-1.5 rounded-full mr-1.5",
+                            "bg-gradient-to-r",
+                            stage.gradient
+                          )} />
+                          {stage.label}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <div className="space-y-1.5">
+                          <div className="flex items-center justify-between text-sm">
+                            <span className={cn("font-medium", stage.color)}>{opp.probability}%</span>
+                          </div>
+                          <Progress 
+                            value={opp.probability} 
+                            className={cn(
+                              "h-2",
+                              "[&>div]:bg-gradient-to-r",
+                              opp.stage === 'closed_won' ? "[&>div]:from-green-400 [&>div]:to-emerald-500" :
+                              opp.stage === 'closed_lost' ? "[&>div]:from-red-400 [&>div]:to-rose-500" :
+                              "[&>div]:from-orange-400 [&>div]:to-amber-500"
+                            )}
+                          />
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-2 text-muted-foreground text-sm">
+                          <Calendar className="h-3.5 w-3.5" />
+                          {opp.expectedCloseDate ? (
+                            format(new Date(opp.expectedCloseDate), 'yyyy/MM/dd', { locale: zhCN })
+                          ) : '-'}
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="opacity-0 group-hover:opacity-100 transition-opacity h-8 w-8"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setDeleteId(opp.id);
+                          }}
+                        >
+                          <Trash2 className="h-4 w-4 text-destructive" />
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
+              </TableBody>
+            </Table>
+          )}
         </CardContent>
       </Card>
 
       {/* Mobile Cards */}
       <div className="grid gap-4 md:hidden">
         {filteredOpportunities.length === 0 ? (
-          <Card>
-            <CardContent className="text-center py-8 text-muted-foreground">
-              暂无销售机会数据
+          <Card className="card-hover">
+            <CardContent className="flex flex-col items-center justify-center py-12">
+              <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-orange-500/10 to-amber-500/10 flex items-center justify-center mb-4">
+                <Briefcase className="h-8 w-8 text-muted-foreground/50" />
+              </div>
+              <p className="text-sm text-muted-foreground mb-4">暂无销售机会数据</p>
+              <Button 
+                onClick={() => router.push('/opportunities/new')}
+                className="gap-2 bg-gradient-to-r from-orange-500 to-amber-500"
+              >
+                <Plus className="h-4 w-4" />
+                新建机会
+              </Button>
             </CardContent>
           </Card>
         ) : (
-          filteredOpportunities.map((opp) => (
-            <Card 
-              key={opp.id}
-              className="cursor-pointer hover:shadow-md transition-shadow"
-              onClick={() => router.push(`/opportunities/${opp.id}`)}
-            >
-              <CardContent className="pt-6">
-                <div className="flex items-start justify-between mb-3">
-                  <div className="flex-1 min-w-0">
-                    <p className="font-medium truncate">{opp.title}</p>
-                    <p className="text-sm text-muted-foreground flex items-center gap-1">
-                      <Building2 className="h-3 w-3" />
-                      {opp.customerName}
-                    </p>
+          filteredOpportunities.map((opp, index) => {
+            const stage = stageConfig[opp.stage];
+            return (
+              <Card 
+                key={opp.id}
+                className={cn(
+                  "cursor-pointer card-hover",
+                  "animate-in slide-in-from-bottom-2",
+                )}
+                style={{ animationDelay: `${index * 50}ms` }}
+                onClick={() => router.push(`/opportunities/${opp.id}`)}
+              >
+                <CardContent className="p-4">
+                  <div className="flex items-start justify-between mb-4">
+                    <div className="flex items-center gap-3">
+                      <StageIcon stage={opp.stage} className="w-12 h-12" />
+                      <div>
+                        <h3 className="font-semibold">{opp.title}</h3>
+                        <p className="text-sm text-muted-foreground flex items-center gap-1">
+                          <Building2 className="h-3 w-3" />
+                          {opp.customerName}
+                        </p>
+                      </div>
+                    </div>
+                    <Badge variant="outline" className={cn(stage.className)}>
+                      {stage.label}
+                    </Badge>
                   </div>
-                  <Badge variant="outline" className={cn(stageLabels[opp.stage].className)}>
-                    {stageLabels[opp.stage].label}
-                  </Badge>
-                </div>
-                <div className="flex items-center justify-between text-sm">
-                  <div className="flex items-center gap-1 text-muted-foreground">
-                    <DollarSign className="h-4 w-4" />
-                    ¥{opp.value.toLocaleString()}
+                  
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between text-sm">
+                      <div className="flex items-center gap-1.5 text-muted-foreground">
+                        <DollarSign className="h-4 w-4" />
+                        <span className="font-semibold text-foreground">¥{opp.value.toLocaleString()}</span>
+                      </div>
+                      <div className="flex items-center gap-1.5 text-muted-foreground">
+                        <Calendar className="h-3.5 w-3.5" />
+                        <span className="text-sm">
+                          {opp.expectedCloseDate ? (
+                            format(new Date(opp.expectedCloseDate), 'MM/dd', { locale: zhCN })
+                          ) : '未设置'}
+                        </span>
+                      </div>
+                    </div>
+                    
+                    <div className="space-y-1.5">
+                      <div className="flex items-center justify-between text-xs">
+                        <span className={cn("font-medium", stage.color)}>成交概率 {opp.probability}%</span>
+                      </div>
+                      <Progress 
+                        value={opp.probability} 
+                        className={cn(
+                          "h-2",
+                          "[&>div]:bg-gradient-to-r",
+                          opp.stage === 'closed_won' ? "[&>div]:from-green-400 [&>div]:to-emerald-500" :
+                          opp.stage === 'closed_lost' ? "[&>div]:from-red-400 [&>div]:to-rose-500" :
+                          "[&>div]:from-orange-400 [&>div]:to-amber-500"
+                        )}
+                      />
+                    </div>
                   </div>
-                  <div className="flex items-center gap-1 text-muted-foreground">
-                    <Calendar className="h-4 w-4" />
-                    {format(new Date(opp.expectedCloseDate), 'MM/dd', { locale: zhCN })}
+                  
+                  <div className="flex items-center justify-between mt-3 pt-3 border-t">
+                    <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                      <TrendingUp className="h-3 w-3" />
+                      <span>预计成交</span>
+                    </div>
+                    <ChevronRight className="h-4 w-4 text-muted-foreground" />
                   </div>
-                  <span>{opp.probability}%</span>
-                </div>
-              </CardContent>
-            </Card>
-          ))
+                </CardContent>
+              </Card>
+            );
+          })
         )}
       </div>
 
       {/* Delete Confirmation Dialog */}
       <Dialog open={!!deleteId} onOpenChange={() => setDeleteId(null)}>
-        <DialogContent>
+        <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>确认删除</DialogTitle>
+            <DialogTitle className="flex items-center gap-2">
+              <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-destructive/10">
+                <Trash2 className="h-5 w-5 text-destructive" />
+              </div>
+              确认删除销售机会
+            </DialogTitle>
             <DialogDescription>
               确定要删除这个销售机会吗？此操作不可撤销。
             </DialogDescription>
           </DialogHeader>
-          <DialogFooter>
+          <DialogFooter className="gap-2">
             <Button variant="outline" onClick={() => setDeleteId(null)}>
               取消
             </Button>
-            <Button variant="destructive" onClick={handleDelete}>
-              删除
+            <Button 
+              variant="destructive" 
+              onClick={handleDelete}
+              className="bg-gradient-to-r from-red-500 to-rose-500 hover:from-red-600 hover:to-rose-600"
+            >
+              确认删除
             </Button>
           </DialogFooter>
         </DialogContent>

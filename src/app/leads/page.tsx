@@ -39,6 +39,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Plus, Search, Building2, DollarSign, Lightbulb, MoreVertical, ArrowRightLeft, XCircle, Trash2, Sparkles, Clock } from 'lucide-react';
 import { LEAD_STATUS_CONFIG, LEAD_SOURCE_CONFIG } from '@/lib/crm-types';
+import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 import { QuickFollowUp } from '@/components/crm/quick-follow-up';
 
@@ -253,11 +254,16 @@ export default function LeadsPage() {
                   </TableCell>
                 </TableRow>
               ) : (
-                filteredLeads.map((lead) => (
+                filteredLeads.map((lead) => {
+                  const isQualified = lead.status === 'qualified';
+                  return (
                   <TableRow 
                     key={lead.id} 
-                    className="group cursor-pointer"
-                    onClick={() => router.push(`/leads/${lead.id}`)}
+                    className={cn(
+                      "group",
+                      isQualified ? "cursor-default bg-muted/30" : "cursor-pointer"
+                    )}
+                    onClick={() => !isQualified && router.push(`/leads/${lead.id}`)}
                   >
                     <TableCell>
                       <div className="flex items-center gap-3">
@@ -291,9 +297,16 @@ export default function LeadsPage() {
                       </div>
                     </TableCell>
                     <TableCell>
-                      <Badge className={statusConfig[lead.status]?.className}>
-                        {statusConfig[lead.status]?.label}
-                      </Badge>
+                      <div className="flex items-center gap-1.5">
+                        <Badge className={statusConfig[lead.status]?.className}>
+                          {statusConfig[lead.status]?.label}
+                        </Badge>
+                        {isQualified && (
+                          <Badge variant="outline" className="text-xs text-cyan-600 border-cyan-300">
+                            已转化
+                          </Badge>
+                        )}
+                      </div>
                     </TableCell>
                     <TableCell className="text-muted-foreground text-sm">
                       {format(new Date(lead.createdAt), 'yyyy-MM-dd')}
@@ -306,34 +319,43 @@ export default function LeadsPage() {
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
-                          <DropdownMenuItem onClick={() => setQuickFollowUp({ open: true, entityId: lead.id, entityName: lead.title })} className="gap-2">
-                            <Clock className="h-4 w-4" />
-                            快捷跟进
-                          </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => openQualifyDialog(lead)} className="gap-2">
-                            <ArrowRightLeft className="h-4 w-4" />
-                            转为机会
-                          </DropdownMenuItem>
-                          <DropdownMenuItem 
-                            onClick={() => handleDisqualify(lead.id)} 
-                            className="gap-2 text-yellow-600"
-                          >
-                            <XCircle className="h-4 w-4" />
-                            标记放弃
-                          </DropdownMenuItem>
-                          <DropdownMenuSeparator />
-                          <DropdownMenuItem 
-                            onClick={() => setDeleteId(lead.id)} 
-                            className="gap-2 text-red-600"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                            删除
-                          </DropdownMenuItem>
+                          {lead.status === 'qualified' ? (
+                            <DropdownMenuItem disabled className="gap-2 text-muted-foreground cursor-not-allowed">
+                              <Sparkles className="h-4 w-4" />
+                              已转为销售机会
+                            </DropdownMenuItem>
+                          ) : (
+                            <>
+                              <DropdownMenuItem onClick={() => setQuickFollowUp({ open: true, entityId: lead.id, entityName: lead.title })} className="gap-2">
+                                <Clock className="h-4 w-4" />
+                                快捷跟进
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => openQualifyDialog(lead)} className="gap-2">
+                                <ArrowRightLeft className="h-4 w-4" />
+                                转为机会
+                              </DropdownMenuItem>
+                              <DropdownMenuItem 
+                                onClick={() => handleDisqualify(lead.id)} 
+                                className="gap-2 text-yellow-600"
+                              >
+                                <XCircle className="h-4 w-4" />
+                                标记放弃
+                              </DropdownMenuItem>
+                              <DropdownMenuSeparator />
+                              <DropdownMenuItem 
+                                onClick={() => setDeleteId(lead.id)} 
+                                className="gap-2 text-red-600"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                                删除
+                              </DropdownMenuItem>
+                            </>
+                          )}
                         </DropdownMenuContent>
                       </DropdownMenu>
                     </TableCell>
                   </TableRow>
-                ))
+                )})
               )}
             </TableBody>
           </Table>

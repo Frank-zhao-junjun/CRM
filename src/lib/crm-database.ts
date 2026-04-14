@@ -780,7 +780,6 @@ export async function convertQuoteToOrder(quoteId: string): Promise<Order> {
 
   const order = await createOrder(
     {
-      order_number: orderNumber,
       quote_id: quoteId,
       opportunity_id: quoteData.opportunity_id,
       customer_id: opp.customer_id,

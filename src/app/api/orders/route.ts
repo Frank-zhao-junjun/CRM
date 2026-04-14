@@ -40,7 +40,7 @@ export async function POST(request: NextRequest) {
         
         const order = await db.createOrder(
           {
-            order_number: orderNumber,
+            
             quote_id: data.quoteId || null,
             opportunity_id: data.opportunityId,
             customer_id: data.customerId,

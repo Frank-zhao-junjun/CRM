@@ -2,7 +2,6 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import * as db from '@/lib/crm-database';
-
 export async function GET(request: NextRequest) {
   try {
     const searchParams = request.nextUrl.searchParams;
@@ -93,16 +92,38 @@ export async function POST(request: NextRequest) {
       case 'send': {
         // Change status from draft to active
         const quote = await db.updateQuote(bodyId || data?.id, { status: 'active' });
+        // 触发工作流: 报价单状态变更
+        db.executeWorkflowEngine({
+          triggerType: 'quote_status_changed',
+          entityType: 'quote',
+          entityId: quote.id,
+          entityName: quote.title,
+          data: { newStatus: 'active' },
+        }).catch(() => {});
         return NextResponse.json(quote);
       }
 
       case 'accept': {
         const quote = await db.updateQuote(bodyId || data?.id, { status: 'accepted' });
+        db.executeWorkflowEngine({
+          triggerType: 'quote_status_changed',
+          entityType: 'quote',
+          entityId: quote.id,
+          entityName: quote.title,
+          data: { newStatus: 'accepted' },
+        }).catch(() => {});
         return NextResponse.json(quote);
       }
 
       case 'reject': {
         const quote = await db.updateQuote(bodyId || data?.id, { status: 'rejected' });
+        db.executeWorkflowEngine({
+          triggerType: 'quote_status_changed',
+          entityType: 'quote',
+          entityId: quote.id,
+          entityName: quote.title,
+          data: { newStatus: 'rejected' },
+        }).catch(() => {});
         return NextResponse.json(quote);
       }
 

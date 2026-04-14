@@ -189,6 +189,13 @@ export async function POST(request: NextRequest) {
           description: `创建销售线索 "${lead.title}"，预估金额 ¥${Number(lead.estimated_value).toLocaleString()}`,
           timestamp: new Date(),
         });
+        // 触发工作流: 线索创建
+        db.executeWorkflowEngine({
+          triggerType: 'lead_created',
+          entityType: 'lead',
+          entityId: lead.id,
+          entityName: lead.title,
+        }).catch(() => { /* 静默处理工作流错误 */ });
         return NextResponse.json(lead);
       }
       
@@ -291,6 +298,13 @@ export async function POST(request: NextRequest) {
           description: `创建商机 "${opportunity.title}"，金额 ¥${Number(opportunity.value).toLocaleString()}`,
           timestamp: new Date(),
         });
+        // 触发工作流: 商机创建
+        db.executeWorkflowEngine({
+          triggerType: 'opportunity_created',
+          entityType: 'opportunity',
+          entityId: opportunity.id,
+          entityName: opportunity.title,
+        }).catch(() => { /* 静默处理工作流错误 */ });
         return NextResponse.json(opportunity);
       }
       
@@ -581,6 +595,15 @@ export async function PUT(request: NextRequest) {
             is_read: false,
           });
         }
+
+        // 触发工作流: 商机阶段变更
+        db.executeWorkflowEngine({
+          triggerType: 'opportunity_stage_changed',
+          entityType: 'opportunity',
+          entityId: updated.id,
+          entityName: updated.title,
+          data: { oldStage: opportunity.stage, newStage: data.stage },
+        }).catch(() => { /* 静默处理工作流错误 */ });
         
         return NextResponse.json(updated);
       }

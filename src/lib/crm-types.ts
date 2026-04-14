@@ -301,6 +301,113 @@ export interface TodayTodo {
   overdueFollowUps: FollowUp[];
 }
 
+// ============ 工作流自动化 ============
+export type WorkflowTriggerType = 
+  | 'lead_created' 
+  | 'lead_status_changed' 
+  | 'opportunity_created' 
+  | 'opportunity_stage_changed' 
+  | 'quote_status_changed' 
+  | 'follow_up_overdue' 
+  | 'opportunity_overdue';
+
+export type WorkflowActionType = 'create_task' | 'send_notification' | 'update_field';
+
+export interface WorkflowCondition {
+  field: string;
+  operator: 'equals' | 'not_equals' | 'contains' | 'in';
+  value: string | string[];
+}
+
+export interface WorkflowAction {
+  type: WorkflowActionType;
+  config: Record<string, unknown>;
+}
+
+export interface Workflow {
+  id: string;
+  name: string;
+  description?: string;
+  triggerType: WorkflowTriggerType;
+  triggerEntity: string;
+  conditions: WorkflowCondition[];
+  actions: WorkflowAction[];
+  isActive: boolean;
+  isTemplate: boolean;
+  runCount: number;
+  lastRunAt?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface WorkflowLog {
+  id: string;
+  workflowId: string;
+  workflowName: string;
+  triggerType: string;
+  triggerEntity?: string;
+  triggerEntityId?: string;
+  actionTaken: string;
+  actionDetail?: string;
+  result: 'success' | 'failed';
+  createdAt: string;
+}
+
+// 工作流触发器配置
+export const WORKFLOW_TRIGGER_CONFIG: Record<WorkflowTriggerType, { label: string; description: string; entity: string }> = {
+  lead_created: { label: '线索创建', description: '当新的销售线索被创建时', entity: 'lead' },
+  lead_status_changed: { label: '线索状态变更', description: '当线索状态发生变化时', entity: 'lead' },
+  opportunity_created: { label: '商机创建', description: '当新的商机被创建时', entity: 'opportunity' },
+  opportunity_stage_changed: { label: '商机阶段变更', description: '当商机阶段发生变化时', entity: 'opportunity' },
+  quote_status_changed: { label: '报价单状态变更', description: '当报价单状态发生变化时', entity: 'quote' },
+  follow_up_overdue: { label: '跟进逾期', description: '当跟进计划逾期未完成时', entity: 'follow_up' },
+  opportunity_overdue: { label: '商机逾期', description: '当商机超过预计成交日期时', entity: 'opportunity' },
+};
+
+// 工作流动作配置
+export const WORKFLOW_ACTION_CONFIG: Record<WorkflowActionType, { label: string; description: string }> = {
+  create_task: { label: '创建任务', description: '自动创建一条待办任务' },
+  send_notification: { label: '发送通知', description: '自动发送一条系统通知' },
+  update_field: { label: '更新字段', description: '自动更新实体字段值' },
+};
+
+// ============ 任务管理 ============
+export type TaskPriority = 'low' | 'medium' | 'high' | 'urgent';
+export type TaskStatus = 'pending' | 'in_progress' | 'completed' | 'cancelled';
+export type TaskSource = 'manual' | 'workflow';
+
+export interface CRMTask {
+  id: string;
+  title: string;
+  description?: string;
+  entityType?: 'lead' | 'opportunity' | 'customer' | 'quote';
+  entityId?: string;
+  entityName?: string;
+  priority: TaskPriority;
+  status: TaskStatus;
+  dueDate?: string;
+  source: TaskSource;
+  workflowId?: string;
+  assignedTo: string;
+  completedAt?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export const TASK_PRIORITY_CONFIG: Record<TaskPriority, { label: string; className: string; color: string; icon: string }> = {
+  low: { label: '低', className: 'bg-slate-500/10 text-slate-600 dark:text-slate-400 border-slate-500/20', color: 'text-slate-600 dark:text-slate-400', icon: '↓' },
+  medium: { label: '中', className: 'bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20', color: 'text-blue-600 dark:text-blue-400', icon: '→' },
+  high: { label: '高', className: 'bg-orange-500/10 text-orange-600 dark:text-orange-400 border-orange-500/20', color: 'text-orange-600 dark:text-orange-400', icon: '↑' },
+  urgent: { label: '紧急', className: 'bg-red-500/10 text-red-600 dark:text-red-400 border-red-500/20', color: 'text-red-600 dark:text-red-400', icon: '!!' },
+};
+
+export const TASK_STATUS_CONFIG: Record<TaskStatus, { label: string; className: string; color: string }> = {
+  pending: { label: '待处理', className: 'bg-gray-500/10 text-gray-600 dark:text-gray-400 border-gray-500/20', color: 'text-gray-600 dark:text-gray-400' },
+  in_progress: { label: '进行中', className: 'bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20', color: 'text-blue-600 dark:text-blue-400' },
+  completed: { label: '已完成', className: 'bg-green-500/10 text-green-600 dark:text-green-400 border-green-500/20', color: 'text-green-600 dark:text-green-400' },
+  cancelled: { label: '已取消', className: 'bg-stone-500/10 text-stone-600 dark:text-stone-400 border-stone-500/20', color: 'text-stone-600 dark:text-stone-400' },
+};
+
 // ============ 统计数据 ============
 export interface DashboardStats {
   totalCustomers: number;

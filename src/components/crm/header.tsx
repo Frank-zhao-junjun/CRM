@@ -18,6 +18,8 @@ const pageTitles: Record<string, string> = {
   '/orders/new': '新建订单',
   '/contacts': '联系人',
   '/contacts/new': '新建联系人',
+  '/tasks': '任务管理',
+  '/workflows': '工作流自动化',
   '/settings': '系统设置',
   '/leads': '销售线索',
   '/leads/new': '新建线索',

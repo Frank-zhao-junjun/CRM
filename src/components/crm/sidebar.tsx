@@ -54,6 +54,12 @@ const navigation = [
     gradient: 'from-indigo-500 to-blue-500',
   },
   { 
+    name: '订单', 
+    href: '/orders', 
+    icon: Package,
+    gradient: 'from-emerald-500 to-green-500',
+  },
+  { 
     name: '联系人', 
     href: '/contacts', 
     icon: Contact2,

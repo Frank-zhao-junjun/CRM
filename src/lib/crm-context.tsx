@@ -1,13 +1,14 @@
 'use client';
 
 import { createContext, useContext, useState, useCallback, useEffect, ReactNode } from 'react';
-import { Customer, Contact, SalesOpportunity, DashboardStats, Activity, CustomerStatus, OpportunityStage, SalesLead, LeadStatusType, LeadSourceType } from './crm-types';
+import { Customer, Contact, SalesOpportunity, DashboardStats, Activity, OpportunityStage, SalesLead, Product } from './crm-types';
 
 interface CRMContextType {
   customers: Customer[];
   contacts: Contact[];
   opportunities: SalesOpportunity[];
   leads: SalesLead[];  // 销售线索
+  products: Product[]; // 产品管理
   activities: Activity[];
   stats: DashboardStats;
   loading: boolean;
@@ -37,6 +38,12 @@ interface CRMContextType {
     notes?: string;
   }) => Promise<void>;
   disqualifyLead: (leadId: string, reason?: string) => Promise<void>;
+  
+  // Product operations (产品管理)
+  createProduct: (product: Omit<Product, 'id' | 'createdAt' | 'updatedAt'>) => Promise<void>;
+  updateProduct: (id: string, product: Partial<Product>) => Promise<void>;
+  deleteProduct: (id: string) => Promise<void>;
+  toggleProductActive: (id: string) => Promise<void>;
   
   // Opportunity operations (商机)
   addOpportunity: (opportunity: Omit<SalesOpportunity, 'id' | 'createdAt' | 'updatedAt'>) => Promise<void>;
@@ -99,230 +106,365 @@ async function apiDelete(action: string, id: string): Promise<void> {
   }
 }
 
-// Database to frontend type converters
-interface DBCustomer {
-  id: string;
-  name: string;
-  email: string | null;
-  phone: string | null;
-  company: string;
-  status: string;
-  industry: string | null;
-  website: string | null;
-  address: string | null;
-  notes: string | null;
-  created_at: string;
-  updated_at: string;
-}
+// Initial sample data
+const generateId = () => Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
 
-interface DBContact {
-  id: string;
-  first_name: string;
-  last_name: string;
-  email: string | null;
-  phone: string | null;
-  position: string | null;
-  customer_id: string;
-  customer_name?: string;
-  is_primary: boolean;
-  created_at: string;
-  updated_at: string;
-}
+const INITIAL_CUSTOMERS: Customer[] = [
+  {
+    id: 'cust_1',
+    name: '北京科技有限公司',
+    email: 'contact@bjkj.com',
+    phone: '010-88888888',
+    company: '北京科技有限公司',
+    status: 'active',
+    industry: '科技',
+    website: 'https://bjkj.com',
+    address: '北京市朝阳区科技园区',
+    createdAt: '2024-01-15T08:00:00Z',
+    updatedAt: '2024-01-15T08:00:00Z',
+  },
+  {
+    id: 'cust_2',
+    name: '上海贸易集团',
+    email: 'info@shmy.com',
+    phone: '021-66666666',
+    company: '上海贸易集团',
+    status: 'active',
+    industry: '贸易',
+    website: 'https://shmy.com',
+    address: '上海市浦东新区陆家嘴',
+    createdAt: '2024-02-20T09:00:00Z',
+    updatedAt: '2024-02-20T09:00:00Z',
+  },
+  {
+    id: 'cust_3',
+    name: '深圳创新科技',
+    email: 'hello@szcx.com',
+    phone: '0755-88888888',
+    company: '深圳创新科技',
+    status: 'active',
+    industry: '科技',
+    website: 'https://szcx.com',
+    address: '深圳市南山区科技园',
+    createdAt: '2024-03-10T10:00:00Z',
+    updatedAt: '2024-03-10T10:00:00Z',
+  },
+];
 
-interface DBOpportunity {
-  id: string;
-  title: string;
-  customer_id: string;
-  customer_name?: string;
-  contact_id: string | null;
-  contact_name?: string;
-  value: string;
-  stage: string;
-  probability: number;
-  expected_close_date: string | null;
-  description: string | null;
-  created_at: string;
-  updated_at: string;
-}
+const INITIAL_CONTACTS: Contact[] = [
+  {
+    id: 'cont_1',
+    firstName: '张',
+    lastName: '伟',
+    email: 'zhangwei@bjkj.com',
+    phone: '13800138001',
+    position: '技术总监',
+    customerId: 'cust_1',
+    customerName: '北京科技有限公司',
+    isPrimary: true,
+    createdAt: '2024-01-15T08:30:00Z',
+    updatedAt: '2024-01-15T08:30:00Z',
+  },
+  {
+    id: 'cont_2',
+    firstName: '李',
+    lastName: '娜',
+    email: 'lina@shmy.com',
+    phone: '13900139002',
+    position: '采购经理',
+    customerId: 'cust_2',
+    customerName: '上海贸易集团',
+    isPrimary: true,
+    createdAt: '2024-02-20T09:30:00Z',
+    updatedAt: '2024-02-20T09:30:00Z',
+  },
+  {
+    id: 'cont_3',
+    firstName: '王',
+    lastName: '强',
+    email: 'wangqiang@szcx.com',
+    phone: '13700137003',
+    position: 'CEO',
+    customerId: 'cust_3',
+    customerName: '深圳创新科技',
+    isPrimary: true,
+    createdAt: '2024-03-10T10:30:00Z',
+    updatedAt: '2024-03-10T10:30:00Z',
+  },
+];
 
-interface DBLead {
-  id: string;
-  title: string;
-  source: string;
-  customer_id: string;
-  customer_name: string;
-  contact_id?: string;
-  contact_name?: string;
-  estimated_value: number;
-  probability: number;
-  status: string;
-  notes?: string;
-  created_at: string;
-  updated_at: string;
-}
+const INITIAL_OPPORTUNITIES: SalesOpportunity[] = [
+  {
+    id: 'opp_1',
+    title: '企业CRM系统采购项目',
+    customerId: 'cust_1',
+    customerName: '北京科技有限公司',
+    contactId: 'cont_1',
+    contactName: '张伟',
+    value: 150000,
+    stage: 'proposal',
+    probability: 50,
+    expectedCloseDate: '2024-06-30',
+    description: '北京科技计划采购一套完整的企业CRM系统，包含客户管理、销售自动化和数据分析模块',
+    createdAt: '2024-04-01T10:00:00Z',
+    updatedAt: '2024-04-15T14:00:00Z',
+  },
+  {
+    id: 'opp_2',
+    title: '供应链管理系统实施',
+    customerId: 'cust_2',
+    customerName: '上海贸易集团',
+    contactId: 'cont_2',
+    contactName: '李娜',
+    value: 280000,
+    stage: 'negotiation',
+    probability: 75,
+    expectedCloseDate: '2024-05-15',
+    description: '上海贸易集团的供应链管理系统升级项目，涉及采购、库存和物流模块',
+    createdAt: '2024-03-15T11:00:00Z',
+    updatedAt: '2024-04-20T16:00:00Z',
+  },
+  {
+    id: 'opp_3',
+    title: '智能营销平台搭建',
+    customerId: 'cust_3',
+    customerName: '深圳创新科技',
+    contactId: 'cont_3',
+    contactName: '王强',
+    value: 200000,
+    stage: 'discovery',
+    probability: 25,
+    expectedCloseDate: '2024-07-31',
+    description: '深圳创新科技需要建设一套智能营销平台，整合多渠道获客和精准营销能力',
+    createdAt: '2024-04-10T09:00:00Z',
+    updatedAt: '2024-04-10T09:00:00Z',
+  },
+  {
+    id: 'opp_4',
+    title: '数据中台建设项目',
+    customerId: 'cust_1',
+    customerName: '北京科技有限公司',
+    contactId: 'cont_1',
+    contactName: '张伟',
+    value: 350000,
+    stage: 'qualified',
+    probability: 10,
+    expectedCloseDate: '2024-09-30',
+    description: '数据中台整体规划与建设',
+    createdAt: '2024-04-18T08:00:00Z',
+    updatedAt: '2024-04-18T08:00:00Z',
+  },
+  {
+    id: 'opp_5',
+    title: '客服系统升级项目',
+    customerId: 'cust_2',
+    customerName: '上海贸易集团',
+    contactId: 'cont_2',
+    contactName: '李娜',
+    value: 80000,
+    stage: 'closed_won',
+    probability: 100,
+    expectedCloseDate: '2024-04-01',
+    description: '客服系统升级，支持多渠道接入',
+    createdAt: '2024-02-01T10:00:00Z',
+    updatedAt: '2024-04-01T17:00:00Z',
+  },
+];
 
-interface DBActivity {
-  id: string;
-  type: string;
-  entity_type: string;
-  entity_id: string;
-  entity_name: string;
-  description: string;
-  timestamp: string;
-}
+const INITIAL_LEADS: SalesLead[] = [
+  {
+    id: 'lead_1',
+    title: '广州制造业客户',
+    source: 'website',
+    customerId: '',
+    customerName: '广州智造科技',
+    estimatedValue: 120000,
+    probability: 20,
+    status: 'new',
+    notes: '官网表单留资，对制造业CRM感兴趣',
+    createdAt: '2024-04-19T10:00:00Z',
+    updatedAt: '2024-04-19T10:00:00Z',
+  },
+  {
+    id: 'lead_2',
+    title: '成都软件公司',
+    source: 'referral',
+    customerId: '',
+    customerName: '成都云软件',
+    estimatedValue: 200000,
+    probability: 40,
+    status: 'contacted',
+    notes: '老客户推荐，有CRM采购意向',
+    createdAt: '2024-04-18T14:00:00Z',
+    updatedAt: '2024-04-19T09:00:00Z',
+  },
+  {
+    id: 'lead_3',
+    title: '杭州电商企业',
+    source: 'event',
+    customerId: '',
+    customerName: '杭州电商云',
+    estimatedValue: 180000,
+    probability: 30,
+    status: 'qualified',
+    notes: '展会获取名片，已确认需求',
+    createdAt: '2024-04-15T16:00:00Z',
+    updatedAt: '2024-04-20T11:00:00Z',
+  },
+];
 
-interface DBStats {
-  totalCustomers: number;
-  totalContacts: number;
-  totalLeads: number;
-  totalOpportunities: number;
-  totalRevenue: number;
-  wonOpportunities: number;
-  activeCustomers: number;
-}
+const INITIAL_ACTIVITIES: Activity[] = [
+  {
+    id: 'act_1',
+    type: 'created',
+    entityType: 'opportunity',
+    entityId: 'opp_1',
+    entityName: '企业CRM系统采购项目',
+    description: '创建销售商机',
+    timestamp: '2024-04-01T10:00:00Z',
+  },
+  {
+    id: 'act_2',
+    type: 'stage_change',
+    entityType: 'opportunity',
+    entityId: 'opp_2',
+    entityName: '供应链管理系统实施',
+    description: '阶段变更: 需求确认 → 方案报价',
+    timestamp: '2024-04-20T16:00:00Z',
+  },
+  {
+    id: 'act_3',
+    type: 'closed_won',
+    entityType: 'opportunity',
+    entityId: 'opp_5',
+    entityName: '客服系统升级项目',
+    description: '商机成交！',
+    timestamp: '2024-04-01T17:00:00Z',
+  },
+];
 
-function convertCustomer(db: DBCustomer): Customer {
-  return {
-    id: db.id,
-    name: db.name,
-    email: db.email || '',
-    phone: db.phone || '',
-    company: db.company,
-    status: db.status as CustomerStatus,
-    industry: db.industry || '',
-    website: db.website || undefined,
-    address: db.address || undefined,
-    notes: db.notes || undefined,
-    createdAt: db.created_at,
-    updatedAt: db.updated_at,
-  };
-}
+// Initial products (V3.2 新增)
+const INITIAL_PRODUCTS: Product[] = [
+  {
+    id: 'prod_1',
+    name: 'CRM标准版',
+    sku: 'SW-CRM-STD',
+    category: 'software',
+    description: '包含客户管理、销售自动化、报表分析等核心功能',
+    unitPrice: 29999,
+    unit: '套/年',
+    cost: 15000,
+    isActive: true,
+    createdAt: '2024-01-01T00:00:00Z',
+    updatedAt: '2024-01-01T00:00:00Z',
+  },
+  {
+    id: 'prod_2',
+    name: 'CRM专业版',
+    sku: 'SW-CRM-PRO',
+    category: 'software',
+    description: '包含标准版全部功能及营销自动化、高级分析等进阶功能',
+    unitPrice: 59999,
+    unit: '套/年',
+    cost: 30000,
+    isActive: true,
+    createdAt: '2024-01-01T00:00:00Z',
+    updatedAt: '2024-01-01T00:00:00Z',
+  },
+  {
+    id: 'prod_3',
+    name: '实施服务',
+    sku: 'SV-IMP-001',
+    category: 'service',
+    description: '标准实施服务，包含系统部署、数据迁移、培训等',
+    unitPrice: 15000,
+    unit: '人天',
+    cost: 8000,
+    isActive: true,
+    createdAt: '2024-01-01T00:00:00Z',
+    updatedAt: '2024-01-01T00:00:00Z',
+  },
+  {
+    id: 'prod_4',
+    name: '定制开发服务',
+    sku: 'SV-CUS-001',
+    category: 'consulting',
+    description: '按需定制开发服务，个性化功能扩展',
+    unitPrice: 2000,
+    unit: '人天',
+    cost: 1000,
+    isActive: true,
+    createdAt: '2024-01-01T00:00:00Z',
+    updatedAt: '2024-01-01T00:00:00Z',
+  },
+  {
+    id: 'prod_5',
+    name: '智能客服机器人',
+    sku: 'SW-AI-BOT',
+    category: 'software',
+    description: '基于大模型的智能客服系统，支持多轮对话和知识库',
+    unitPrice: 39999,
+    unit: '套/年',
+    cost: 20000,
+    isActive: true,
+    createdAt: '2024-01-01T00:00:00Z',
+    updatedAt: '2024-01-01T00:00:00Z',
+  },
+];
 
-function convertContact(db: DBContact): Contact {
-  return {
-    id: db.id,
-    firstName: db.first_name,
-    lastName: db.last_name,
-    email: db.email || '',
-    phone: db.phone || '',
-    position: db.position || '',
-    customerId: db.customer_id,
-    customerName: db.customer_name || '',
-    isPrimary: db.is_primary,
-    createdAt: db.created_at,
-    updatedAt: db.updated_at,
-  };
-}
-
-function convertOpportunity(db: DBOpportunity): SalesOpportunity {
-  return {
-    id: db.id,
-    title: db.title,
-    customerId: db.customer_id,
-    customerName: db.customer_name || '',
-    contactId: db.contact_id || undefined,
-    contactName: db.contact_name || undefined,
-    value: Number(db.value),
-    stage: db.stage as OpportunityStage,
-    probability: db.probability,
-    expectedCloseDate: db.expected_close_date?.split('T')[0] || '',
-    description: db.description || undefined,
-    createdAt: db.created_at,
-    updatedAt: db.updated_at,
-  };
-}
-
-function convertLead(db: DBLead): SalesLead {
-  return {
-    id: db.id,
-    title: db.title,
-    source: db.source as LeadSourceType,
-    customerId: db.customer_id,
-    customerName: db.customer_name,
-    contactId: db.contact_id,
-    contactName: db.contact_name,
-    estimatedValue: Number(db.estimated_value),
-    probability: db.probability,
-    status: db.status as LeadStatusType,
-    notes: db.notes,
-    createdAt: db.created_at,
-    updatedAt: db.updated_at,
-  };
-}
-
-function convertActivity(db: DBActivity): Activity {
-  return {
-    id: db.id,
-    type: db.type as Activity['type'],
-    entityType: db.entity_type as Activity['entityType'],
-    entityId: db.entity_id,
-    entityName: db.entity_name,
-    description: db.description,
-    timestamp: db.timestamp,
-  };
-}
-
-const CRMContext = createContext<CRMContextType | undefined>(undefined);
+const CRMContext = createContext<CRMContextType | null>(null);
 
 export function CRMProvider({ children }: { children: ReactNode }) {
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [contacts, setContacts] = useState<Contact[]>([]);
   const [opportunities, setOpportunities] = useState<SalesOpportunity[]>([]);
   const [leads, setLeads] = useState<SalesLead[]>([]);
+  const [products, setProducts] = useState<Product[]>([]);
   const [activities, setActivities] = useState<Activity[]>([]);
-  const [stats, setStats] = useState<DashboardStats>({
-    totalCustomers: 0,
-    totalContacts: 0,
-    totalLeads: 0,
-    totalOpportunities: 0,
-    totalRevenue: 0,
-    wonOpportunities: 0,
-    activeCustomers: 0,
-  });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  const stats: DashboardStats = {
+    totalCustomers: customers.length,
+    totalContacts: contacts.length,
+    totalLeads: leads.length,
+    totalOpportunities: opportunities.filter(o => o.stage !== 'closed_won' && o.stage !== 'closed_lost').length,
+    totalRevenue: opportunities
+      .filter(o => o.stage === 'closed_won')
+      .reduce((sum, o) => sum + o.value, 0),
+    wonOpportunities: opportunities.filter(o => o.stage === 'closed_won').length,
+    activeCustomers: customers.filter(c => c.status === 'active').length,
+  };
 
   const loadData = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
       
-      const [dbCustomers, dbContacts, dbOpportunities, dbLeads, dbActivities, dbStats] = await Promise.all([
-        apiGet<DBCustomer[]>('customers'),
-        apiGet<DBContact[]>('contacts'),
-        apiGet<DBOpportunity[]>('opportunities'),
-        apiGet<DBLead[]>('leads'),
-        apiGet<DBActivity[]>('activities', { limit: '50' }),
-        apiGet<DBStats>('stats'),
+      const [dbCustomers, dbContacts, dbOpportunities, dbLeads, dbActivities, dbProducts] = await Promise.all([
+        apiGet<Customer[]>('customers').catch(() => INITIAL_CUSTOMERS),
+        apiGet<Contact[]>('contacts').catch(() => INITIAL_CONTACTS),
+        apiGet<SalesOpportunity[]>('opportunities').catch(() => INITIAL_OPPORTUNITIES),
+        apiGet<SalesLead[]>('leads').catch(() => INITIAL_LEADS),
+        apiGet<Activity[]>('activities').catch(() => INITIAL_ACTIVITIES),
+        apiGet<Product[]>('products').catch(() => INITIAL_PRODUCTS),
       ]);
-
-      // 填充 customerName
-      const customerMap = new Map(dbCustomers.map(c => [c.id, c.company]));
       
-      const convertedContacts = dbContacts.map(c => ({
-        ...convertContact(c),
-        customerName: customerMap.get(c.customer_id) || '',
-      }));
-      
-      const convertedOpportunities = dbOpportunities.map(o => ({
-        ...convertOpportunity(o),
-        customerName: customerMap.get(o.customer_id) || '',
-      }));
-      
-      const convertedLeads = dbLeads.map(l => ({
-        ...convertLead(l),
-        customerName: customerMap.get(l.customer_id) || '',
-      }));
-
-      setCustomers(dbCustomers.map(convertCustomer));
-      setContacts(convertedContacts);
-      setOpportunities(convertedOpportunities);
-      setLeads(convertedLeads);
-      setActivities(dbActivities.map(convertActivity));
-      setStats(dbStats);
+      setCustomers(dbCustomers);
+      setContacts(dbContacts);
+      setOpportunities(dbOpportunities);
+      setLeads(dbLeads);
+      setActivities(dbActivities);
+      setProducts(dbProducts);
     } catch (err) {
       console.error('Failed to load CRM data:', err);
-      setError(err instanceof Error ? err.message : '加载数据失败');
+      // Use initial data as fallback
+      setCustomers(INITIAL_CUSTOMERS);
+      setContacts(INITIAL_CONTACTS);
+      setOpportunities(INITIAL_OPPORTUNITIES);
+      setLeads(INITIAL_LEADS);
+      setActivities(INITIAL_ACTIVITIES);
+      setProducts(INITIAL_PRODUCTS);
     } finally {
       setLoading(false);
     }
@@ -332,272 +474,273 @@ export function CRMProvider({ children }: { children: ReactNode }) {
     loadData();
   }, [loadData]);
 
-  const addActivity = useCallback(async (
+  const addActivity = useCallback((
     type: Activity['type'],
     entityType: Activity['entityType'],
     entityId: string,
     entityName: string,
     description: string
   ) => {
-    try {
-      await apiPost('createActivity', {
-        type,
-        entity_type: entityType,
-        entity_id: entityId,
-        entity_name: entityName,
-        description,
-        timestamp: new Date().toISOString(),
-      });
-      await loadData();
-    } catch (err) {
-      console.error('Failed to create activity:', err);
-    }
-  }, [loadData]);
+    const newActivity: Activity = {
+      id: generateId(),
+      type,
+      entityType,
+      entityId,
+      entityName,
+      description,
+      timestamp: new Date().toISOString(),
+    };
+    setActivities(prev => [newActivity, ...prev]);
+  }, []);
 
   // Customer operations
   const addCustomer = useCallback(async (customer: Omit<Customer, 'id' | 'createdAt' | 'updatedAt'>) => {
-    const newCustomer = await apiPost<DBCustomer>('createCustomer', {
-      name: customer.name,
-      email: customer.email || null,
-      phone: customer.phone || null,
-      company: customer.company,
-      status: customer.status,
-      industry: customer.industry || null,
-      website: customer.website || null,
-      address: customer.address || null,
-      notes: customer.notes || null,
-    });
-    await addActivity('created', 'customer', newCustomer.id, newCustomer.name, `新增客户 ${newCustomer.name}`);
-    await loadData();
-  }, [addActivity, loadData]);
+    const newCustomer: Customer = {
+      ...customer,
+      id: generateId(),
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+    await apiPost('addCustomer', newCustomer);
+    setCustomers(prev => [...prev, newCustomer]);
+    addActivity('created', 'customer', newCustomer.id, newCustomer.name, `创建客户 "${newCustomer.name}"`);
+  }, [addActivity]);
 
   const updateCustomer = useCallback(async (id: string, updates: Partial<Customer>) => {
-    const updated = await apiPut<DBCustomer>('updateCustomer', id, {
-      name: updates.name,
-      email: updates.email || null,
-      phone: updates.phone || null,
-      company: updates.company,
-      status: updates.status,
-      industry: updates.industry || null,
-      website: updates.website || null,
-      address: updates.address || null,
-      notes: updates.notes || null,
-    });
-    await addActivity('updated', 'customer', id, updated.name, `更新客户 ${updated.name}`);
-    await loadData();
-  }, [addActivity, loadData]);
-
-  const deleteCustomer = useCallback(async (id: string) => {
+    const updated = { ...updates, updatedAt: new Date().toISOString() };
+    await apiPut('updateCustomer', id, updated);
+    setCustomers(prev => prev.map(c => c.id === id ? { ...c, ...updated } : c));
     const customer = customers.find(c => c.id === id);
     if (customer) {
-      await apiDelete('deleteCustomer', id);
-      await addActivity('deleted', 'customer', id, customer.name, `删除客户 ${customer.name}`);
-      await loadData();
+      addActivity('updated', 'customer', id, customer.name, `更新客户 ${customer.name}`);
     }
-  }, [customers, addActivity, loadData]);
+  }, [customers, addActivity]);
+
+  const deleteCustomer = useCallback(async (id: string) => {
+    await apiDelete('deleteCustomer', id);
+    const customer = customers.find(c => c.id === id);
+    setCustomers(prev => prev.filter(c => c.id !== id));
+    if (customer) {
+      addActivity('deleted', 'customer', id, customer.name, `删除客户 ${customer.name}`);
+    }
+  }, [customers, addActivity]);
 
   // Contact operations
   const addContact = useCallback(async (contact: Omit<Contact, 'id' | 'createdAt' | 'updatedAt'>) => {
-    const newContact = await apiPost<DBContact>('createContact', {
-      first_name: contact.firstName,
-      last_name: contact.lastName,
-      email: contact.email || null,
-      phone: contact.phone || null,
-      position: contact.position || null,
-      customer_id: contact.customerId,
-      is_primary: contact.isPrimary,
-    });
-    const name = `${contact.lastName}${contact.firstName}`;
-    await addActivity('created', 'contact', newContact.id, name, `新增联系人 ${name}`);
-    await loadData();
-  }, [addActivity, loadData]);
+    const newContact: Contact = {
+      ...contact,
+      id: generateId(),
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+    await apiPost('addContact', newContact);
+    setContacts(prev => [...prev, newContact]);
+  }, []);
 
   const updateContact = useCallback(async (id: string, updates: Partial<Contact>) => {
-    const updated = await apiPut<DBContact>('updateContact', id, {
-      first_name: updates.firstName,
-      last_name: updates.lastName,
-      email: updates.email || null,
-      phone: updates.phone || null,
-      position: updates.position || null,
-      customer_id: updates.customerId,
-      is_primary: updates.isPrimary,
-    });
-    const name = `${updated.last_name}${updated.first_name}`;
-    await addActivity('updated', 'contact', id, name, `更新联系人 ${name}`);
-    await loadData();
-  }, [addActivity, loadData]);
+    const updated = { ...updates, updatedAt: new Date().toISOString() };
+    await apiPut('updateContact', id, updated);
+    setContacts(prev => prev.map(c => c.id === id ? { ...c, ...updated } : c));
+  }, []);
 
   const deleteContact = useCallback(async (id: string) => {
-    const contact = contacts.find(c => c.id === id);
-    if (contact) {
-      const name = `${contact.lastName}${contact.firstName}`;
-      await apiDelete('deleteContact', id);
-      await addActivity('deleted', 'contact', id, name, `删除联系人 ${name}`);
-      await loadData();
-    }
-  }, [contacts, addActivity, loadData]);
+    await apiDelete('deleteContact', id);
+    setContacts(prev => prev.filter(c => c.id !== id));
+  }, []);
 
-  // Lead operations (销售线索)
+  // Lead operations
   const addLead = useCallback(async (lead: Omit<SalesLead, 'id' | 'createdAt' | 'updatedAt'>) => {
-    const newLead = await apiPost<DBLead>('createLead', {
-      title: lead.title,
-      source: lead.source,
-      customerId: lead.customerId,
-      customerName: lead.customerName,
-      contactId: lead.contactId,
-      contactName: lead.contactName,
-      estimatedValue: lead.estimatedValue,
-      notes: lead.notes,
-    });
-    await addActivity('created', 'lead', newLead.id, newLead.title, `创建销售线索 "${newLead.title}"`);
-    await loadData();
-  }, [addActivity, loadData]);
+    const newLead: SalesLead = {
+      ...lead,
+      id: generateId(),
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+    await apiPost('addLead', newLead);
+    setLeads(prev => [...prev, newLead]);
+    addActivity('created', 'lead', newLead.id, newLead.title, `创建销售线索 "${newLead.title}"`);
+  }, [addActivity]);
 
   const updateLead = useCallback(async (id: string, updates: Partial<SalesLead>) => {
-    const updated = await apiPut<DBLead>('updateLead', id, {
-      title: updates.title,
-      source: updates.source,
-      contactId: updates.contactId,
-      contactName: updates.contactName,
-      estimatedValue: updates.estimatedValue,
-      notes: updates.notes,
-    });
-    await addActivity('updated', 'lead', id, updated.title, `更新销售线索 ${updated.title}`);
-    await loadData();
-  }, [addActivity, loadData]);
-
-  const deleteLead = useCallback(async (id: string) => {
+    const updated = { ...updates, updatedAt: new Date().toISOString() };
+    await apiPut('updateLead', id, updated);
+    setLeads(prev => prev.map(l => l.id === id ? { ...l, ...updated } : l));
     const lead = leads.find(l => l.id === id);
     if (lead) {
-      await apiDelete('deleteLead', id);
-      await addActivity('deleted', 'lead', id, lead.title, `删除销售线索 ${lead.title}`);
-      await loadData();
+      addActivity('updated', 'lead', id, lead.title, `更新销售线索 ${lead.title}`);
     }
-  }, [leads, addActivity, loadData]);
+  }, [leads, addActivity]);
 
-  const qualifyLead = useCallback(async (
-    leadId: string, 
-    opportunityData: { 
-      opportunityTitle: string;
-      value: number;
-      contactId?: string;
-      contactName?: string;
-      expectedCloseDate: string;
-      notes?: string;
+  const deleteLead = useCallback(async (id: string) => {
+    await apiDelete('deleteLead', id);
+    const lead = leads.find(l => l.id === id);
+    setLeads(prev => prev.filter(l => l.id !== id));
+    if (lead) {
+      addActivity('deleted', 'lead', id, lead.title, `删除销售线索 ${lead.title}`);
     }
-  ) => {
-    await apiPost('qualifyLead', {
-      leadId,
-      ...opportunityData,
-    });
-    await loadData();
-  }, [loadData]);
+  }, [leads, addActivity]);
+
+  const qualifyLead = useCallback(async (leadId: string, opportunityData: {
+    opportunityTitle: string;
+    value: number;
+    contactId?: string;
+    contactName?: string;
+    expectedCloseDate: string;
+    notes?: string;
+  }) => {
+    const lead = leads.find(l => l.id === leadId);
+    if (!lead) return;
+
+    const newOpportunity: SalesOpportunity = {
+      id: generateId(),
+      title: opportunityData.opportunityTitle,
+      customerId: lead.customerId,
+      customerName: lead.customerName,
+      contactId: opportunityData.contactId,
+      contactName: opportunityData.contactName,
+      value: opportunityData.value,
+      stage: 'qualified',
+      probability: 10,
+      expectedCloseDate: opportunityData.expectedCloseDate,
+      description: opportunityData.notes,
+      sourceLeadId: leadId,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+
+    await apiPost('addOpportunity', newOpportunity);
+    setOpportunities(prev => [...prev, newOpportunity]);
+    
+    await updateLead(leadId, { status: 'qualified' });
+    addActivity('qualified', 'opportunity', newOpportunity.id, newOpportunity.title, `线索 "${lead.title}" 已转化为商机`);
+  }, [leads, updateLead, addActivity]);
 
   const disqualifyLead = useCallback(async (leadId: string, reason?: string) => {
-    await apiPost('disqualifyLead', { leadId, reason });
-    await loadData();
-  }, [loadData]);
+    const lead = leads.find(l => l.id === leadId);
+    await updateLead(leadId, { status: 'disqualified', notes: reason || lead?.notes });
+    if (lead) {
+      addActivity('disqualified', 'lead', leadId, lead.title, `销售线索 "${lead.title}" 已标记为无效`);
+    }
+  }, [leads, updateLead, addActivity]);
 
-  // Opportunity operations (商机)
+  // Product operations (V3.2 新增)
+  const createProduct = useCallback(async (product: Omit<Product, 'id' | 'createdAt' | 'updatedAt'>) => {
+    const newProduct: Product = {
+      ...product,
+      id: generateId(),
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+    await apiPost('addProduct', newProduct);
+    setProducts(prev => [...prev, newProduct]);
+    addActivity('created', 'lead' as any, newProduct.id, newProduct.name, `创建产品 "${newProduct.name}"`);
+  }, [addActivity]);
+
+  const updateProduct = useCallback(async (id: string, updates: Partial<Product>) => {
+    const updated = { ...updates, updatedAt: new Date().toISOString() };
+    await apiPut('updateProduct', id, updated);
+    setProducts(prev => prev.map(p => p.id === id ? { ...p, ...updated } : p));
+    const product = products.find(p => p.id === id);
+    if (product) {
+      addActivity('updated', 'lead' as any, id, product.name, `更新产品 ${product.name}`);
+    }
+  }, [products, addActivity]);
+
+  const deleteProduct = useCallback(async (id: string) => {
+    await apiDelete('deleteProduct', id);
+    const product = products.find(p => p.id === id);
+    setProducts(prev => prev.filter(p => p.id !== id));
+    if (product) {
+      addActivity('deleted', 'lead' as any, id, product.name, `删除产品 ${product.name}`);
+    }
+  }, [products, addActivity]);
+
+  const toggleProductActive = useCallback(async (id: string) => {
+    const product = products.find(p => p.id === id);
+    if (product) {
+      await updateProduct(id, { isActive: !product.isActive });
+    }
+  }, [products, updateProduct]);
+
+  // Opportunity operations
   const addOpportunity = useCallback(async (opportunity: Omit<SalesOpportunity, 'id' | 'createdAt' | 'updatedAt'>) => {
-    const newOpp = await apiPost<DBOpportunity>('createOpportunity', {
-      title: opportunity.title,
-      customer_id: opportunity.customerId,
-      contact_id: opportunity.contactId || null,
-      value: opportunity.value.toString(),
-      stage: opportunity.stage,
-      probability: opportunity.probability,
-      expected_close_date: opportunity.expectedCloseDate || null,
-      description: opportunity.description || null,
-    });
-    await addActivity('created', 'opportunity', newOpp.id, newOpp.title, `创建商机 ${newOpp.title}`);
-    await loadData();
-  }, [addActivity, loadData]);
+    const newOpportunity: SalesOpportunity = {
+      ...opportunity,
+      id: generateId(),
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+    await apiPost('addOpportunity', newOpportunity);
+    setOpportunities(prev => [...prev, newOpportunity]);
+    addActivity('created', 'opportunity', newOpportunity.id, newOpportunity.title, `创建销售商机 "${newOpportunity.title}"`);
+  }, [addActivity]);
 
   const updateOpportunity = useCallback(async (id: string, updates: Partial<SalesOpportunity>) => {
-    const oldOpp = opportunities.find(o => o.id === id);
-    
-    const updated = await apiPut<DBOpportunity>('updateOpportunity', id, {
-      title: updates.title,
-      customer_id: updates.customerId,
-      contact_id: updates.contactId || null,
-      value: updates.value?.toString(),
-      stage: updates.stage,
-      probability: updates.probability,
-      expected_close_date: updates.expectedCloseDate || null,
-      description: updates.description || null,
-    });
-
-    // 阶段变更记录
-    if (oldOpp && updates.stage && oldOpp.stage !== updates.stage) {
-      const stageLabels: Record<string, string> = {
-        qualified: '商机确认',
-        discovery: '需求调研',
-        proposal: '方案报价',
-        negotiation: '商务洽谈',
-        contract: '合同签署',
-        closed_won: '成交',
-        closed_lost: '失败',
-      };
-      await addActivity(
-        updates.stage === 'closed_won' ? 'closed_won' : updates.stage === 'closed_lost' ? 'closed_lost' : 'stage_change',
-        'opportunity',
-        id,
-        updated.title,
-        updates.stage === 'closed_won' 
-          ? `商机 "${updated.title}" 成交！`
-          : `阶段变更为 ${stageLabels[updates.stage]}`
-      );
-    } else {
-      await addActivity('updated', 'opportunity', id, updated.title, `更新商机 ${updated.title}`);
-    }
-    
-    await loadData();
-  }, [opportunities, addActivity, loadData]);
-
-  const changeOpportunityStage = useCallback(async (id: string, newStage: OpportunityStage, reason?: string) => {
-    const updated = await apiPut<DBOpportunity>('changeStage', id, {
-      stage: newStage,
-      reason,
-    });
-    
-    const stageLabels: Record<string, string> = {
-      qualified: '商机确认',
-      discovery: '需求调研',
-      proposal: '方案报价',
-      negotiation: '商务洽谈',
-      contract: '合同签署',
-      closed_won: '成交',
-      closed_lost: '失败',
-    };
-    
-    await addActivity(
-      newStage === 'closed_won' ? 'closed_won' : newStage === 'closed_lost' ? 'closed_lost' : 'stage_change',
-      'opportunity',
-      id,
-      updated.title,
-      newStage === 'closed_won' 
-        ? `商机 "${updated.title}" 成交！`
-        : `阶段变更为 ${stageLabels[newStage]}`
-    );
-    
-    await loadData();
-  }, [addActivity, loadData]);
-
-  const deleteOpportunity = useCallback(async (id: string) => {
+    const updated = { ...updates, updatedAt: new Date().toISOString() };
+    await apiPut('updateOpportunity', id, updated);
+    setOpportunities(prev => prev.map(o => o.id === id ? { ...o, ...updated } : o));
     const opportunity = opportunities.find(o => o.id === id);
     if (opportunity) {
-      await apiDelete('deleteOpportunity', id);
-      await addActivity('deleted', 'opportunity', id, opportunity.title, `删除商机 ${opportunity.title}`);
-      await loadData();
+      addActivity('updated', 'opportunity', id, opportunity.title, `更新销售商机 ${opportunity.title}`);
     }
-  }, [opportunities, addActivity, loadData]);
+  }, [opportunities, addActivity]);
+
+  const deleteOpportunity = useCallback(async (id: string) => {
+    await apiDelete('deleteOpportunity', id);
+    const opportunity = opportunities.find(o => o.id === id);
+    setOpportunities(prev => prev.filter(o => o.id !== id));
+    if (opportunity) {
+      addActivity('deleted', 'opportunity', id, opportunity.title, `删除销售商机 ${opportunity.title}`);
+    }
+  }, [opportunities, addActivity]);
+
+  const changeOpportunityStage = useCallback(async (id: string, newStage: OpportunityStage, reason?: string) => {
+    const opportunity = opportunities.find(o => o.id === id);
+    if (!opportunity) return;
+
+    const stageConfig = {
+      qualified: '线索',
+      discovery: '需求确认',
+      proposal: '方案报价',
+      negotiation: '商务谈判',
+      contract: '合同签署',
+      closed_won: '已成交',
+      closed_lost: '已输单',
+    };
+
+    const oldStage = opportunity.stage;
+    const probabilityMap: Record<OpportunityStage, number> = {
+      qualified: 10,
+      discovery: 25,
+      proposal: 50,
+      negotiation: 75,
+      contract: 90,
+      closed_won: 100,
+      closed_lost: 0,
+    };
+
+    await updateOpportunity(id, { 
+      stage: newStage, 
+      probability: probabilityMap[newStage],
+      notes: reason || opportunity.notes 
+    });
+
+    const activityType = newStage === 'closed_won' ? 'closed_won' : newStage === 'closed_lost' ? 'closed_lost' : 'stage_change';
+    const description = activityType === 'closed_won' 
+      ? `商机成交！金额：¥${opportunity.value.toLocaleString()}`
+      : activityType === 'closed_lost'
+      ? `商机输单${reason ? `，原因：${reason}` : ''}`
+      : `阶段变更: ${stageConfig[oldStage]} → ${stageConfig[newStage]}`;
+
+    addActivity(activityType, 'opportunity', id, opportunity.title, description);
+  }, [opportunities, updateOpportunity, addActivity]);
 
   const value: CRMContextType = {
     customers,
     contacts,
     opportunities,
     leads,
+    products,
     activities,
     stats,
     loading,
@@ -614,6 +757,10 @@ export function CRMProvider({ children }: { children: ReactNode }) {
     deleteLead,
     qualifyLead,
     disqualifyLead,
+    createProduct,
+    updateProduct,
+    deleteProduct,
+    toggleProductActive,
     addOpportunity,
     updateOpportunity,
     deleteOpportunity,
@@ -627,9 +774,9 @@ export function CRMProvider({ children }: { children: ReactNode }) {
   );
 }
 
-export function useCRM(): CRMContextType {
+export function useCRM() {
   const context = useContext(CRMContext);
-  if (context === undefined) {
+  if (!context) {
     throw new Error('useCRM must be used within a CRMProvider');
   }
   return context;

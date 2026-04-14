@@ -15,6 +15,7 @@ import {
   Lightbulb,
   FileText,
   Package,
+  Package2,
   Clock,
   FileBarGraph,
 } from 'lucide-react';
@@ -49,6 +50,12 @@ const navigation = [
     gradient: 'from-orange-500 to-amber-500',
   },
   { 
+    name: '产品管理', 
+    href: '/products', 
+    icon: Package2,
+    gradient: 'from-cyan-500 to-blue-500',
+  },
+  { 
     name: '报价单', 
     href: '/quotes', 
     icon: FileText,
@@ -71,13 +78,6 @@ const navigation = [
     href: '/contacts', 
     icon: Contact2,
     gradient: 'from-green-500 to-emerald-500',
-  },
-
-  { 
-    name: '成交订单', 
-    href: '/orders', 
-    icon: Package,
-    gradient: 'from-teal-500 to-cyan-500',
   },
   { 
     name: '跟进记录', 
@@ -171,6 +171,7 @@ export function Sidebar() {
           <div className="flex flex-col h-full">
             {/* Logo Section */}
             <div className="relative h-20 flex items-center px-6 border-b/50 overflow-hidden">
+
               {/* Background decoration */}
               <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent" />
               <div className="absolute right-0 top-0 w-24 h-24 bg-gradient-to-br from-primary/10 rounded-full blur-2xl" />
@@ -312,7 +313,7 @@ export function Sidebar() {
               <div className="mt-4 px-3 text-xs text-muted-foreground/60 animate-in fade-in slide-in-from-bottom-2 duration-300">
                 <div className="flex items-center gap-2">
                   <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
-                  <span>v1.0.0</span>
+                  <span>v3.2.0</span>
                 </div>
               </div>
             )}

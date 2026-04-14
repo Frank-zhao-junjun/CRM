@@ -6,6 +6,32 @@ export type LeadStatusType = 'new' | 'contacted' | 'qualified' | 'disqualified';
 export type LeadSourceType = 'referral' | 'website' | 'cold_call' | 'event' | 'advertisement' | 'other';
 export type OpportunityStage = 'qualified' | 'discovery' | 'proposal' | 'negotiation' | 'contract' | 'closed_won' | 'closed_lost';
 
+// ============ 产品管理类型 (V3.2 新增) ============
+export type ProductCategory = 'software' | 'hardware' | 'service' | 'consulting' | 'other';
+
+export interface Product {
+  id: string;
+  name: string;
+  sku: string;
+  category: ProductCategory;
+  description?: string;
+  unitPrice: number;
+  unit: string;
+  cost: number;
+  stock?: number;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export const PRODUCT_CATEGORY_CONFIG: Record<ProductCategory, { label: string; color: string }> = {
+  software: { label: '软件', color: 'text-blue-600' },
+  hardware: { label: '硬件', color: 'text-green-600' },
+  service: { label: '服务', color: 'text-purple-600' },
+  consulting: { label: '咨询', color: 'text-orange-600' },
+  other: { label: '其他', color: 'text-gray-600' },
+};
+
 // ============ 实体类型 ============
 export interface Customer {
   id: string;
@@ -36,7 +62,7 @@ export interface Contact {
   updatedAt: string;
 }
 
-// ============ 销售线索类型 (新增) ============
+// ============ 销售线索类型 ============
 export interface SalesLead {
   id: string;
   title: string;
@@ -82,7 +108,7 @@ export interface Activity {
   timestamp: string;
 }
 
-// ============ 跟进记录 (V3.0) ============
+// ============ 跟进记录 ============
 export type FollowUpType = 'call' | 'email' | 'meeting' | 'note';
 export type FollowUpMethod = 'phone' | 'wechat' | 'email' | 'meeting' | 'other';
 
@@ -118,7 +144,7 @@ export interface FollowUp {
   updatedAt: string;
 }
 
-// ============ 通知 (V3.0) ============
+// ============ 通知 ============
 export type NotificationType = 'overdue' | 'reminder' | 'stage_change' | 'info';
 
 export interface CRMNotification {
@@ -179,7 +205,6 @@ export const QUOTE_STATUS_CONFIG: Record<QuoteStatus, { label: string; className
 };
 
 // ============ 成交订单 ============
-// 订单状态: 草稿 → 已确认 → 待付款 → 已付款 → 已完成 → 已取消
 export type OrderStatus = 'draft' | 'confirmed' | 'awaiting_payment' | 'paid' | 'completed' | 'cancelled';
 
 export interface OrderItem {
@@ -227,7 +252,6 @@ export const ORDER_STATUS_CONFIG: Record<OrderStatus, { label: string; className
 };
 
 // ============ 合同管理 ============
-// 合同状态: 草稿 → 执行中 → 已完成 → 已终止
 export type ContractStatus = 'draft' | 'executing' | 'completed' | 'terminated';
 
 export interface ContractMilestone {
@@ -281,14 +305,14 @@ export interface TodayTodo {
 export interface DashboardStats {
   totalCustomers: number;
   totalContacts: number;
-  totalLeads: number;          // 新增: 线索总数
-  totalOpportunities: number;  // 排除线索阶段
+  totalLeads: number;
+  totalOpportunities: number;
   totalRevenue: number;
   wonOpportunities: number;
   activeCustomers: number;
 }
 
-// ============ 阶段配置 (用于UI展示) ============
+// ============ 阶段配置 ============
 export const OPPORTUNITY_STAGE_CONFIG: Record<OpportunityStage, { 
   label: string; 
   className: string; 
@@ -298,124 +322,77 @@ export const OPPORTUNITY_STAGE_CONFIG: Record<OpportunityStage, {
   description: string;
 }> = {
   qualified: { 
-    label: '商机确认', 
-    className: 'bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20',
-    gradient: 'from-blue-400 to-cyan-500',
-    color: 'text-blue-600 dark:text-blue-400',
-    defaultProbability: 20,
-    description: '商机已确认，待深入沟通',
+    label: '线索', 
+    className: 'bg-gray-500/10 text-gray-600 dark:text-gray-400 border-gray-500/20', 
+    gradient: 'from-gray-400 to-gray-500',
+    color: 'text-gray-600 dark:text-gray-400',
+    defaultProbability: 10,
+    description: '刚获取的销售线索'
   },
   discovery: { 
-    label: '需求调研', 
-    className: 'bg-sky-500/10 text-sky-600 dark:text-sky-400 border-sky-500/20',
-    gradient: 'from-sky-400 to-blue-500',
-    color: 'text-sky-600 dark:text-sky-400',
-    defaultProbability: 30,
-    description: '了解客户需求，进行调研交流',
+    label: '需求确认', 
+    className: 'bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20', 
+    gradient: 'from-blue-400 to-blue-500',
+    color: 'text-blue-600 dark:text-blue-400',
+    defaultProbability: 25,
+    description: '正在了解客户需求'
   },
   proposal: { 
     label: '方案报价', 
-    className: 'bg-purple-500/10 text-purple-600 dark:text-purple-400 border-purple-500/20',
-    gradient: 'from-purple-400 to-pink-500',
+    className: 'bg-purple-500/10 text-purple-600 dark:text-purple-400 border-purple-500/20', 
+    gradient: 'from-purple-400 to-purple-500',
     color: 'text-purple-600 dark:text-purple-400',
-    defaultProbability: 45,
-    description: '已提交方案和报价',
+    defaultProbability: 50,
+    description: '正在提供解决方案'
   },
   negotiation: { 
-    label: '商务洽谈', 
-    className: 'bg-orange-500/10 text-orange-600 dark:text-orange-400 border-orange-500/20',
-    gradient: 'from-orange-400 to-amber-500',
+    label: '商务谈判', 
+    className: 'bg-orange-500/10 text-orange-600 dark:text-orange-400 border-orange-500/20', 
+    gradient: 'from-orange-400 to-orange-500',
     color: 'text-orange-600 dark:text-orange-400',
-    defaultProbability: 65,
-    description: '正在商务谈判',
+    defaultProbability: 75,
+    description: '正在进行价格和条款谈判'
   },
   contract: { 
     label: '合同签署', 
-    className: 'bg-teal-500/10 text-teal-600 dark:text-teal-400 border-teal-500/20',
-    gradient: 'from-teal-400 to-emerald-500',
+    className: 'bg-teal-500/10 text-teal-600 dark:text-teal-400 border-teal-500/20', 
+    gradient: 'from-teal-400 to-teal-500',
     color: 'text-teal-600 dark:text-teal-400',
-    defaultProbability: 85,
-    description: '合同签署中',
+    defaultProbability: 90,
+    description: '合同准备或签署中'
   },
   closed_won: { 
-    label: '成交', 
-    className: 'bg-green-500/10 text-green-600 dark:text-green-400 border-green-500/20',
-    gradient: 'from-green-400 to-emerald-500',
+    label: '已成交', 
+    className: 'bg-green-500/10 text-green-600 dark:text-green-400 border-green-500/20', 
+    gradient: 'from-green-400 to-green-500',
     color: 'text-green-600 dark:text-green-400',
     defaultProbability: 100,
-    description: '已成交',
+    description: '成功签约'
   },
   closed_lost: { 
-    label: '失败', 
-    className: 'bg-red-500/10 text-red-600 dark:text-red-400 border-red-500/20',
-    gradient: 'from-red-400 to-rose-500',
+    label: '已输单', 
+    className: 'bg-red-500/10 text-red-600 dark:text-red-400 border-red-500/20', 
+    gradient: 'from-red-400 to-red-500',
     color: 'text-red-600 dark:text-red-400',
     defaultProbability: 0,
-    description: '已失败',
+    description: '竞争失败或客户放弃'
   },
 };
 
 // ============ 线索状态配置 ============
-export const LEAD_STATUS_CONFIG: Record<LeadStatusType, { 
-  label: string; 
-  className: string; 
-  gradient: string; 
-  color: string;
-}> = {
-  new: { 
-    label: '新建', 
-    className: 'bg-gray-500/10 text-gray-600 dark:text-gray-400 border-gray-500/20',
-    gradient: 'from-gray-400 to-slate-500',
-    color: 'text-gray-600 dark:text-gray-400',
-  },
-  contacted: { 
-    label: '已联系', 
-    className: 'bg-yellow-500/10 text-yellow-600 dark:text-yellow-400 border-yellow-500/20',
-    gradient: 'from-yellow-400 to-orange-500',
-    color: 'text-yellow-600 dark:text-yellow-400',
-  },
-  qualified: { 
-    label: '已Qualified', 
-    className: 'bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 border-cyan-500/20',
-    gradient: 'from-cyan-400 to-blue-500',
-    color: 'text-cyan-600 dark:text-cyan-400',
-  },
-  disqualified: { 
-    label: '已放弃', 
-    className: 'bg-stone-500/10 text-stone-600 dark:text-stone-400 border-stone-500/20',
-    gradient: 'from-stone-400 to-zinc-500',
-    color: 'text-stone-600 dark:text-stone-400',
-  },
+export const LEAD_STATUS_CONFIG: Record<LeadStatusType, { label: string; className: string; color: string }> = {
+  new: { label: '新线索', className: 'bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20', color: 'text-blue-600 dark:text-blue-400' },
+  contacted: { label: '已联系', className: 'bg-purple-500/10 text-purple-600 dark:text-purple-400 border-purple-500/20', color: 'text-purple-600 dark:text-purple-400' },
+  qualified: { label: '已合格', className: 'bg-green-500/10 text-green-600 dark:text-green-400 border-green-500/20', color: 'text-green-600 dark:text-green-400' },
+  disqualified: { label: '已放弃', className: 'bg-gray-500/10 text-gray-600 dark:text-gray-400 border-gray-500/20', color: 'text-gray-600 dark:text-gray-400' },
 };
 
 // ============ 线索来源配置 ============
 export const LEAD_SOURCE_CONFIG: Record<LeadSourceType, { label: string; icon: string }> = {
-  referral: { label: '转介绍', icon: '👥' },
-  website: { label: '网站', icon: '🌐' },
+  referral: { label: '客户推荐', icon: '👥' },
+  website: { label: '官网表单', icon: '🌐' },
   cold_call: { label: '电话拓展', icon: '📞' },
-  event: { label: '活动', icon: '🎪' },
-  advertisement: { label: '广告', icon: '📢' },
-  other: { label: '其他', icon: '📋' },
-};
-
-// ============ 销售漏斗配置 ============
-export const PIPELINE_STAGES: OpportunityStage[] = [
-  'qualified',
-  'discovery',
-  'proposal', 
-  'negotiation',
-  'contract',
-  'closed_won',
-  'closed_lost',
-];
-
-// ============ 阶段转换规则 ============
-export const STAGE_TRANSITIONS: Record<OpportunityStage, OpportunityStage[]> = {
-  qualified: ['discovery', 'closed_lost'],
-  discovery: ['proposal', 'closed_lost'],
-  proposal: ['negotiation', 'closed_lost'],
-  negotiation: ['contract', 'closed_lost'],
-  contract: ['closed_won', 'closed_lost'],
-  closed_won: [],
-  closed_lost: [],
+  event: { label: '展会活动', icon: '🎪' },
+  advertisement: { label: '广告投放', icon: '📺' },
+  other: { label: '其他来源', icon: '📌' },
 };

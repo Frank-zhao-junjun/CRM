@@ -16,6 +16,7 @@ import {
   FileText,
   Package,
   Clock,
+  FileBarGraph,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
@@ -52,6 +53,12 @@ const navigation = [
     href: '/quotes', 
     icon: FileText,
     gradient: 'from-indigo-500 to-blue-500',
+  },
+  { 
+    name: '合同', 
+    href: '/contracts', 
+    icon: FileBarGraph,
+    gradient: 'from-violet-500 to-purple-500',
   },
   { 
     name: '订单', 

@@ -259,6 +259,56 @@ export const orderItems = pgTable(
   ]
 );
 
+// ============ 合同管理 ============
+// 合同表
+export const contracts = pgTable(
+  "contracts",
+  {
+    id: varchar("id", { length: 36 }).primaryKey().default(sql`gen_random_uuid()`),
+    contract_number: varchar("contract_number", { length: 50 }).notNull().unique(),
+    customer_id: varchar("customer_id", { length: 36 }).references(() => customers.id, { onDelete: "set null" }),
+    customer_name: varchar("customer_name", { length: 255 }),
+    opportunity_id: varchar("opportunity_id", { length: 36 }).references(() => opportunities.id, { onDelete: "set null" }),
+    opportunity_name: varchar("opportunity_name", { length: 255 }),
+    quote_id: varchar("quote_id", { length: 36 }).references(() => quotes.id, { onDelete: "set null" }),
+    quote_title: varchar("quote_title", { length: 255 }),
+    status: varchar("status", { length: 20 }).notNull().default("draft"), // draft, executing, completed, terminated
+    amount: numeric("amount", { precision: 15, scale: 2 }).notNull().default("0"),
+    signing_date: timestamp("signing_date"),
+    effective_date: timestamp("effective_date"),
+    expiration_date: timestamp("expiration_date"),
+    terms: text("terms"),
+    custom_terms: text("custom_terms"),
+    notes: text("notes"),
+    created_at: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+    updated_at: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => [
+    index("contracts_customer_id_idx").on(table.customer_id),
+    index("contracts_opportunity_id_idx").on(table.opportunity_id),
+    index("contracts_quote_id_idx").on(table.quote_id),
+    index("contracts_status_idx").on(table.status),
+  ]
+);
+
+// 合同履约节点表
+export const contractMilestones = pgTable(
+  "contract_milestones",
+  {
+    id: varchar("id", { length: 36 }).primaryKey().default(sql`gen_random_uuid()`),
+    contract_id: varchar("contract_id", { length: 36 }).notNull().references(() => contracts.id, { onDelete: "cascade" }),
+    name: varchar("name", { length: 255 }).notNull(),
+    description: text("description"),
+    expected_date: timestamp("expected_date"),
+    completed_date: timestamp("completed_date"),
+    is_completed: boolean("is_completed").default(false).notNull(),
+    sort_order: integer("sort_order").notNull().default(0),
+  },
+  (table) => [
+    index("contract_milestones_contract_id_idx").on(table.contract_id),
+  ]
+);
+
 // 类型导出
 export type Customer = typeof customers.$inferSelect;
 export type InsertCustomer = typeof customers.$inferInsert;
@@ -282,3 +332,7 @@ export type Order = typeof orders.$inferSelect;
 export type InsertOrder = typeof orders.$inferInsert;
 export type OrderItem = typeof orderItems.$inferSelect;
 export type InsertOrderItem = typeof orderItems.$inferInsert;
+export type Contract = typeof contracts.$inferSelect;
+export type InsertContract = typeof contracts.$inferInsert;
+export type ContractMilestone = typeof contractMilestones.$inferSelect;
+export type InsertContractMilestone = typeof contractMilestones.$inferInsert;

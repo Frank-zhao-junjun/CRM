@@ -1,6 +1,6 @@
 import 'server-only';
 import { getSupabaseClient } from '@/storage/database/supabase-client';
-import type { Customer, InsertCustomer, Contact, InsertContact, Opportunity, InsertOpportunity, Activity, InsertActivity, FollowUp, InsertFollowUp, Notification, InsertNotification, Quote, InsertQuote, QuoteItem, InsertQuoteItem, Order, InsertOrder, OrderItem, InsertOrderItem } from '@/storage/database/shared/schema';
+import type { Customer, InsertCustomer, Contact, InsertContact, Opportunity, InsertOpportunity, Activity, InsertActivity, FollowUp, InsertFollowUp, Notification, InsertNotification, Quote, InsertQuote, QuoteItem, InsertQuoteItem, Order, InsertOrder, OrderItem, InsertOrderItem, Contract, InsertContract, ContractMilestone, InsertContractMilestone } from '@/storage/database/shared/schema';
 
 // CRM 数据库服务 - 支持线索管理
 
@@ -839,4 +839,209 @@ export async function getTodayTodos(overdueDays: number = 7): Promise<{
     todayFollowUps: (followUpData || []) as FollowUp[],
     overdueFollowUps: (overdueData || []) as FollowUp[],
   };
+}
+
+// ============ Contract 操作 (合同管理) ============
+
+export async function getAllContracts(): Promise<Contract[]> {
+  const client = getSupabaseClient();
+  const { data, error } = await client
+    .from('contracts')
+    .select('*')
+    .order('created_at', { ascending: false });
+  if (error) throw new Error(`获取合同列表失败: ${error.message}`);
+  return data as Contract[];
+}
+
+export async function getContractById(id: string): Promise<Contract | null> {
+  const client = getSupabaseClient();
+  const { data, error } = await client
+    .from('contracts')
+    .select('*')
+    .eq('id', id)
+    .maybeSingle();
+  if (error) throw new Error(`获取合同失败: ${error.message}`);
+  return data as Contract | null;
+}
+
+export async function getContractByNumber(contractNumber: string): Promise<Contract | null> {
+  const client = getSupabaseClient();
+  const { data, error } = await client
+    .from('contracts')
+    .select('*')
+    .eq('contract_number', contractNumber)
+    .maybeSingle();
+  if (error) throw new Error(`获取合同失败: ${error.message}`);
+  return data as Contract | null;
+}
+
+export async function getContractsByCustomer(customerId: string): Promise<Contract[]> {
+  const client = getSupabaseClient();
+  const { data, error } = await client
+    .from('contracts')
+    .select('*')
+    .eq('customer_id', customerId)
+    .order('created_at', { ascending: false });
+  if (error) throw new Error(`获取客户合同失败: ${error.message}`);
+  return data as Contract[];
+}
+
+export async function getContractsByOpportunity(opportunityId: string): Promise<Contract[]> {
+  const client = getSupabaseClient();
+  const { data, error } = await client
+    .from('contracts')
+    .select('*')
+    .eq('opportunity_id', opportunityId)
+    .order('created_at', { ascending: false });
+  if (error) throw new Error(`获取商机合同失败: ${error.message}`);
+  return data as Contract[];
+}
+
+export async function getContractsByQuote(quoteId: string): Promise<Contract[]> {
+  const client = getSupabaseClient();
+  const { data, error } = await client
+    .from('contracts')
+    .select('*')
+    .eq('quote_id', quoteId)
+    .order('created_at', { ascending: false });
+  if (error) throw new Error(`获取报价单合同失败: ${error.message}`);
+  return data as Contract[];
+}
+
+export async function createContract(contract: InsertContract, milestones?: InsertContractMilestone[]): Promise<Contract> {
+  const client = getSupabaseClient();
+  const { data, error } = await client
+    .from('contracts')
+    .insert(contract)
+    .select()
+    .single();
+  if (error) throw new Error(`创建合同失败: ${error.message}`);
+  
+  // 如果有履约节点，一并创建
+  if (milestones && milestones.length > 0) {
+    const milestonesWithContractId = milestones.map(m => ({
+      ...m,
+      contract_id: data.id,
+    }));
+    const { error: milestoneError } = await client
+      .from('contract_milestones')
+      .insert(milestonesWithContractId);
+    if (milestoneError) throw new Error(`创建合同履约节点失败: ${milestoneError.message}`);
+  }
+  
+  return data as Contract;
+}
+
+export async function updateContract(id: string, updates: Partial<InsertContract>): Promise<Contract> {
+  const client = getSupabaseClient();
+  const { data, error } = await client
+    .from('contracts')
+    .update({ ...updates, updated_at: new Date().toISOString() })
+    .eq('id', id)
+    .select()
+    .single();
+  if (error) throw new Error(`更新合同失败: ${error.message}`);
+  return data as Contract;
+}
+
+export async function deleteContract(id: string): Promise<void> {
+  const client = getSupabaseClient();
+  const { error } = await client
+    .from('contracts')
+    .delete()
+    .eq('id', id);
+  if (error) throw new Error(`删除合同失败: ${error.message}`);
+}
+
+// ============ Contract Milestone 操作 (合同履约节点) ============
+
+export async function getMilestonesByContract(contractId: string): Promise<ContractMilestone[]> {
+  const client = getSupabaseClient();
+  const { data, error } = await client
+    .from('contract_milestones')
+    .select('*')
+    .eq('contract_id', contractId)
+    .order('sort_order', { ascending: true });
+  if (error) throw new Error(`获取合同履约节点失败: ${error.message}`);
+  return data as ContractMilestone[];
+}
+
+export async function createMilestone(milestone: InsertContractMilestone): Promise<ContractMilestone> {
+  const client = getSupabaseClient();
+  const { data, error } = await client
+    .from('contract_milestones')
+    .insert(milestone)
+    .select()
+    .single();
+  if (error) throw new Error(`创建履约节点失败: ${error.message}`);
+  return data as ContractMilestone;
+}
+
+export async function updateMilestone(id: string, updates: Partial<InsertContractMilestone>): Promise<ContractMilestone> {
+  const client = getSupabaseClient();
+  const { data, error } = await client
+    .from('contract_milestones')
+    .update(updates)
+    .eq('id', id)
+    .select()
+    .single();
+  if (error) throw new Error(`更新履约节点失败: ${error.message}`);
+  return data as ContractMilestone;
+}
+
+export async function completeMilestone(id: string): Promise<ContractMilestone> {
+  const client = getSupabaseClient();
+  const { data, error } = await client
+    .from('contract_milestones')
+    .update({ 
+      is_completed: true, 
+      completed_date: new Date().toISOString() 
+    })
+    .eq('id', id)
+    .select()
+    .single();
+  if (error) throw new Error(`完成履约节点失败: ${error.message}`);
+  return data as ContractMilestone;
+}
+
+export async function deleteMilestone(id: string): Promise<void> {
+  const client = getSupabaseClient();
+  const { error } = await client
+    .from('contract_milestones')
+    .delete()
+    .eq('id', id);
+  if (error) throw new Error(`删除履约节点失败: ${error.message}`);
+}
+
+// ============ 从报价单创建合同 ============
+
+export async function createContractFromQuote(quoteId: string, contractData?: Partial<InsertContract>): Promise<Contract> {
+  // 获取报价单信息
+  const quote = await getQuoteById(quoteId);
+  if (!quote) throw new Error('报价单不存在');
+  
+  // 生成合同编号
+  const timestamp = new Date().toISOString().slice(0, 10).replace(/-/g, '');
+  const random = Math.random().toString(36).substring(2, 6).toUpperCase();
+  const contractNumber = `CT${timestamp}${random}`;
+  
+  // 获取商机信息
+  const opp = await getOpportunityById(quote.opportunity_id);
+  
+  const contract = await createContract({
+    id: `contract_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
+    contract_number: contractNumber,
+    customer_id: quote.customer_id,
+    customer_name: quote.customer_name,
+    opportunity_id: quote.opportunity_id,
+    opportunity_name: opp?.title,
+    quote_id: quoteId,
+    quote_title: quote.title,
+    status: 'draft',
+    amount: quote.total,
+    terms: quote.terms,
+    ...contractData,
+  });
+  
+  return contract;
 }

@@ -26,6 +26,7 @@ import { Button } from '@/components/ui/button';
 import { SalesFunnel } from '@/components/crm/sales-funnel';
 import { QuickFollowUp } from '@/components/crm/quick-follow-up';
 import { TodayTodoCard } from '@/components/crm/today-todo';
+import { StageConversionChart, StageValueDistribution, WinProbabilityForecast } from '@/components/crm/dashboard-charts';
 import type { OpportunityStage } from '@/lib/crm-types';
 
 const statCards = [
@@ -205,7 +206,34 @@ export default function DashboardPage() {
           </CardContent>
         </Card>
 
-        {/* 最近活动 */}
+        {/* 销售数据分析 */}
+        <Card className="card-hover animate-in slide-in-from-right-4 duration-500">
+          <CardHeader className="relative">
+            <div className="absolute -left-4 top-0 bottom-0 w-1 bg-gradient-to-b from-primary to-purple-500 rounded-full" />
+            <CardTitle className="flex items-center gap-2">
+              <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-gradient-to-br from-primary/10 to-purple-500/10">
+                <TrendingUp className="h-4 w-4 text-primary" />
+              </div>
+              销售分析
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-2 gap-4">
+              <StageConversionChart data={funnelData} />
+              <WinProbabilityForecast data={funnelData} />
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* 管道金额分布 */}
+      <Card className="card-hover animate-in slide-in-from-bottom-4 duration-500">
+        <CardContent className="p-4">
+          <StageValueDistribution data={funnelData} />
+        </CardContent>
+      </Card>
+
+      <div className="grid gap-6 lg:grid-cols-2">
         <Card className="card-hover animate-in slide-in-from-right-4 duration-500">
           <CardHeader className="relative">
             <div className="absolute -left-4 top-0 bottom-0 w-1 bg-gradient-to-b from-green-500 to-emerald-500 rounded-full" />

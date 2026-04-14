@@ -226,6 +226,50 @@ export const ORDER_STATUS_CONFIG: Record<OrderStatus, { label: string; className
   cancelled: { label: '已取消', className: 'bg-red-500/10 text-red-600 dark:text-red-400 border-red-500/20', color: 'text-red-600 dark:text-red-400', step: -1 },
 };
 
+// ============ 合同管理 ============
+// 合同状态: 草稿 → 执行中 → 已完成 → 已终止
+export type ContractStatus = 'draft' | 'executing' | 'completed' | 'terminated';
+
+export interface ContractMilestone {
+  id: string;
+  contractId: string;
+  name: string;
+  description?: string;
+  expectedDate?: string;
+  completedDate?: string;
+  isCompleted: boolean;
+  sortOrder: number;
+}
+
+export interface Contract {
+  id: string;
+  contractNumber: string;
+  customerId?: string;
+  customerName?: string;
+  opportunityId?: string;
+  opportunityName?: string;
+  quoteId?: string;
+  quoteTitle?: string;
+  status: ContractStatus;
+  amount: number;
+  signingDate?: string;
+  effectiveDate?: string;
+  expirationDate?: string;
+  terms?: string;
+  customTerms?: string;
+  milestones?: ContractMilestone[];
+  notes?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export const CONTRACT_STATUS_CONFIG: Record<ContractStatus, { label: string; className: string; color: string; step: number }> = {
+  draft: { label: '草稿', className: 'bg-gray-500/10 text-gray-600 dark:text-gray-400 border-gray-500/20', color: 'text-gray-600 dark:text-gray-400', step: 0 },
+  executing: { label: '执行中', className: 'bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20', color: 'text-blue-600 dark:text-blue-400', step: 1 },
+  completed: { label: '已完成', className: 'bg-green-500/10 text-green-600 dark:text-green-400 border-green-500/20', color: 'text-green-600 dark:text-green-400', step: 2 },
+  terminated: { label: '已终止', className: 'bg-red-500/10 text-red-600 dark:text-red-400 border-red-500/20', color: 'text-red-600 dark:text-red-400', step: -1 },
+};
+
 // ============ 今日待办 ============
 export interface TodayTodo {
   todayClosing: SalesOpportunity[];

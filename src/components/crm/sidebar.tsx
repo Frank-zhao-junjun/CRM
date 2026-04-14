@@ -13,6 +13,7 @@ import {
   Menu,
   Zap,
   Lightbulb,
+  FileText,
   Package,
   Clock,
 } from 'lucide-react';
@@ -45,6 +46,12 @@ const navigation = [
     href: '/opportunities', 
     icon: Briefcase,
     gradient: 'from-orange-500 to-amber-500',
+  },
+  { 
+    name: '报价单', 
+    href: '/quotes', 
+    icon: FileText,
+    gradient: 'from-indigo-500 to-blue-500',
   },
   { 
     name: '联系人', 

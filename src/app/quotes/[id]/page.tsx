@@ -5,6 +5,7 @@ import { useRouter, useParams } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Separator } from '@/components/ui/separator';
 import {
   Table,
   TableBody,
@@ -13,10 +14,19 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { ArrowLeft, Send, ArrowRight, FileText, Briefcase, GitBranch, MessageSquare, Building2 } from 'lucide-react';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import { ArrowLeft, Send, ArrowRight, FileText, Briefcase, GitBranch, MessageSquare, Building2, Edit, Trash2, Calendar } from 'lucide-react';
 import Link from 'next/link';
 import { QUOTE_STATUS_CONFIG, type Quote, type QuoteStatus } from '@/lib/crm-types';
 import { format } from 'date-fns';
+import { zhCN } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 
 export default function QuoteDetailPage() {
@@ -25,6 +35,7 @@ export default function QuoteDetailPage() {
   const id = params.id as string;
   const [quote, setQuote] = useState<Quote | null>(null);
   const [allQuotesForOpp, setAllQuotesForOpp] = useState<Quote[]>([]);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
 
   useEffect(() => {
     const fetchQuote = async () => {
@@ -117,11 +128,19 @@ export default function QuoteDetailPage() {
     } catch { /* silent */ }
   };
 
+  const handleDelete = async () => {
+    try {
+      await fetch(`/api/quotes?id=${id}`, { method: 'DELETE' });
+      router.push('/quotes');
+    } catch { /* silent */ }
+  };
+
   if (!quote) {
     return <div className="flex items-center justify-center h-64"><p className="text-muted-foreground">加载中...</p></div>;
   }
 
   const statusConf = QUOTE_STATUS_CONFIG[quote.status];
+  const isEditable = quote.status === 'draft';
 
   return (
     <div className="space-y-6">
@@ -138,15 +157,22 @@ export default function QuoteDetailPage() {
                 V{quote.version}
               </Badge>
             </div>
-            <p className="text-muted-foreground text-sm mt-1">创建于 {format(new Date(quote.createdAt), 'yyyy-MM-dd HH:mm')}</p>
+            <p className="text-muted-foreground text-sm mt-1">创建于 {format(new Date(quote.createdAt), 'yyyy-MM-dd HH:mm', { locale: zhCN })}</p>
           </div>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
           <Badge className={statusConf.className}>{statusConf.label}</Badge>
-          {quote.status === 'draft' && (
-            <Button onClick={() => handleAction('send')} className="gap-2">
-              <Send className="h-4 w-4" /> 发送报价
-            </Button>
+          {isEditable && (
+            <>
+              <Button variant="outline" asChild>
+                <Link href={`/quotes/${id}/edit`}>
+                  <Edit className="h-4 w-4 mr-2" /> 编辑
+                </Link>
+              </Button>
+              <Button onClick={() => handleAction('send')} className="gap-2">
+                <Send className="h-4 w-4" /> 发送报价
+              </Button>
+            </>
           )}
           {quote.status === 'active' && (
             <>
@@ -159,13 +185,16 @@ export default function QuoteDetailPage() {
               <ArrowRight className="h-4 w-4" /> 转为订单
             </Button>
           )}
+          <Button variant="ghost" size="icon" className="text-red-500 hover:text-red-600" onClick={() => setShowDeleteDialog(true)}>
+            <Trash2 className="h-4 w-4" />
+          </Button>
         </div>
       </div>
 
       <div className="grid gap-6 lg:grid-cols-3">
         {/* Main Content */}
         <div className="lg:col-span-2 space-y-6">
-          {/* Items */}
+          {/* Quote Items */}
           <Card>
             <CardHeader><CardTitle className="flex items-center gap-2"><FileText className="h-5 w-5" /> 报价明细</CardTitle></CardHeader>
             <CardContent>
@@ -196,6 +225,13 @@ export default function QuoteDetailPage() {
                   ))}
                 </TableBody>
               </Table>
+              {/* Summary row */}
+              <div className="flex justify-end p-4 border-t bg-muted/30 text-sm space-x-6">
+                <span>小计: ¥{quote.subtotal.toLocaleString()}</span>
+                <span>折扣: -¥{quote.discount.toLocaleString()}</span>
+                <span>税额: ¥{quote.tax.toLocaleString()}</span>
+                <span className="font-bold text-primary">总计: ¥{quote.total.toLocaleString()}</span>
+              </div>
             </CardContent>
           </Card>
 
@@ -204,6 +240,13 @@ export default function QuoteDetailPage() {
             <Card>
               <CardHeader><CardTitle>条款说明</CardTitle></CardHeader>
               <CardContent><p className="text-sm whitespace-pre-wrap">{quote.terms}</p></CardContent>
+            </Card>
+          )}
+
+          {quote.notes && (
+            <Card>
+              <CardHeader><CardTitle>备注</CardTitle></CardHeader>
+              <CardContent><p className="text-sm whitespace-pre-wrap">{quote.notes}</p></CardContent>
             </Card>
           )}
         </div>
@@ -217,16 +260,27 @@ export default function QuoteDetailPage() {
               <div className="flex justify-between text-sm"><span className="text-muted-foreground">小计</span><span>¥{quote.subtotal.toLocaleString()}</span></div>
               <div className="flex justify-between text-sm"><span className="text-muted-foreground">折扣</span><span>-¥{quote.discount.toLocaleString()}</span></div>
               <div className="flex justify-between text-sm"><span className="text-muted-foreground">税额</span><span>¥{quote.tax.toLocaleString()}</span></div>
-              <div className="border-t pt-3 flex justify-between font-bold text-lg"><span>总计</span><span className="text-primary">¥{quote.total.toLocaleString()}</span></div>
+              <Separator />
+              <div className="flex justify-between font-bold text-lg"><span>总计</span><span className="text-primary">¥{quote.total.toLocaleString()}</span></div>
             </CardContent>
           </Card>
 
           {/* Details */}
           <Card>
             <CardHeader><CardTitle>详细信息</CardTitle></CardHeader>
-            <CardContent className="space-y-3 text-sm">
-              <div><span className="text-muted-foreground">状态</span><div className="mt-1"><Badge className={statusConf.className}>{statusConf.label}</Badge></div></div>
-              <div><span className="text-muted-foreground">版本</span><div className="mt-1"><Badge variant="outline" className={quote.version > 1 ? "bg-purple-50 text-purple-600 border-purple-200" : "bg-gray-50 text-gray-500 border-gray-200"}>V{quote.version}</Badge></div></div>
+            <CardContent className="space-y-4 text-sm">
+              <div>
+                <span className="text-muted-foreground">状态</span>
+                <div className="mt-1"><Badge className={statusConf.className}>{statusConf.label}</Badge></div>
+              </div>
+              <div>
+                <span className="text-muted-foreground">版本</span>
+                <div className="mt-1">
+                  <Badge variant="outline" className={quote.version > 1 ? "bg-purple-50 text-purple-600 border-purple-200" : "bg-gray-50 text-gray-500 border-gray-200"}>
+                    V{quote.version}
+                  </Badge>
+                </div>
+              </div>
               {quote.customerName && (
                 <div>
                   <span className="text-muted-foreground">客户</span>
@@ -245,17 +299,45 @@ export default function QuoteDetailPage() {
                   </Link>
                 </div>
               </div>
-              {quote.validFrom && <div><span className="text-muted-foreground">有效期开始</span><div className="mt-1">{format(new Date(quote.validFrom), 'yyyy-MM-dd')}</div></div>}
-              {quote.validUntil && <div><span className="text-muted-foreground">有效期结束</span><div className="mt-1">{format(new Date(quote.validUntil), 'yyyy-MM-dd')}</div></div>}
-              {quote.revisionReason && (
+              {quote.validFrom && (
                 <div>
-                  <span className="text-purple-600 font-medium flex items-center gap-1"><MessageSquare className="h-3.5 w-3.5" /> 修订原因</span>
-                  <div className="mt-1 text-sm bg-purple-50/50 border border-purple-100 rounded-md p-2 text-purple-700 whitespace-pre-wrap">{quote.revisionReason}</div>
+                  <span className="text-muted-foreground">有效期开始</span>
+                  <div className="mt-1 flex items-center gap-1">
+                    <Calendar className="h-3.5 w-3.5" />
+                    {format(new Date(quote.validFrom), 'yyyy-MM-dd')}
+                  </div>
                 </div>
               )}
-              {quote.notes && <div><span className="text-muted-foreground">备注</span><div className="mt-1 whitespace-pre-wrap">{quote.notes}</div></div>}
+              {quote.validUntil && (
+                <div>
+                  <span className="text-muted-foreground">有效期结束</span>
+                  <div className="mt-1 flex items-center gap-1">
+                    <Calendar className="h-3.5 w-3.5" />
+                    {format(new Date(quote.validUntil), 'yyyy-MM-dd')}
+                  </div>
+                </div>
+              )}
+              <Separator />
+              <div className="flex justify-between text-xs text-muted-foreground">
+                <span>创建: {format(new Date(quote.createdAt), 'yyyy-MM-dd HH:mm', { locale: zhCN })}</span>
+              </div>
+              <div className="flex justify-between text-xs text-muted-foreground">
+                <span>更新: {format(new Date(quote.updatedAt), 'yyyy-MM-dd HH:mm', { locale: zhCN })}</span>
+              </div>
             </CardContent>
           </Card>
+
+          {/* Revision Reason */}
+          {quote.revisionReason && (
+            <Card>
+              <CardHeader><CardTitle className="flex items-center gap-2"><MessageSquare className="h-4 w-4 text-purple-500" /> 修订原因</CardTitle></CardHeader>
+              <CardContent>
+                <div className="text-sm bg-purple-50/50 border border-purple-100 rounded-md p-3 text-purple-700 whitespace-pre-wrap">
+                  {quote.revisionReason}
+                </div>
+              </CardContent>
+            </Card>
+          )}
 
           {/* Version History */}
           {allQuotesForOpp.length > 1 && (
@@ -306,6 +388,24 @@ export default function QuoteDetailPage() {
           )}
         </div>
       </div>
+
+      {/* Delete Dialog */}
+      <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Trash2 className="h-5 w-5 text-red-500" /> 确认删除
+            </DialogTitle>
+            <DialogDescription>
+              确定要删除报价单 &ldquo;{quote.title}&rdquo; 吗？此操作不可撤销。
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowDeleteDialog(false)}>取消</Button>
+            <Button variant="destructive" onClick={handleDelete}>确认删除</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

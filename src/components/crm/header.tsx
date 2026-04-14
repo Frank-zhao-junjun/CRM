@@ -11,7 +11,9 @@ const pageTitles: Record<string, string> = {
   '/customers': '客户管理',
   '/customers/new': '新建客户',
   '/opportunities': '商机',
-  '/opportunities/new': '新建机会',
+  '/opportunities/new': '新建商机',
+  '/quotes': '报价单',
+  '/quotes/new': '新建报价单',
   '/contacts': '联系人',
   '/contacts/new': '新建联系人',
   '/settings': '系统设置',
@@ -28,8 +30,10 @@ export function Header() {
   const getDynamicTitle = () => {
     if (pathname.match(/^\/customers\/[^/]+$/)) return '客户详情';
     if (pathname.match(/^\/customers\/[^/]+\/edit$/)) return '编辑客户';
-    if (pathname.match(/^\/opportunities\/[^/]+$/)) return '机会详情';
-    if (pathname.match(/^\/opportunities\/[^/]+\/edit$/)) return '编辑机会';
+    if (pathname.match(/^\/opportunities\/[^/]+$/)) return '商机详情';
+    if (pathname.match(/^\/opportunities\/[^/]+\/edit$/)) return '编辑商机';
+    if (pathname.match(/^\/quotes\/[^/]+$/)) return '报价单详情';
+    if (pathname.match(/^\/quotes\/[^/]+\/edit$/)) return '编辑报价单';
     if (pathname.match(/^\/contacts\/[^/]+$/)) return '联系人详情';
     if (pathname.match(/^\/contacts\/[^/]+\/edit$/)) return '编辑联系人';
     if (pathname.match(/^\/leads\/[^/]+$/)) return '线索详情';

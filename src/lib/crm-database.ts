@@ -756,13 +756,17 @@ export async function convertQuoteToOrder(quoteId: string): Promise<Order> {
     .select('*')
     .eq('quote_id', quoteId);
 
-  // Get opportunity to find customer_id
+  // Get opportunity to find customer_id and customer_name
   const { data: opp } = await client
     .from('opportunities')
-    .select('customer_id')
+    .select('customer_id, customer_name')
     .eq('id', quoteData.opportunity_id)
     .maybeSingle();
   if (!opp) throw new Error('关联商机不存在');
+
+  // Generate order number
+  const timestamp = Date.now();
+  const orderNumber = `ORD-${timestamp.toString(36).toUpperCase()}`;
 
   // Create order from quote
   const orderItems = (quoteItemsData || []).map((item: Record<string, unknown>) => ({
@@ -770,24 +774,26 @@ export async function convertQuoteToOrder(quoteId: string): Promise<Order> {
     description: item.description as string | null,
     quantity: item.quantity as number,
     unit_price: item.unit_price as string,
+    discount: item.discount as string || '0',
     subtotal: item.subtotal as string,
   }));
 
   const order = await createOrder(
     {
+      order_number: orderNumber,
       quote_id: quoteId,
       opportunity_id: quoteData.opportunity_id,
       customer_id: opp.customer_id,
-      status: 'pending',
+      customer_name: opp.customer_name || quoteData.customer_name,
+      status: 'draft', // New status: draft
       subtotal: quoteData.subtotal,
+      discount: quoteData.discount || '0',
       tax: quoteData.tax,
       total: quoteData.total,
       notes: quoteData.notes,
     },
     orderItems
   );
-
-  // Update quote status (already accepted since we validated above)
 
   return order;
 }

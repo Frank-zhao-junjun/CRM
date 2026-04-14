@@ -211,6 +211,7 @@ export const quoteItems = pgTable(
 );
 
 // 成交订单表
+// 订单状态: draft | confirmed | awaiting_payment | paid | completed | cancelled
 export const orders = pgTable(
   "orders",
   {
@@ -218,11 +219,14 @@ export const orders = pgTable(
     quote_id: varchar("quote_id", { length: 36 }).references(() => quotes.id, { onDelete: "set null" }),
     opportunity_id: varchar("opportunity_id", { length: 36 }).notNull().references(() => opportunities.id, { onDelete: "cascade" }),
     customer_id: varchar("customer_id", { length: 36 }).notNull().references(() => customers.id, { onDelete: "cascade" }),
+    customer_name: varchar("customer_name", { length: 255 }),
     order_number: varchar("order_number", { length: 50 }).notNull().unique(),
-    status: varchar("status", { length: 20 }).notNull().default("pending"), // pending, confirmed, fulfilled, cancelled
+    status: varchar("status", { length: 30 }).notNull().default("draft"), // draft, confirmed, awaiting_payment, paid, completed, cancelled
+    payment_method: varchar("payment_method", { length: 30 }), // bank_transfer, cash, credit_card, other
     order_date: timestamp("order_date"),
     delivery_date: timestamp("delivery_date"),
     subtotal: numeric("subtotal", { precision: 15, scale: 2 }).notNull().default("0"),
+    discount: numeric("discount", { precision: 15, scale: 2 }).notNull().default("0"),
     tax: numeric("tax", { precision: 15, scale: 2 }).notNull().default("0"),
     total: numeric("total", { precision: 15, scale: 2 }).notNull().default("0"),
     notes: text("notes"),
@@ -246,6 +250,7 @@ export const orderItems = pgTable(
     description: text("description"),
     quantity: integer("quantity").notNull().default(1),
     unit_price: numeric("unit_price", { precision: 15, scale: 2 }).notNull().default("0"),
+    discount: numeric("discount", { precision: 15, scale: 2 }).notNull().default("0"),
     subtotal: numeric("subtotal", { precision: 15, scale: 2 }).notNull().default("0"),
     sort_order: integer("sort_order").notNull().default(0),
   },

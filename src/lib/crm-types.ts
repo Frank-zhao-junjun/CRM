@@ -179,7 +179,8 @@ export const QUOTE_STATUS_CONFIG: Record<QuoteStatus, { label: string; className
 };
 
 // ============ 成交订单 ============
-export type OrderStatus = 'pending' | 'confirmed' | 'fulfilled' | 'cancelled';
+// 订单状态: 草稿 → 已确认 → 待付款 → 已付款 → 已完成 → 已取消
+export type OrderStatus = 'draft' | 'confirmed' | 'awaiting_payment' | 'paid' | 'completed' | 'cancelled';
 
 export interface OrderItem {
   id: string;
@@ -188,6 +189,7 @@ export interface OrderItem {
   description?: string;
   quantity: number;
   unitPrice: number;
+  discount: number;
   subtotal: number;
   sortOrder: number;
 }
@@ -195,14 +197,18 @@ export interface OrderItem {
 export interface Order {
   id: string;
   quoteId?: string;
+  quoteNumber?: string;
   opportunityId: string;
+  opportunityName?: string;
   customerId: string;
   customerName?: string;
   orderNumber: string;
   status: OrderStatus;
+  paymentMethod?: 'bank_transfer' | 'cash' | 'credit_card' | 'other';
   orderDate?: string;
   deliveryDate?: string;
   subtotal: number;
+  discount: number;
   tax: number;
   total: number;
   notes?: string;
@@ -211,11 +217,13 @@ export interface Order {
   updatedAt: string;
 }
 
-export const ORDER_STATUS_CONFIG: Record<OrderStatus, { label: string; className: string; color: string }> = {
-  pending: { label: '待确认', className: 'bg-yellow-500/10 text-yellow-600 dark:text-yellow-400 border-yellow-500/20', color: 'text-yellow-600 dark:text-yellow-400' },
-  confirmed: { label: '已确认', className: 'bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20', color: 'text-blue-600 dark:text-blue-400' },
-  fulfilled: { label: '已完成', className: 'bg-green-500/10 text-green-600 dark:text-green-400 border-green-500/20', color: 'text-green-600 dark:text-green-400' },
-  cancelled: { label: '已取消', className: 'bg-red-500/10 text-red-600 dark:text-red-400 border-red-500/20', color: 'text-red-600 dark:text-red-400' },
+export const ORDER_STATUS_CONFIG: Record<OrderStatus, { label: string; className: string; color: string; step: number }> = {
+  draft: { label: '草稿', className: 'bg-gray-500/10 text-gray-600 dark:text-gray-400 border-gray-500/20', color: 'text-gray-600 dark:text-gray-400', step: 0 },
+  confirmed: { label: '已确认', className: 'bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20', color: 'text-blue-600 dark:text-blue-400', step: 1 },
+  awaiting_payment: { label: '待付款', className: 'bg-orange-500/10 text-orange-600 dark:text-orange-400 border-orange-500/20', color: 'text-orange-600 dark:text-orange-400', step: 2 },
+  paid: { label: '已付款', className: 'bg-green-500/10 text-green-600 dark:text-green-400 border-green-500/20', color: 'text-green-600 dark:text-green-400', step: 3 },
+  completed: { label: '已完成', className: 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20', color: 'text-emerald-600 dark:text-emerald-400', step: 4 },
+  cancelled: { label: '已取消', className: 'bg-red-500/10 text-red-600 dark:text-red-400 border-red-500/20', color: 'text-red-600 dark:text-red-400', step: -1 },
 };
 
 // ============ 今日待办 ============

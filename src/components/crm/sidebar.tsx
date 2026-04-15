@@ -23,7 +23,22 @@ import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { useState } from 'react';
 
-const navigation = [
+interface SubMenuItem {
+  name: string;
+  href: string;
+}
+
+interface NavItemType {
+  name: string;
+  href: string;
+  icon: React.ComponentType<{ className?: string }>;
+  gradient: string;
+  badge?: string;
+  isSection?: boolean;
+  subMenu?: SubMenuItem[];
+}
+
+const navigation: NavItemType[] = [
   { 
     name: '仪表盘', 
     href: '/', 
@@ -84,6 +99,19 @@ const navigation = [
     href: '/follow-ups', 
     icon: Clock,
     gradient: 'from-rose-500 to-pink-500',
+  },
+  { 
+    name: '报表中心', 
+    href: '/reports', 
+    icon: FileBarGraph,
+    gradient: 'from-violet-500 to-purple-500',
+    isSection: true,
+    subMenu: [
+      { name: '销售漏斗', href: '/reports/funnel' },
+      { name: '团队排名', href: '/reports/team-ranking' },
+      { name: '收入预测', href: '/reports/forecast' },
+      { name: '转化分析', href: '/reports/conversion' },
+    ],
   },
 ];
 
@@ -190,16 +218,36 @@ export function Sidebar() {
             {/* Navigation */}
             <nav className="flex-1 px-3 py-4 space-y-1">
               {navigation.map((item) => (
-                <NavItem
-                  key={item.name}
-                  href={item.href}
-                  icon={item.icon}
-                  label={item.name}
-                  isActive={isActive(item.href)}
-                  collapsed={false}
-                  gradient={item.gradient}
-                  onClick={() => setMobileOpen(false)}
-                />
+                item.isSection && item.subMenu ? (
+                  <div key={item.name} className="space-y-1">
+                    <div className="flex items-center gap-3 px-3 py-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                      {item.name}
+                    </div>
+                    {item.subMenu.map((subItem) => (
+                      <NavItem
+                        key={subItem.href}
+                        href={subItem.href}
+                        icon={item.icon}
+                        label={subItem.name}
+                        isActive={isActive(subItem.href)}
+                        collapsed={false}
+                        gradient={item.gradient}
+                        onClick={() => setMobileOpen(false)}
+                      />
+                    ))}
+                  </div>
+                ) : (
+                  <NavItem
+                    key={item.name}
+                    href={item.href}
+                    icon={item.icon}
+                    label={item.name}
+                    isActive={isActive(item.href)}
+                    collapsed={false}
+                    gradient={item.gradient}
+                    onClick={() => setMobileOpen(false)}
+                  />
+                )
               ))}
             </nav>
 
@@ -268,15 +316,37 @@ export function Sidebar() {
           {/* Navigation */}
           <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto scrollbar-thin">
             {navigation.map((item) => (
-              <NavItem
-                key={item.name}
-                href={item.href}
-                icon={item.icon}
-                label={item.name}
-                isActive={isActive(item.href)}
-                collapsed={collapsed}
-                gradient={item.gradient}
-              />
+              item.isSection && item.subMenu ? (
+                <div key={item.name} className="space-y-1">
+                  <div className={cn(
+                    "flex items-center gap-3 px-3 py-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider",
+                    collapsed && "justify-center px-2"
+                  )}>
+                    {!collapsed && item.name}
+                  </div>
+                  {item.subMenu.map((subItem) => (
+                    <NavItem
+                      key={subItem.href}
+                      href={subItem.href}
+                      icon={item.icon}
+                      label={subItem.name}
+                      isActive={isActive(subItem.href)}
+                      collapsed={collapsed}
+                      gradient={item.gradient}
+                    />
+                  ))}
+                </div>
+              ) : (
+                <NavItem
+                  key={item.name}
+                  href={item.href}
+                  icon={item.icon}
+                  label={item.name}
+                  isActive={isActive(item.href)}
+                  collapsed={collapsed}
+                  gradient={item.gradient}
+                />
+              )
             ))}
           </nav>
 

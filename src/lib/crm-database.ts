@@ -1221,3 +1221,75 @@ export async function getTodayDuePaymentPlans(): Promise<PaymentPlan[]> {
   if (error) throw new Error(`获取今日到期回款计划失败: ${error.message}`);
   return data.map(transformPaymentPlan);
 }
+
+/**
+ * 获取阶段转化数据
+ */
+export async function getConversionData(timeRange: 'month' | 'quarter' | 'year' | 'all' = 'all') {
+  const client = getSupabaseClient();
+  
+  // 计算时间范围
+  const now = new Date();
+  let periodStart = new Date(0);
+  switch (timeRange) {
+    case 'month':
+      periodStart = new Date(now.getFullYear(), now.getMonth(), 1);
+      break;
+    case 'quarter':
+      const quarter = Math.floor(now.getMonth() / 3);
+      periodStart = new Date(now.getFullYear(), quarter * 3, 1);
+      break;
+    case 'year':
+      periodStart = new Date(now.getFullYear(), 0, 1);
+      break;
+    default:
+      periodStart = new Date(0);
+  }
+  
+  // 转化阶段配置
+  const CONVERSION_STAGES = [
+    { from: 'lead', to: 'qualified', label: '线索→Qualify' },
+    { from: 'qualified', to: 'discovery', label: 'Qualify→调研' },
+    { from: 'discovery', to: 'proposal', label: '调研→报价' },
+    { from: 'proposal', to: 'negotiation', label: '报价→谈判' },
+    { from: 'negotiation', to: 'contract', label: '谈判→签约' },
+    { from: 'contract', to: 'closed_won', label: '签约→成交' },
+  ];
+  
+  // 获取所有商机
+  const { data: opportunities } = await client
+    .from('opportunities')
+    .select('*');
+  
+  if (!opportunities) return [];
+  
+  // 按阶段分组
+  const stageCounts: Record<string, number> = {};
+  ['lead', 'qualified', 'discovery', 'proposal', 'negotiation', 'contract', 'closed_won', 'closed_lost'].forEach(stage => {
+    stageCounts[stage] = 0;
+  });
+  
+  opportunities.forEach(opp => {
+    const created = new Date(opp.created_at);
+    if (created >= periodStart) {
+      stageCounts[opp.stage] = (stageCounts[opp.stage] || 0) + 1;
+    }
+  });
+  
+  // 计算转化率
+  return CONVERSION_STAGES.map(conversion => {
+    const fromCount = stageCounts[conversion.from] || 0;
+    const toCount = stageCounts[conversion.to] || 0;
+    const conversionRate = fromCount > 0 ? (toCount / fromCount) * 100 : 0;
+    
+    return {
+      fromStage: conversion.from,
+      toStage: conversion.to,
+      stageLabel: conversion.label,
+      fromCount,
+      toCount,
+      conversionRate,
+      isBottleneck: conversionRate < 30 && fromCount > 5,
+    };
+  });
+}

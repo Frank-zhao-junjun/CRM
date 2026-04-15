@@ -22,7 +22,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Plus, Search, DollarSign, Building2, Calendar, Briefcase, ChevronRight, Trash2, TrendingUp, Clock, LayoutGrid } from 'lucide-react';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { Plus, Search, DollarSign, Building2, Calendar, Briefcase, ChevronRight, Trash2, TrendingUp, Clock, LayoutGrid, Download, FileSpreadsheet } from 'lucide-react';
 import Link from 'next/link';
 import { OpportunityStage } from '@/lib/crm-types';
 import { cn } from '@/lib/utils';
@@ -38,6 +44,22 @@ import {
 import { format } from 'date-fns';
 import { zhCN } from 'date-fns/locale';
 import { Progress } from '@/components/ui/progress';
+
+async function handleExport(format: 'csv' | 'xlsx') {
+  try {
+    const response = await fetch(`/api/export?type=opportunities&format=${format}`);
+    if (!response.ok) { const error = await response.json(); throw new Error(error.error || '导出失败'); }
+    const blob = await response.blob();
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `opportunities_${new Date().toISOString().split('T')[0]}.${format}`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  } catch (error) { alert(`导出失败: ${(error as Error).message}`); }
+}
 
 const stageConfig: Record<OpportunityStage, { label: string; className: string; gradient: string; color: string }> = {
   // 注意: lead 阶段已移除，销售线索在独立页面管理

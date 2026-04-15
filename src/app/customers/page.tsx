@@ -22,7 +22,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Plus, Search, Mail, Phone, Building2, Users, ChevronRight, Trash2 } from 'lucide-react';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { Plus, Search, Mail, Phone, Building2, Users, ChevronRight, Trash2, Download, FileSpreadsheet } from 'lucide-react';
 import { CustomerStatus } from '@/lib/crm-types';
 import { cn } from '@/lib/utils';
 import {
@@ -66,6 +72,29 @@ function CustomerAvatar({ name, className }: { name: string; className?: string 
   );
 }
 
+// 导出函数
+async function handleExport(format: 'csv' | 'xlsx') {
+  try {
+    const response = await fetch(`/api/export?type=customers&format=${format}`);
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error || '导出失败');
+    }
+    
+    const blob = await response.blob();
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `customers_${new Date().toISOString().split('T')[0]}.${format}`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  } catch (error) {
+    alert(`导出失败: ${(error as Error).message}`);
+  }
+}
+
 export default function CustomersPage() {
   const router = useRouter();
   const { customers, deleteCustomer } = useCRM();
@@ -101,13 +130,33 @@ export default function CustomersPage() {
               共 {filteredCustomers.length} 个客户
             </p>
           </div>
-          <Button 
-            onClick={() => router.push('/customers/new')}
-            className="gap-2 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 shadow-lg shadow-purple-500/25 transition-all duration-300"
-          >
-            <Plus className="h-4 w-4" />
-            新建客户
-          </Button>
+          <div className="flex gap-2">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" className="gap-2">
+                  <Download className="h-4 w-4" />
+                  导出
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={() => handleExport('csv')} className="gap-2">
+                  <FileSpreadsheet className="h-4 w-4" />
+                  导出为 CSV
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => handleExport('xlsx')} className="gap-2">
+                  <FileSpreadsheet className="h-4 w-4" />
+                  导出为 Excel
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+            <Button 
+              onClick={() => router.push('/customers/new')}
+              className="gap-2 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 shadow-lg shadow-purple-500/25 transition-all duration-300"
+            >
+              <Plus className="h-4 w-4" />
+              新建客户
+            </Button>
+          </div>
         </div>
       </div>
 
@@ -166,7 +215,7 @@ export default function CustomersPage() {
                   <TableHead className="font-semibold">联系方式</TableHead>
                   <TableHead className="font-semibold">状态</TableHead>
                   <TableHead className="font-semibold">创建时间</TableHead>
-                  <TableHead className="w-10"></TableHead>
+                  <TableHead className="w-10" />
                 </TableRow>
               </TableHeader>
               <TableBody>

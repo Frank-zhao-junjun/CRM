@@ -37,12 +37,28 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Plus, Search, Building2, DollarSign, Lightbulb, MoreVertical, ArrowRightLeft, XCircle, Trash2, Sparkles, Clock, LayoutGrid } from 'lucide-react';
+import { Plus, Search, Building2, DollarSign, Lightbulb, MoreVertical, ArrowRightLeft, XCircle, Trash2, Sparkles, Clock, LayoutGrid, Download, FileSpreadsheet } from 'lucide-react';
 import Link from 'next/link';
 import { LEAD_STATUS_CONFIG, LEAD_SOURCE_CONFIG } from '@/lib/crm-types';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 import { QuickFollowUp } from '@/components/crm/quick-follow-up';
+
+async function handleExport(format: 'csv' | 'xlsx') {
+  try {
+    const response = await fetch(`/api/export?type=leads&format=${format}`);
+    if (!response.ok) { const error = await response.json(); throw new Error(error.error || '导出失败'); }
+    const blob = await response.blob();
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `leads_${new Date().toISOString().split('T')[0]}.${format}`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  } catch (error) { alert(`导出失败: ${(error as Error).message}`); }
+}
 
 const statusConfig = LEAD_STATUS_CONFIG;
 const sourceConfig = LEAD_SOURCE_CONFIG;

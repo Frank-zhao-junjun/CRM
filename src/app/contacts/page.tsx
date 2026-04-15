@@ -15,7 +15,13 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { Plus, Search, Mail, Phone, ChevronRight, Trash2, Contact2 } from 'lucide-react';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { Plus, Search, Mail, Phone, ChevronRight, Trash2, Contact2, Download, FileSpreadsheet } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import {
   Dialog,
@@ -48,6 +54,28 @@ function ContactAvatar({ firstName, lastName, className }: { firstName: string; 
       </AvatarFallback>
     </Avatar>
   );
+}
+
+// 导出函数
+async function handleExport(format: 'csv' | 'xlsx') {
+  try {
+    const response = await fetch(`/api/export?type=contacts&format=${format}`);
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error || '导出失败');
+    }
+    const blob = await response.blob();
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `contacts_${new Date().toISOString().split('T')[0]}.${format}`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  } catch (error) {
+    alert(`导出失败: ${(error as Error).message}`);
+  }
 }
 
 export default function ContactsPage() {
@@ -84,13 +112,33 @@ export default function ContactsPage() {
               共 {filteredContacts.length} 个联系人
             </p>
           </div>
-          <Button 
-            onClick={() => router.push('/contacts/new')}
-            className="gap-2 bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 shadow-lg shadow-green-500/25 transition-all duration-300"
-          >
-            <Plus className="h-4 w-4" />
-            新建联系人
-          </Button>
+          <div className="flex gap-2">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" className="gap-2">
+                  <Download className="h-4 w-4" />
+                  导出
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={() => handleExport('csv')} className="gap-2">
+                  <FileSpreadsheet className="h-4 w-4" />
+                  导出为 CSV
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => handleExport('xlsx')} className="gap-2">
+                  <FileSpreadsheet className="h-4 w-4" />
+                  导出为 Excel
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+            <Button 
+              onClick={() => router.push('/contacts/new')}
+              className="gap-2 bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 shadow-lg shadow-green-500/25 transition-all duration-300"
+            >
+              <Plus className="h-4 w-4" />
+              新建联系人
+            </Button>
+          </div>
         </div>
       </div>
 
@@ -136,7 +184,7 @@ export default function ContactsPage() {
                   <TableHead className="font-semibold">所属客户</TableHead>
                   <TableHead className="font-semibold">联系方式</TableHead>
                   <TableHead className="font-semibold">主要联系人</TableHead>
-                  <TableHead className="w-10"></TableHead>
+                  <TableHead className="w-10" />
                 </TableRow>
               </TableHeader>
               <TableBody>

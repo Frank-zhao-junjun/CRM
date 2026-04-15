@@ -121,16 +121,16 @@ export default function DashboardPage() {
     }));
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6 sm:space-y-8">
       {/* Header */}
       <div className="relative">
         <div className="absolute inset-0 bg-gradient-to-r from-primary/5 via-transparent to-purple-500/5 rounded-3xl -z-10" />
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold tracking-tight">
+            <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">
               <span className="gradient-text">欢迎回来</span>
             </h1>
-            <p className="text-muted-foreground mt-1">
+            <p className="text-muted-foreground mt-1 text-sm sm:text-base">
               这里是你的业务数据总览
             </p>
           </div>
@@ -141,8 +141,8 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      {/* 统计卡片 - 5个指标排一行 */}
-      <div className="grid gap-3 grid-cols-5">
+      {/* 统计卡片 - 响应式网格布局 */}
+      <div className="grid gap-3 grid-cols-2 sm:grid-cols-3 lg:grid-cols-5">
         {statCards.map((stat, index) => {
           const value = stats[stat.key as keyof typeof stats] as number;
           return (
@@ -156,18 +156,18 @@ export default function DashboardPage() {
               onClick={() => stat.link && router.push(stat.link)}
             >
               <div className={cn("absolute inset-0", stat.bgGradient)} />
-              <CardContent className="relative p-4">
-                <div className="flex items-center gap-3">
+              <CardContent className="relative p-3 sm:p-4">
+                <div className="flex items-center gap-2 sm:gap-3">
                   <div className={cn(
-                    "relative flex items-center justify-center w-9 h-9 rounded-lg shrink-0",
+                    "relative flex items-center justify-center w-8 h-8 sm:w-9 sm:h-9 rounded-lg shrink-0",
                     "bg-gradient-to-br shadow-md",
                     stat.gradient
                   )}>
                     <stat.icon className="h-4 w-4 text-white" />
                   </div>
-                  <div className="min-w-0">
+                  <div className="min-w-0 flex-1">
                     <p className="text-xs text-muted-foreground truncate">{stat.label}</p>
-                    <div className="text-xl font-bold tracking-tight">
+                    <div className="text-lg sm:text-xl font-bold tracking-tight">
                       <span className={cn(
                         "bg-gradient-to-r bg-clip-text text-transparent",
                         stat.gradient
@@ -189,7 +189,8 @@ export default function DashboardPage() {
         onFollowUp={(entityType, entityId, entityName) => setQuickFollowUp({ open: true, entityType, entityId, entityName })}
       />
 
-      <div className="grid gap-6 lg:grid-cols-2">
+      {/* 双列卡片区域 */}
+      <div className="grid gap-4 lg:gap-6 lg:grid-cols-2">
         {/* 销售漏斗 */}
         <Card className="card-hover animate-in slide-in-from-left-4 duration-500">
           <CardHeader className="relative">
@@ -228,12 +229,13 @@ export default function DashboardPage() {
 
       {/* 管道金额分布 */}
       <Card className="card-hover animate-in slide-in-from-bottom-4 duration-500">
-        <CardContent className="p-4">
+        <CardContent className="p-3 sm:p-4">
           <StageValueDistribution data={funnelData} />
         </CardContent>
       </Card>
 
-      <div className="grid gap-6 lg:grid-cols-2">
+      {/* 双列卡片区域 - 最近活动和最近机会 */}
+      <div className="grid gap-4 lg:gap-6 lg:grid-cols-2">
         <Card className="card-hover animate-in slide-in-from-right-4 duration-500">
           <CardHeader className="relative">
             <div className="absolute -left-4 top-0 bottom-0 w-1 bg-gradient-to-b from-green-500 to-emerald-500 rounded-full" />
@@ -388,7 +390,7 @@ export default function DashboardPage() {
       </Card>
 
       {/* 逾期提醒 & 数据导出 */}
-      <div className="grid gap-6 lg:grid-cols-2">
+      <div className="grid gap-4 lg:gap-6 lg:grid-cols-2">
         {/* 逾期提醒 */}
         <Card className="card-hover animate-in slide-in-from-left-4 duration-500">
           <CardHeader className="relative">

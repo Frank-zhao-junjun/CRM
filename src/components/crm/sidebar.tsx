@@ -143,6 +143,13 @@ const navigation: NavItemType[] = [
       { name: '转化分析', href: '/reports/conversion' },
     ],
   },
+  { 
+    name: '流程自动化', 
+    href: '/automation', 
+    icon: Zap,
+    gradient: 'from-yellow-500 to-orange-500',
+    badge: 'NEW',
+  },
 ];
 
 interface NavItemProps {

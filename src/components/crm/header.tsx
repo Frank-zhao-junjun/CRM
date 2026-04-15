@@ -2,9 +2,9 @@
 
 import { User } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { usePathname } from 'next/navigation';
 import { NotificationBell } from './notification-bell';
+import { GlobalSearch } from './global-search';
 
 const pageTitles: Record<string, string> = {
   '/': '仪表盘',
@@ -28,7 +28,7 @@ export function Header() {
   
   const title = pageTitles[pathname] || 'CRM系统';
   
-  // 提取动态路由的标题
+  // Extract dynamic route title
   const getDynamicTitle = () => {
     if (pathname.match(/^\/customers\/[^/]+$/)) return '客户详情';
     if (pathname.match(/^\/customers\/[^/]+\/edit$/)) return '编辑客户';
@@ -52,13 +52,8 @@ export function Header() {
         </div>
         
         <div className="flex items-center gap-2">
-          <div className="hidden md:flex relative">
-            <Input
-              type="search"
-              placeholder="搜索..."
-              className="w-64 pl-9"
-            />
-          </div>
+          {/* Global Search */}
+          <GlobalSearch className="hidden md:block" />
           
           <NotificationBell />
           

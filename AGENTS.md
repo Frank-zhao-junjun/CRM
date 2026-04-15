@@ -482,3 +482,36 @@ PUT /api/crm
 | V2.1 | 2024-04 | 删除/编辑功能详细方案 |
 | V2.2 | 2024-04 | **DDD 重构**，分离线索与机会，阶段转换验证 |
 | V2.3 | 2024-04 | **报价单版本管理**：同一机会的报价单支持版本递增，新建版本需填写修订原因 |
+| V4.0 | 2026-04-15 | **高级数据分析报表**：销售漏斗、团队排名、收入预测、转化分析 |
+
+---
+
+## Ralph 方法开发记录 (V4.0)
+
+### 功能点选择
+基于 GitHub 搜索和竞品分析，选择「高级数据分析报表」作为 V4.0 核心功能：
+- 用户价值：高 - 数据驱动决策是管理者核心需求
+- 技术可行性：高 - 已有仪表盘基础，可复用 recharts
+- ROI：高 - 直接提升销售管理效率
+
+### 技术选型
+- **图表库**: recharts 2.15.4
+- **数据展示**: 水平柱状图 (Funnel)、折线图 (Forecast)、柱状图 (Ranking/Conversion)
+- **时间筛选**: 月/季度/年/全部
+
+### 文件结构
+```
+src/
+├── app/reports/
+│   ├── page.tsx          # 报表首页
+│   ├── layout.tsx       # 统一布局
+│   ├── funnel/           # 销售漏斗
+│   ├── team-ranking/    # 团队排名
+│   ├── forecast/        # 收入预测
+│   └── conversion/       # 转化分析
+└── components/reports/
+    ├── funnel-chart.tsx
+    ├── team-ranking.tsx
+    ├── forecast-chart.tsx
+    └── conversion-chart.tsx
+```

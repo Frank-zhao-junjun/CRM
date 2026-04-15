@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseClient } from '@/storage/database/supabase-client';
-import type { Tag, CustomerTag } from '@/storage/database/shared/schema';
+import type { Tag } from '@/storage/database/shared/schema';
 
 export async function GET(request: NextRequest) {
   try {
@@ -14,11 +14,7 @@ export async function GET(request: NextRequest) {
     const client = getSupabaseClient();
     const { data, error } = await client
       .from('customer_tags')
-      .select(`
-        id,
-        created_at,
-        tag:tags(*)
-      `)
+      .select('tag:tags(*)')
       .eq('customer_id', customerId);
 
     if (error) throw new Error(`获取客户标签失败: ${error.message}`);
@@ -55,10 +51,6 @@ export async function POST(request: NextRequest) {
       }
       throw new Error(`添加标签失败: ${insertError.message}`);
     }
-
-    await client.rpc('increment_usage_count', { tag_id: body.tagId }).catch(() => {
-      console.log('RPC increment_usage_count not available, using fallback');
-    });
 
     const { data: tagData } = await client
       .from('tags')

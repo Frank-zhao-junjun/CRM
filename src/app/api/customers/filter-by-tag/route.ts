@@ -14,9 +14,7 @@ export async function GET(request: NextRequest) {
     const client = getSupabaseClient();
     const { data, error } = await client
       .from('customer_tags')
-      .select(`
-        customer:customers(*)
-      `)
+      .select('customer:customers(*)')
       .eq('tag_id', tagId);
 
     if (error) throw new Error(`按标签筛选客户失败: ${error.message}`);

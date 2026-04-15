@@ -4,7 +4,7 @@ import type { Tag, InsertTag } from '@/storage/database/shared/schema';
 
 const generateId = () => `tag_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
 
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
     const client = getSupabaseClient();
     const { data, error } = await client
@@ -83,7 +83,7 @@ export async function PUT(request: NextRequest) {
       }
     }
 
-    const updates: Partial<Tag> = {
+    const updates: Record<string, unknown> = {
       updated_at: new Date().toISOString(),
     };
 

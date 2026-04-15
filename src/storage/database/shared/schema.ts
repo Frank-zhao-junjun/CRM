@@ -440,6 +440,80 @@ export const workflowExecutionLogs = pgTable(
   ]
 );
 
+// ============ 权限管理 (RBAC) ============
+
+// 角色表
+export const roles = pgTable(
+  'roles',
+  {
+    id: varchar('id', { length: 36 }).primaryKey().default(sql`gen_random_uuid()`),
+    name: varchar('name', { length: 100 }).notNull().unique(),
+    description: text('description'),
+    is_system: boolean('is_system').default(false).notNull(), // 系统角色不可删除
+    created_at: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+    updated_at: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => [
+    index('roles_name_idx').on(table.name),
+    index('roles_is_system_idx').on(table.is_system),
+  ]
+);
+
+// 权限表
+export const permissions = pgTable(
+  'permissions',
+  {
+    id: varchar('id', { length: 36 }).primaryKey().default(sql`gen_random_uuid()`),
+    name: varchar('name', { length: 100 }).notNull().unique(), // 权限标识符
+    label: varchar('label', { length: 100 }).notNull(), // 显示名称
+    description: text('description'),
+    category: varchar('category', { length: 50 }).notNull(), // 权限分类
+    created_at: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => [
+    index('permissions_name_idx').on(table.name),
+    index('permissions_category_idx').on(table.category),
+  ]
+);
+
+// 角色权限关联表
+export const rolePermissions = pgTable(
+  'role_permissions',
+  {
+    id: varchar('id', { length: 36 }).primaryKey().default(sql`gen_random_uuid()`),
+    role_id: varchar('role_id', { length: 36 }).notNull().references(() => roles.id, { onDelete: 'cascade' }),
+    permission_id: varchar('permission_id', { length: 36 }).notNull().references(() => permissions.id, { onDelete: 'cascade' }),
+    created_at: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => [
+    index('role_permissions_role_id_idx').on(table.role_id),
+    index('role_permissions_permission_id_idx').on(table.permission_id),
+    // UNIQUE(role_id, permission_id) - 防止重复分配
+    {
+      rolePermissionUnique: unique().on(table.role_id, table.permission_id)
+    }
+  ]
+);
+
+// 用户角色关联表
+export const userRoles = pgTable(
+  'user_roles',
+  {
+    id: varchar('id', { length: 36 }).primaryKey().default(sql`gen_random_uuid()`),
+    user_id: varchar('user_id', { length: 100 }).notNull(), // 用户标识
+    role_id: varchar('role_id', { length: 36 }).notNull().references(() => roles.id, { onDelete: 'cascade' }),
+    created_at: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => [
+    index('user_roles_user_id_idx').on(table.user_id),
+    index('user_roles_role_id_idx').on(table.role_id),
+    // UNIQUE(user_id, role_id) - 防止重复分配
+    {
+      userRoleUnique: unique().on(table.user_id, table.role_id)
+    }
+  ]
+);
+
 // 类型导出
 export type Workflow = typeof workflows.$inferSelect;
 export type InsertWorkflow = typeof workflows.$inferInsert;
@@ -447,3 +521,94 @@ export type WorkflowExecution = typeof workflowExecutions.$inferSelect;
 export type InsertWorkflowExecution = typeof workflowExecutions.$inferInsert;
 export type WorkflowExecutionLog = typeof workflowExecutionLogs.$inferSelect;
 export type InsertWorkflowExecutionLog = typeof workflowExecutionLogs.$inferInsert;
+
+// 权限管理类型导出
+export type Role = typeof roles.$inferSelect;
+export type InsertRole = typeof roles.$inferInsert;
+export type Permission = typeof permissions.$inferSelect;
+export type InsertPermission = typeof permissions.$inferInsert;
+export type RolePermission = typeof rolePermissions.$inferSelect;
+export type InsertRolePermission = typeof rolePermissions.$inferInsert;
+export type UserRole = typeof userRoles.$inferSelect;
+export type InsertUserRole = typeof userRoles.$inferInsert;
+
+
+// ============ 邮件集成 ============
+
+// 邮件配置表
+export const emailConfigs = pgTable(
+  'email_configs',
+  {
+    id: varchar('id', { length: 36 }).primaryKey().default(sql`gen_random_uuid()`),
+    name: varchar('name', { length: 100 }).notNull(),
+    host: varchar('host', { length: 255 }).notNull(),
+    port: integer('port').notNull().default(587),
+    secure: boolean('secure').default(false).notNull(),
+    username: varchar('username', { length: 255 }).notNull(),
+    password: varchar('password', { length: 500 }).notNull(),
+    from_name: varchar('from_name', { length: 100 }).notNull(),
+    from_email: varchar('from_email', { length: 255 }).notNull(),
+    is_default: boolean('is_default').default(false).notNull(),
+    created_at: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+    updated_at: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => [
+    index('email_configs_is_default_idx').on(table.is_default),
+  ]
+);
+
+// 邮件模板表
+export const emailTemplates = pgTable(
+  'email_templates',
+  {
+    id: varchar('id', { length: 36 }).primaryKey().default(sql`gen_random_uuid()`),
+    name: varchar('name', { length: 100 }).notNull(),
+    subject: varchar('subject', { length: 255 }).notNull(),
+    body: text('body').notNull(),
+    category: varchar('category', { length: 50 }).default('general').notNull(),
+    variables: text('variables').default('[]').notNull(),
+    is_active: boolean('is_active').default(true).notNull(),
+    created_at: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+    updated_at: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => [
+    index('email_templates_category_idx').on(table.category),
+    index('email_templates_is_active_idx').on(table.is_active),
+  ]
+);
+
+// 邮件日志表
+export const emailLogs = pgTable(
+  'email_logs',
+  {
+    id: varchar('id', { length: 36 }).primaryKey().default(sql`gen_random_uuid()`),
+    config_id: varchar('config_id', { length: 36 }).references(() => emailConfigs.id, { onDelete: 'set null' }),
+    template_id: varchar('template_id', { length: 36 }).references(() => emailTemplates.id, { onDelete: 'set null' }),
+    entity_type: varchar('entity_type', { length: 50 }),
+    entity_id: varchar('entity_id', { length: 36 }),
+    entity_name: varchar('entity_name', { length: 255 }),
+    to_email: varchar('to_email', { length: 255 }).notNull(),
+    to_name: varchar('to_name', { length: 100 }),
+    subject: varchar('subject', { length: 255 }).notNull(),
+    body: text('body'),
+    status: varchar('status', { length: 20 }).default('pending').notNull(),
+    error_message: text('error_message'),
+    sent_at: timestamp('sent_at', { withTimezone: true }),
+    created_at: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => [
+    index('email_logs_config_id_idx').on(table.config_id),
+    index('email_logs_template_id_idx').on(table.template_id),
+    index('email_logs_entity_idx').on(table.entity_type, table.entity_id),
+    index('email_logs_status_idx').on(table.status),
+    index('email_logs_created_at_idx').on(table.created_at),
+  ]
+);
+
+// 邮件类型导出
+export type EmailConfig = typeof emailConfigs.$inferSelect;
+export type InsertEmailConfig = typeof emailConfigs.$inferInsert;
+export type EmailTemplate = typeof emailTemplates.$inferSelect;
+export type InsertEmailTemplate = typeof emailTemplates.$inferInsert;
+export type EmailLog = typeof emailLogs.$inferSelect;
+export type InsertEmailLog = typeof emailLogs.$inferInsert;

@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo } from 'react';
+import { useState, useEffect } from 'react';
 import { 
   BarChart, 
   Bar, 
@@ -12,11 +12,18 @@ import {
   Cell,
   LabelList
 } from 'recharts';
-import { useCRM } from '@/lib/crm-context';
-import { OPPORTUNITY_STAGE_CONFIG } from '@/lib/crm-types';
 
 // 销售漏斗阶段配置（不含终态）
 const FUNNEL_STAGES = ['qualified', 'discovery', 'proposal', 'negotiation', 'contract'] as const;
+
+// 阶段颜色配置
+const STAGE_COLORS: Record<string, string> = {
+  qualified: '#3b82f6',
+  discovery: '#06b6d4',
+  proposal: '#8b5cf6',
+  negotiation: '#f59e0b',
+  contract: '#10b981',
+};
 
 interface FunnelDataItem {
   stage: string;
@@ -31,6 +38,14 @@ interface FunnelChartProps {
   data: FunnelDataItem[];
   viewMode: 'count' | 'amount';
 }
+
+const STAGE_LABELS: Record<string, string> = {
+  qualified: '已Qualify',
+  discovery: '需求调研',
+  proposal: '方案报价',
+  negotiation: '商务谈判',
+  contract: '合同签署',
+};
 
 const CustomTooltip = ({ active, payload, label }: any) => {
   if (active && payload && payload.length) {
@@ -102,86 +117,79 @@ export function FunnelChart({ data, viewMode }: FunnelChartProps) {
   );
 }
 
-// 计算漏斗数据
+// API 数据类型
+interface ApiFunnelResponse {
+  success: boolean;
+  data: {
+    stages: Array<{
+      stage: string;
+      stageLabel: string;
+      count: number;
+      amount: number;
+      avgDays: number;
+      conversionRate: number;
+    }>;
+    won: { count: number; amount: number };
+    leads: number;
+  };
+  timestamp: string;
+}
+
+// 计算漏斗数据 - 使用 API
 export function useFunnelData(timeRange: 'month' | 'quarter' | 'year' | 'all') {
-  const { opportunities, leads } = useCRM();
-  
-  return useMemo(() => {
-    // 过滤时间范围
-    const now = new Date();
-    let filteredOpportunities = [...opportunities];
-    
-    if (timeRange !== 'all') {
-      filteredOpportunities = opportunities.filter(opp => {
-        const createdAt = new Date(opp.createdAt);
-        switch (timeRange) {
-          case 'month':
-            return createdAt >= new Date(now.getFullYear(), now.getMonth(), 1);
-          case 'quarter':
-            const quarterMonth = Math.floor(now.getMonth() / 3) * 3;
-            return createdAt >= new Date(now.getFullYear(), quarterMonth, 1);
-          case 'year':
-            return createdAt >= new Date(now.getFullYear(), 0, 1);
-          default:
-            return true;
+  const [funnelData, setFunnelData] = useState<FunnelDataItem[]>([]);
+  const [wonOpps, setWonOpps] = useState({ count: 0, amount: 0, label: '已成交' });
+  const [leadCount, setLeadCount] = useState(0);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    async function fetchData() {
+      setLoading(true);
+      setError(null);
+      try {
+        const response = await fetch(`/api/reports?type=funnel&timeRange=${timeRange}`);
+        if (!response.ok) {
+          throw new Error('获取漏斗数据失败');
         }
-      });
+        const result: ApiFunnelResponse = await response.json();
+        
+        if (result.success) {
+          // 转换数据格式
+          const transformedData: FunnelDataItem[] = result.data.stages.map(stage => ({
+            stage: stage.stage,
+            stageLabel: stage.stageLabel || STAGE_LABELS[stage.stage] || stage.stage,
+            count: stage.count,
+            amount: stage.amount,
+            conversionRate: stage.conversionRate,
+            color: STAGE_COLORS[stage.stage] || '#8884d8',
+          }));
+          
+          setFunnelData(transformedData);
+          setWonOpps({
+            count: result.data.won.count,
+            amount: result.data.won.amount,
+            label: '已成交',
+          });
+          setLeadCount(result.data.leads);
+        } else {
+          throw new Error(result.data ? '获取数据失败' : '未知错误');
+        }
+      } catch (err) {
+        setError(err instanceof Error ? err.message : '未知错误');
+      } finally {
+        setLoading(false);
+      }
     }
     
-    // 计算各阶段数据
-    const stageData = FUNNEL_STAGES.map((stage, index) => {
-      const stageOpps = filteredOpportunities.filter(opp => opp.stage === stage);
-      const count = stageOpps.length;
-      const amount = stageOpps.reduce((sum, opp) => sum + opp.value, 0);
-      
-      // 计算转化率（与上一阶段对比）
-      let conversionRate = 100;
-      if (index > 0) {
-        const prevStage = FUNNEL_STAGES[index - 1];
-        const prevCount = filteredOpportunities.filter(opp => opp.stage === prevStage).length;
-        conversionRate = prevCount > 0 ? Math.round((count / prevCount) * 100) : 0;
-      }
-      
-      return {
-        stage,
-        stageLabel: OPPORTUNITY_STAGE_CONFIG[stage].label,
-        count,
-        amount,
-        conversionRate,
-        color: OPPORTUNITY_STAGE_CONFIG[stage].gradient.split(' ')[1] || '#8884d8',
-      };
-    });
-    
-    // 添加成交统计
-    const wonOpps = filteredOpportunities.filter(opp => opp.stage === 'closed_won');
-    const wonAmount = wonOpps.reduce((sum, opp) => sum + opp.value, 0);
-    
-    // 添加线索统计
-    const leadCount = timeRange === 'all' 
-      ? leads.length 
-      : leads.filter(lead => {
-          const createdAt = new Date(lead.createdAt);
-          switch (timeRange) {
-            case 'month':
-              return createdAt >= new Date(now.getFullYear(), now.getMonth(), 1);
-            case 'quarter':
-              const quarterMonth = Math.floor(now.getMonth() / 3) * 3;
-              return createdAt >= new Date(now.getFullYear(), quarterMonth, 1);
-            case 'year':
-              return createdAt >= new Date(now.getFullYear(), 0, 1);
-            default:
-              return true;
-          }
-        }).length;
-    
-    return {
-      funnelData: stageData,
-      wonOpps: {
-        count: wonOpps.length,
-        amount: wonAmount,
-        label: '已成交',
-      },
-      leadCount,
-    };
-  }, [opportunities, leads, timeRange]);
+    fetchData();
+  }, [timeRange]);
+
+  return {
+    funnelData,
+    wonOpps,
+    leadCount,
+    loading,
+    error,
+  };
 }

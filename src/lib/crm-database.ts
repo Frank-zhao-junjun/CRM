@@ -1045,3 +1045,179 @@ export async function createContractFromQuote(quoteId: string, contractData?: Pa
   
   return contract;
 }
+
+// ============ Payment Plan (回款计划) V3.3 ============
+
+export interface InsertPaymentPlan {
+  id: string;
+  plan_number: string;
+  contract_id: string | null;
+  contract_number: string | null;
+  customer_id: string | null;
+  customer_name: string | null;
+  opportunity_id: string | null;
+  opportunity_name: string | null;
+  title: string;
+  total_amount: number;
+  paid_amount: number;
+  pending_amount: number;
+  due_date: string;
+  status: 'pending' | 'overdue' | 'partial' | 'paid' | 'cancelled';
+  payment_method?: string | null;
+  installments?: string;
+  overdue_days: number;
+  is_overdue: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface PaymentPlan {
+  id: string;
+  planNumber: string;
+  contractId?: string;
+  contractNumber?: string;
+  customerId?: string;
+  customerName?: string;
+  opportunityId?: string;
+  opportunityName?: string;
+  title: string;
+  totalAmount: number;
+  paidAmount: number;
+  pendingAmount: number;
+  dueDate: string;
+  status: 'pending' | 'overdue' | 'partial' | 'paid' | 'cancelled';
+  paymentMethod?: string;
+  installments?: any[];
+  overdueDays: number;
+  isOverdue: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+function transformPaymentPlan(row: any): PaymentPlan {
+  return {
+    id: row.id,
+    planNumber: row.plan_number,
+    contractId: row.contract_id,
+    contractNumber: row.contract_number,
+    customerId: row.customer_id,
+    customerName: row.customer_name,
+    opportunityId: row.opportunity_id,
+    opportunityName: row.opportunity_name,
+    title: row.title,
+    totalAmount: Number(row.total_amount),
+    paidAmount: Number(row.paid_amount),
+    pendingAmount: Number(row.pending_amount),
+    dueDate: row.due_date,
+    status: row.status,
+    paymentMethod: row.payment_method,
+    installments: row.installments ? JSON.parse(row.installments) : [],
+    overdueDays: row.overdue_days || 0,
+    isOverdue: row.is_overdue || false,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  };
+}
+
+export async function getAllPaymentPlans(): Promise<PaymentPlan[]> {
+  const client = getSupabaseClient();
+  const { data, error } = await client
+    .from('payment_plans')
+    .select('*')
+    .order('due_date', { ascending: true });
+  if (error) throw new Error(`获取回款计划失败: ${error.message}`);
+  return data.map(transformPaymentPlan);
+}
+
+export async function getPaymentPlanById(id: string): Promise<PaymentPlan | null> {
+  const client = getSupabaseClient();
+  const { data, error } = await client
+    .from('payment_plans')
+    .select('*')
+    .eq('id', id)
+    .single();
+  if (error && error.code !== 'PGRST116') throw new Error(`获取回款计划失败: ${error.message}`);
+  return data ? transformPaymentPlan(data) : null;
+}
+
+export async function getPaymentPlansByCustomer(customerId: string): Promise<PaymentPlan[]> {
+  const client = getSupabaseClient();
+  const { data, error } = await client
+    .from('payment_plans')
+    .select('*')
+    .eq('customer_id', customerId)
+    .order('due_date', { ascending: true });
+  if (error) throw new Error(`获取客户回款计划失败: ${error.message}`);
+  return data.map(transformPaymentPlan);
+}
+
+export async function getPaymentPlansByContract(contractId: string): Promise<PaymentPlan[]> {
+  const client = getSupabaseClient();
+  const { data, error } = await client
+    .from('payment_plans')
+    .select('*')
+    .eq('contract_id', contractId)
+    .order('due_date', { ascending: true });
+  if (error) throw new Error(`获取合同回款计划失败: ${error.message}`);
+  return data.map(transformPaymentPlan);
+}
+
+export async function createPaymentPlan(plan: InsertPaymentPlan): Promise<PaymentPlan> {
+  const client = getSupabaseClient();
+  const { data, error } = await client
+    .from('payment_plans')
+    .insert(plan)
+    .select()
+    .single();
+  if (error) throw new Error(`创建回款计划失败: ${error.message}`);
+  return transformPaymentPlan(data);
+}
+
+export async function updatePaymentPlan(id: string, updates: Partial<InsertPaymentPlan>): Promise<PaymentPlan> {
+  const client = getSupabaseClient();
+  const { data, error } = await client
+    .from('payment_plans')
+    .update(updates)
+    .eq('id', id)
+    .select()
+    .single();
+  if (error) throw new Error(`更新回款计划失败: ${error.message}`);
+  return transformPaymentPlan(data);
+}
+
+export async function deletePaymentPlan(id: string): Promise<void> {
+  const client = getSupabaseClient();
+  const { error } = await client
+    .from('payment_plans')
+    .delete()
+    .eq('id', id);
+  if (error) throw new Error(`删除回款计划失败: ${error.message}`);
+}
+
+export async function getOverduePaymentPlans(): Promise<PaymentPlan[]> {
+  const today = new Date().toISOString().split('T')[0];
+  const client = getSupabaseClient();
+  const { data, error } = await client
+    .from('payment_plans')
+    .select('*')
+    .not('status', 'eq', 'paid')
+    .not('status', 'eq', 'cancelled')
+    .lt('due_date', today)
+    .order('due_date', { ascending: true });
+  if (error) throw new Error(`获取逾期回款计划失败: ${error.message}`);
+  return data.map(transformPaymentPlan);
+}
+
+export async function getTodayDuePaymentPlans(): Promise<PaymentPlan[]> {
+  const today = new Date().toISOString().split('T')[0];
+  const client = getSupabaseClient();
+  const { data, error } = await client
+    .from('payment_plans')
+    .select('*')
+    .eq('due_date', today)
+    .not('status', 'eq', 'paid')
+    .not('status', 'eq', 'cancelled')
+    .order('due_date', { ascending: true });
+  if (error) throw new Error(`获取今日到期回款计划失败: ${error.message}`);
+  return data.map(transformPaymentPlan);
+}

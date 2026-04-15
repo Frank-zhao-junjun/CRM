@@ -1,7 +1,7 @@
 'use client';
 
 import { createContext, useContext, useState, useCallback, useEffect, ReactNode } from 'react';
-import { Customer, Contact, SalesOpportunity, DashboardStats, Activity, OpportunityStage, SalesLead, Product } from './crm-types';
+import { Customer, Contact, SalesOpportunity, DashboardStats, Activity, OpportunityStage, SalesLead, Product, PaymentPlan } from './crm-types';
 
 interface CRMContextType {
   customers: Customer[];
@@ -9,6 +9,9 @@ interface CRMContextType {
   opportunities: SalesOpportunity[];
   leads: SalesLead[];  // 销售线索
   products: Product[]; // 产品管理
+  paymentPlans: PaymentPlan[]; // 回款计划
+  todayPayments: PaymentPlan[]; // 今日到期回款
+  overduePayments: PaymentPlan[]; // 逾期回款
   activities: Activity[];
   stats: DashboardStats;
   loading: boolean;
@@ -44,6 +47,12 @@ interface CRMContextType {
   updateProduct: (id: string, product: Partial<Product>) => Promise<void>;
   deleteProduct: (id: string) => Promise<void>;
   toggleProductActive: (id: string) => Promise<void>;
+  
+  // Payment Plan operations (回款管理 V3.3 新增)
+  addPaymentPlan: (plan: Omit<PaymentPlan, 'id' | 'createdAt' | 'updatedAt'>) => Promise<void>;
+  updatePaymentPlan: (id: string, plan: Partial<PaymentPlan>) => Promise<void>;
+  deletePaymentPlan: (id: string) => Promise<void>;
+  recordPayment: (planId: string, amount: number, method?: string) => Promise<void>;
   
   // Opportunity operations (商机)
   addOpportunity: (opportunity: Omit<SalesOpportunity, 'id' | 'createdAt' | 'updatedAt'>) => Promise<void>;
@@ -420,6 +429,7 @@ export function CRMProvider({ children }: { children: ReactNode }) {
   const [opportunities, setOpportunities] = useState<SalesOpportunity[]>([]);
   const [leads, setLeads] = useState<SalesLead[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
+  const [paymentPlans, setPaymentPlans] = useState<PaymentPlan[]>([]);
   const [activities, setActivities] = useState<Activity[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -662,6 +672,55 @@ export function CRMProvider({ children }: { children: ReactNode }) {
     }
   }, [products, updateProduct]);
 
+  // Payment Plan operations (V3.3 新增)
+  const addPaymentPlan = useCallback(async (plan: Omit<PaymentPlan, 'id' | 'createdAt' | 'updatedAt'>) => {
+    const newPlan: PaymentPlan = {
+      ...plan,
+      id: generateId(),
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+    await apiPost('addPaymentPlan', newPlan);
+    setPaymentPlans(prev => [...prev, newPlan]);
+    addActivity('created', 'lead' as any, newPlan.id, newPlan.title, `创建回款计划 "${newPlan.title}"`);
+  }, [addActivity]);
+
+  const updatePaymentPlan = useCallback(async (id: string, updates: Partial<PaymentPlan>) => {
+    const updated = { ...updates, updatedAt: new Date().toISOString() };
+    await apiPut('updatePaymentPlan', id, updated);
+    setPaymentPlans(prev => prev.map(p => p.id === id ? { ...p, ...updated } : p));
+    const plan = paymentPlans.find(p => p.id === id);
+    if (plan) {
+      addActivity('updated', 'lead' as any, id, plan.title, `更新回款计划 ${plan.title}`);
+    }
+  }, [paymentPlans, addActivity]);
+
+  const deletePaymentPlan = useCallback(async (id: string) => {
+    await apiDelete('deletePaymentPlan', id);
+    const plan = paymentPlans.find(p => p.id === id);
+    setPaymentPlans(prev => prev.filter(p => p.id !== id));
+    if (plan) {
+      addActivity('deleted', 'lead' as any, id, plan.title, `删除回款计划 ${plan.title}`);
+    }
+  }, [paymentPlans, addActivity]);
+
+  const recordPayment = useCallback(async (planId: string, amount: number, method?: string) => {
+    const plan = paymentPlans.find(p => p.id === planId);
+    if (!plan) return;
+    
+    const newPaidAmount = plan.paidAmount + amount;
+    const newPendingAmount = Math.max(0, plan.totalAmount - newPaidAmount);
+    
+    await updatePaymentPlan(planId, {
+      paidAmount: newPaidAmount,
+      pendingAmount: newPendingAmount,
+      status: newPaidAmount >= plan.totalAmount ? 'paid' : 'partial',
+      paymentMethod: method as any,
+    });
+    
+    addActivity('updated', 'lead' as any, planId, plan.title, `登记回款 ¥${amount.toLocaleString()}`);
+  }, [paymentPlans, updatePaymentPlan, addActivity]);
+
   // Opportunity operations
   const addOpportunity = useCallback(async (opportunity: Omit<SalesOpportunity, 'id' | 'createdAt' | 'updatedAt'>) => {
     const newOpportunity: SalesOpportunity = {
@@ -741,6 +800,9 @@ export function CRMProvider({ children }: { children: ReactNode }) {
     opportunities,
     leads,
     products,
+    paymentPlans,
+    todayPayments,
+    overduePayments,
     activities,
     stats,
     loading,
@@ -761,6 +823,10 @@ export function CRMProvider({ children }: { children: ReactNode }) {
     updateProduct,
     deleteProduct,
     toggleProductActive,
+    addPaymentPlan,
+    updatePaymentPlan,
+    deletePaymentPlan,
+    recordPayment,
     addOpportunity,
     updateOpportunity,
     deleteOpportunity,

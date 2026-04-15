@@ -523,6 +523,42 @@ export async function PUT(request: NextRequest) {
         return NextResponse.json({ success: true });
       }
       
+      // Payment Plan (回款管理 V3.3)
+      case 'addPaymentPlan': {
+        const plan = await db.createPaymentPlan({
+          id: data.id,
+          plan_number: data.planNumber,
+          contract_id: data.contractId || null,
+          contract_number: data.contractNumber || null,
+          customer_id: data.customerId || null,
+          customer_name: data.customerName || null,
+          opportunity_id: data.opportunityId || null,
+          opportunity_name: data.opportunityName || null,
+          title: data.title,
+          total_amount: data.totalAmount,
+          paid_amount: 0,
+          pending_amount: data.totalAmount,
+          due_date: data.dueDate,
+          status: 'pending',
+          payment_method: data.paymentMethod || null,
+          installments: JSON.stringify(data.installments || []),
+          overdue_days: data.overdueDays || 0,
+          is_overdue: data.isOverdue || false,
+          created_at: data.createdAt,
+          updated_at: data.updatedAt,
+        });
+        await db.createActivity({
+          id: `act_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
+          type: 'created',
+          entity_type: 'lead' as any,
+          entity_id: plan.id,
+          entity_name: plan.title,
+          description: `创建回款计划 "${plan.title}"，金额 ¥${Number(plan.total_amount).toLocaleString()}`,
+          timestamp: new Date(),
+        });
+        return NextResponse.json(plan);
+      }
+      
       default:
         return NextResponse.json({ error: 'Unknown action' }, { status: 400 });
     }
@@ -599,6 +635,12 @@ export async function DELETE(request: NextRequest) {
             timestamp: new Date(),
           });
         }
+        return NextResponse.json({ success: true });
+      }
+      
+      // Payment Plan (回款管理 V3.3)
+      case 'deletePaymentPlan': {
+        await db.deletePaymentPlan(id);
         return NextResponse.json({ success: true });
       }
       

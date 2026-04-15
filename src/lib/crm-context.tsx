@@ -1,7 +1,7 @@
 'use client';
 
 import { createContext, useContext, useState, useCallback, useEffect, ReactNode } from 'react';
-import { Customer, Contact, SalesOpportunity, DashboardStats, Activity, OpportunityStage, SalesLead, Product, PaymentPlan } from './crm-types';
+import { Customer, Contact, SalesOpportunity, DashboardStats, Activity, OpportunityStage, SalesLead, Product, PaymentPlan, Task } from './crm-types';
 
 interface CRMContextType {
   customers: Customer[];
@@ -12,6 +12,8 @@ interface CRMContextType {
   paymentPlans: PaymentPlan[]; // 回款计划
   todayPayments: PaymentPlan[]; // 今日到期回款
   overduePayments: PaymentPlan[]; // 逾期回款
+  tasks: Task[]; // 任务管理
+  overdueTasks: Task[]; // 逾期任务
   activities: Activity[];
   stats: DashboardStats;
   loading: boolean;
@@ -59,6 +61,12 @@ interface CRMContextType {
   updateOpportunity: (id: string, opportunity: Partial<SalesOpportunity>) => Promise<void>;
   deleteOpportunity: (id: string) => Promise<void>;
   changeOpportunityStage: (id: string, newStage: OpportunityStage, reason?: string) => Promise<void>;
+  
+  // Task operations (任务管理 V4.1 新增)
+  addTask: (task: Omit<Task, 'id' | 'createdAt' | 'updatedAt'>) => Promise<void>;
+  updateTask: (id: string, task: Partial<Task>) => Promise<void>;
+  deleteTask: (id: string) => Promise<void>;
+  completeTask: (id: string) => Promise<void>;
 }
 
 // API helper functions
@@ -430,9 +438,28 @@ export function CRMProvider({ children }: { children: ReactNode }) {
   const [leads, setLeads] = useState<SalesLead[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
   const [paymentPlans, setPaymentPlans] = useState<PaymentPlan[]>([]);
+  const [tasks, setTasks] = useState<Task[]>([]); // 任务管理 V4.1
   const [activities, setActivities] = useState<Activity[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  // 逾期任务计算
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const overdueTasks = tasks.filter(t => {
+    if (t.status === 'completed' || t.status === 'cancelled') return false;
+    const dueDate = new Date(t.dueDate);
+    dueDate.setHours(0, 0, 0, 0);
+    return dueDate < today;
+  });
+
+  // 今日到期任务
+  const todayTasks = tasks.filter(t => {
+    if (t.status === 'completed' || t.status === 'cancelled') return false;
+    const dueDate = new Date(t.dueDate);
+    dueDate.setHours(0, 0, 0, 0);
+    return dueDate.getTime() === today.getTime();
+  });
 
   const stats: DashboardStats = {
     totalCustomers: customers.length,
@@ -451,13 +478,14 @@ export function CRMProvider({ children }: { children: ReactNode }) {
       setLoading(true);
       setError(null);
       
-      const [dbCustomers, dbContacts, dbOpportunities, dbLeads, dbActivities, dbProducts] = await Promise.all([
+      const [dbCustomers, dbContacts, dbOpportunities, dbLeads, dbActivities, dbProducts, dbTasks] = await Promise.all([
         apiGet<Customer[]>('customers').catch(() => INITIAL_CUSTOMERS),
         apiGet<Contact[]>('contacts').catch(() => INITIAL_CONTACTS),
         apiGet<SalesOpportunity[]>('opportunities').catch(() => INITIAL_OPPORTUNITIES),
         apiGet<SalesLead[]>('leads').catch(() => INITIAL_LEADS),
         apiGet<Activity[]>('activities').catch(() => INITIAL_ACTIVITIES),
         apiGet<Product[]>('products').catch(() => INITIAL_PRODUCTS),
+        apiGet<Task[]>('tasks').catch(() => []),
       ]);
       
       setCustomers(dbCustomers);
@@ -466,6 +494,7 @@ export function CRMProvider({ children }: { children: ReactNode }) {
       setLeads(dbLeads);
       setActivities(dbActivities);
       setProducts(dbProducts);
+      setTasks(dbTasks);
     } catch (err) {
       console.error('Failed to load CRM data:', err);
       // Use initial data as fallback
@@ -721,6 +750,52 @@ export function CRMProvider({ children }: { children: ReactNode }) {
     addActivity('updated', 'lead' as any, planId, plan.title, `登记回款 ¥${amount.toLocaleString()}`);
   }, [paymentPlans, updatePaymentPlan, addActivity]);
 
+  // Task operations (V4.1 新增)
+  const addTask = useCallback(async (task: Omit<Task, 'id' | 'createdAt' | 'updatedAt'>) => {
+    const newTask: Task = {
+      ...task,
+      id: generateId(),
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+    await apiPost('addTask', newTask);
+    setTasks(prev => [...prev, newTask]);
+    addActivity('created', 'lead' as any, newTask.id, newTask.title, `创建任务 "${newTask.title}"`);
+  }, [addActivity]);
+
+  const updateTask = useCallback(async (id: string, updates: Partial<Task>) => {
+    const updated = { ...updates, updatedAt: new Date().toISOString() };
+    await apiPut('updateTask', id, updated);
+    setTasks(prev => prev.map(t => t.id === id ? { ...t, ...updated } : t));
+    const task = tasks.find(t => t.id === id);
+    if (task) {
+      addActivity('updated', 'lead' as any, id, task.title, `更新任务 ${task.title}`);
+    }
+  }, [tasks, addActivity]);
+
+  const deleteTask = useCallback(async (id: string) => {
+    await apiDelete('deleteTask', id);
+    const task = tasks.find(t => t.id === id);
+    setTasks(prev => prev.filter(t => t.id !== id));
+    if (task) {
+      addActivity('deleted', 'lead' as any, id, task.title, `删除任务 ${task.title}`);
+    }
+  }, [tasks, addActivity]);
+
+  const completeTask = useCallback(async (id: string) => {
+    const task = tasks.find(t => t.id === id);
+    if (!task) return;
+    
+    const updated = {
+      status: 'completed' as const,
+      completedAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+    await apiPut('updateTask', id, updated);
+    setTasks(prev => prev.map(t => t.id === id ? { ...t, ...updated } : t));
+    addActivity('updated', 'lead' as any, id, task.title, `完成任务 "${task.title}"`);
+  }, [tasks, addActivity]);
+
   // Opportunity operations
   const addOpportunity = useCallback(async (opportunity: Omit<SalesOpportunity, 'id' | 'createdAt' | 'updatedAt'>) => {
     const newOpportunity: SalesOpportunity = {
@@ -803,6 +878,8 @@ export function CRMProvider({ children }: { children: ReactNode }) {
     paymentPlans,
     todayPayments,
     overduePayments,
+    tasks,
+    overdueTasks,
     activities,
     stats,
     loading,
@@ -831,6 +908,10 @@ export function CRMProvider({ children }: { children: ReactNode }) {
     updateOpportunity,
     deleteOpportunity,
     changeOpportunityStage,
+    addTask,
+    updateTask,
+    deleteTask,
+    completeTask,
   };
 
   return (

@@ -444,3 +444,50 @@ export const INVOICE_STATUS_CONFIG: Record<InvoiceStatus, { label: string; class
   cancelled: { label: '已作废', className: 'bg-stone-500/10 text-stone-600 dark:text-stone-400 border-stone-500/20', color: 'text-stone-600 dark:text-stone-400' },
   refunded: { label: '已退款', className: 'bg-orange-500/10 text-orange-600 dark:text-orange-400 border-orange-500/20', color: 'text-orange-600 dark:text-orange-400' },
 };
+
+// ============ 任务管理类型 (V4.1 新增) ============
+export type TaskType = 'follow_up' | 'meeting' | 'call' | 'email' | 'demo' | 'proposal' | 'other';
+export type TaskPriority = 'low' | 'medium' | 'high' | 'urgent';
+export type TaskStatus = 'pending' | 'in_progress' | 'completed' | 'cancelled';
+
+export interface Task {
+  id: string;
+  title: string;
+  description?: string;
+  type: TaskType;
+  priority: TaskPriority;
+  status: TaskStatus;
+  assigneeId?: string;
+  assigneeName?: string;
+  relatedType?: 'customer' | 'lead' | 'opportunity' | 'contract' | 'order';
+  relatedId?: string;
+  relatedName?: string;
+  dueDate: string;
+  completedAt?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export const TASK_TYPE_CONFIG: Record<TaskType, { label: string; icon: string }> = {
+  follow_up: { label: '跟进', icon: '📞' },
+  meeting: { label: '会议', icon: '👥' },
+  call: { label: '电话', icon: '📱' },
+  email: { label: '邮件', icon: '✉️' },
+  demo: { label: '演示', icon: '💻' },
+  proposal: { label: '方案', icon: '📄' },
+  other: { label: '其他', icon: '📌' },
+};
+
+export const TASK_PRIORITY_CONFIG: Record<TaskPriority, { label: string; color: string; bgColor: string }> = {
+  low: { label: '低', color: 'text-gray-600', bgColor: 'bg-gray-100' },
+  medium: { label: '中', color: 'text-blue-600', bgColor: 'bg-blue-100' },
+  high: { label: '高', color: 'text-orange-600', bgColor: 'bg-orange-100' },
+  urgent: { label: '紧急', color: 'text-red-600', bgColor: 'bg-red-100' },
+};
+
+export const TASK_STATUS_CONFIG: Record<TaskStatus, { label: string; className: string; color: string }> = {
+  pending: { label: '待办', className: 'bg-gray-500/10 text-gray-600 dark:text-gray-400 border-gray-500/20', color: 'text-gray-600' },
+  in_progress: { label: '进行中', className: 'bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20', color: 'text-blue-600' },
+  completed: { label: '已完成', className: 'bg-green-500/10 text-green-600 dark:text-green-400 border-green-500/20', color: 'text-green-600' },
+  cancelled: { label: '已取消', className: 'bg-stone-500/10 text-stone-600 dark:text-stone-400 border-stone-500/20', color: 'text-stone-600' },
+};

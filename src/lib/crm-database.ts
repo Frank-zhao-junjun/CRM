@@ -1378,3 +1378,158 @@ export async function getConversionData(timeRange: 'month' | 'quarter' | 'year' 
     };
   });
 }
+
+// ============ 任务管理数据库操作 (V4.1 新增) ============
+export interface InsertTask {
+  title: string;
+  description?: string;
+  type: 'follow_up' | 'meeting' | 'call' | 'email' | 'demo' | 'proposal' | 'other';
+  priority: 'low' | 'medium' | 'high' | 'urgent';
+  status?: 'pending' | 'in_progress' | 'completed' | 'cancelled';
+  assigneeId?: string;
+  assigneeName?: string;
+  relatedType?: 'customer' | 'lead' | 'opportunity' | 'contract' | 'order';
+  relatedId?: string;
+  relatedName?: string;
+  dueDate: string;
+}
+
+export interface TaskRow {
+  id: string;
+  title: string;
+  description?: string;
+  type: 'follow_up' | 'meeting' | 'call' | 'email' | 'demo' | 'proposal' | 'other';
+  priority: 'low' | 'medium' | 'high' | 'urgent';
+  status: 'pending' | 'in_progress' | 'completed' | 'cancelled';
+  assignee_id?: string;
+  assignee_name?: string;
+  related_type?: 'customer' | 'lead' | 'opportunity' | 'contract' | 'order';
+  related_id?: string;
+  related_name?: string;
+  due_date: string;
+  completed_at?: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export async function getAllTasks(): Promise<any[]> {
+  const { data, error } = await client
+    .from('tasks')
+    .select('*')
+    .order('due_date', { ascending: true });
+
+  if (error) {
+    console.error('获取任务列表失败:', error);
+    return [];
+  }
+
+  return (data as TaskRow[])?.map(rowToTask) || [];
+}
+
+export async function getTaskById(id: string): Promise<any | null> {
+  const { data, error } = await client
+    .from('tasks')
+    .select('*')
+    .eq('id', id)
+    .single();
+
+  if (error) {
+    console.error('获取任务详情失败:', error);
+    return null;
+  }
+
+  return data ? rowToTask(data as TaskRow) : null;
+}
+
+export async function createTask(task: InsertTask): Promise<any> {
+  const now = new Date().toISOString();
+  const { data, error } = await client
+    .from('tasks')
+    .insert({
+      title: task.title,
+      description: task.description,
+      type: task.type,
+      priority: task.priority,
+      status: task.status || 'pending',
+      assignee_id: task.assigneeId,
+      assignee_name: task.assigneeName,
+      related_type: task.relatedType,
+      related_id: task.relatedId,
+      related_name: task.relatedName,
+      due_date: task.dueDate,
+      created_at: now,
+      updated_at: now,
+    })
+    .select()
+    .single();
+
+  if (error) {
+    console.error('创建任务失败:', error);
+    throw error;
+  }
+
+  return rowToTask(data as TaskRow);
+}
+
+export async function updateTask(id: string, updates: Partial<InsertTask>): Promise<any> {
+  const now = new Date().toISOString();
+  const updateData: Record<string, any> = { updated_at: now };
+
+  if (updates.title !== undefined) updateData.title = updates.title;
+  if (updates.description !== undefined) updateData.description = updates.description;
+  if (updates.type !== undefined) updateData.type = updates.type;
+  if (updates.priority !== undefined) updateData.priority = updates.priority;
+  if (updates.status !== undefined) updateData.status = updates.status;
+  if (updates.assigneeId !== undefined) updateData.assignee_id = updates.assigneeId;
+  if (updates.assigneeName !== undefined) updateData.assignee_name = updates.assigneeName;
+  if (updates.relatedType !== undefined) updateData.related_type = updates.relatedType;
+  if (updates.relatedId !== undefined) updateData.related_id = updates.relatedId;
+  if (updates.relatedName !== undefined) updateData.related_name = updates.relatedName;
+  if (updates.dueDate !== undefined) updateData.due_date = updates.dueDate;
+
+  const { data, error } = await client
+    .from('tasks')
+    .update(updateData)
+    .eq('id', id)
+    .select()
+    .single();
+
+  if (error) {
+    console.error('更新任务失败:', error);
+    throw error;
+  }
+
+  return rowToTask(data as TaskRow);
+}
+
+export async function deleteTask(id: string): Promise<void> {
+  const { error } = await client
+    .from('tasks')
+    .delete()
+    .eq('id', id);
+
+  if (error) {
+    console.error('删除任务失败:', error);
+    throw error;
+  }
+}
+
+function rowToTask(row: TaskRow): any {
+  return {
+    id: row.id,
+    title: row.title,
+    description: row.description,
+    type: row.type,
+    priority: row.priority,
+    status: row.status,
+    assigneeId: row.assignee_id,
+    assigneeName: row.assignee_name,
+    relatedType: row.related_type,
+    relatedId: row.related_id,
+    relatedName: row.related_name,
+    dueDate: row.due_date,
+    completedAt: row.completed_at,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  };
+}

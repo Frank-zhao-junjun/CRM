@@ -21,6 +21,7 @@ import {
   FileBarGraph,
   Receipt,
   Activity as ActivityIcon,
+  CheckSquare,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
@@ -121,6 +122,13 @@ const navigation: NavItemType[] = [
     href: '/activities', 
     icon: ActivityIcon,
     gradient: 'from-blue-500 to-indigo-500',
+  },
+  { 
+    name: '任务管理', 
+    href: '/tasks', 
+    icon: CheckSquare,
+    gradient: 'from-emerald-500 to-teal-500',
+    badge: 'NEW',
   },
   { 
     name: '报表中心', 

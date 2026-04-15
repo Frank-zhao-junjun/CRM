@@ -66,6 +66,12 @@ export async function GET(request: NextRequest) {
       return NextResponse.json(todos);
     }
     
+    // Tasks (任务管理 V4.1)
+    if (type === 'tasks') {
+      const tasks = await db.getAllTasks();
+      return NextResponse.json(tasks);
+    }
+    
     if (type === 'contacts') {
       const customerId = searchParams.get('customerId');
       if (customerId) {
@@ -350,6 +356,33 @@ export async function POST(request: NextRequest) {
         return NextResponse.json(notification);
       }
       
+      // Task (任务管理 V4.1)
+      case 'addTask': {
+        const task = await db.createTask({
+          title: data.title,
+          description: data.description,
+          type: data.type || 'other',
+          priority: data.priority || 'medium',
+          status: data.status || 'pending',
+          assigneeId: data.assigneeId,
+          assigneeName: data.assigneeName,
+          relatedType: data.relatedType,
+          relatedId: data.relatedId,
+          relatedName: data.relatedName,
+          dueDate: data.dueDate,
+        });
+        await db.createActivity({
+          id: `act_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
+          type: 'created',
+          entity_type: 'lead' as any,
+          entity_id: task.id,
+          entity_name: task.title,
+          description: `创建任务 "${task.title}"`,
+          timestamp: new Date(),
+        });
+        return NextResponse.json(task);
+      }
+      
       default:
         return NextResponse.json({ error: 'Unknown action' }, { status: 400 });
     }
@@ -523,6 +556,12 @@ export async function PUT(request: NextRequest) {
         return NextResponse.json({ success: true });
       }
       
+      // Task (任务管理 V4.1)
+      case 'updateTask': {
+        const task = await db.updateTask(id, data);
+        return NextResponse.json(task);
+      }
+      
       // Payment Plan (回款管理 V3.3)
       case 'addPaymentPlan': {
         const plan = await db.createPaymentPlan({
@@ -641,6 +680,12 @@ export async function DELETE(request: NextRequest) {
       // Payment Plan (回款管理 V3.3)
       case 'deletePaymentPlan': {
         await db.deletePaymentPlan(id);
+        return NextResponse.json({ success: true });
+      }
+      
+      // Task (任务管理 V4.1)
+      case 'deleteTask': {
+        await db.deleteTask(id);
         return NextResponse.json({ success: true });
       }
       

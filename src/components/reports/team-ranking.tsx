@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo } from 'react';
+import { useState, useEffect } from 'react';
 import { 
   BarChart, 
   Bar, 
@@ -11,23 +11,23 @@ import {
   ResponsiveContainer,
   Legend
 } from 'recharts';
-import { SalesOpportunity } from '@/lib/crm-types';
 
-// 模拟团队成员数据
 interface TeamMember {
-  id: string;
-  name: string;
-  avatar?: string;
-}
-
-// 扩展商机关联owner信息（用于演示）
-interface OpportunityWithOwner extends SalesOpportunity {
-  ownerId?: string;
-  ownerName?: string;
+  memberId: string;
+  memberName: string;
+  wonAmount: number;
+  wonCount: number;
+  newOpportunities: number;
+  pipelineAmount: number;
+  conversionRate: number;
+  avgDealSize: number;
 }
 
 interface RankingData {
-  member: TeamMember;
+  member: {
+    id: string;
+    name: string;
+  };
   metrics: {
     wonAmount: number;
     wonCount: number;
@@ -35,7 +35,7 @@ interface RankingData {
     pipelineAmount: number;
     conversionRate: number;
     avgDealSize: number;
-    growth: number; // 环比增长率
+    growth: number;
   };
 }
 
@@ -76,24 +76,22 @@ const CustomTooltip = ({ active, payload, label }: any) => {
 };
 
 export function TeamRankingChart({ data, sortBy }: TeamRankingChartProps) {
-  const chartData = useMemo(() => {
-    return [...data]
-      .sort((a, b) => {
-        switch (sortBy) {
-          case 'wonAmount':
-            return b.metrics.wonAmount - a.metrics.wonAmount;
-          case 'wonCount':
-            return b.metrics.wonCount - a.metrics.wonCount;
-          case 'conversionRate':
-            return b.metrics.conversionRate - a.metrics.conversionRate;
-          case 'newOpps':
-            return b.metrics.newOpps - a.metrics.newOpps;
-          default:
-            return 0;
-        }
-      })
-      .slice(0, 10); // 只显示前10名
-  }, [data, sortBy]);
+  const chartData = [...data]
+    .sort((a, b) => {
+      switch (sortBy) {
+        case 'wonAmount':
+          return b.metrics.wonAmount - a.metrics.wonAmount;
+        case 'wonCount':
+          return b.metrics.wonCount - a.metrics.wonCount;
+        case 'conversionRate':
+          return b.metrics.conversionRate - a.metrics.conversionRate;
+        case 'newOpps':
+          return b.metrics.newOpps - a.metrics.newOpps;
+        default:
+          return 0;
+      }
+    })
+    .slice(0, 10);
 
   return (
     <div className="h-[400px] w-full">
@@ -132,70 +130,65 @@ export function TeamRankingChart({ data, sortBy }: TeamRankingChartProps) {
   );
 }
 
-// 计算团队排名数据
-export function useTeamRanking(opportunities: OpportunityWithOwner[], timeRange: 'month' | 'quarter' | 'year' | 'all') {
-  // 模拟团队成员
-  const teamMembers: TeamMember[] = [
-    { id: 'user_1', name: '张销售' },
-    { id: 'user_2', name: '李经理' },
-    { id: 'user_3', name: '王总监' },
-    { id: 'user_4', name: '赵专员' },
-    { id: 'user_5', name: '钱顾问' },
-  ];
+// API 响应类型
+interface ApiRankingResponse {
+  success: boolean;
+  data: TeamMember[];
+  timestamp: string;
+}
 
-  return useMemo(() => {
-    const now = new Date();
-    
-    // 为商机分配随机的owner（用于演示）
-    const opportunitiesWithOwner = opportunities.map((opp, index) => ({
-      ...opp,
-      ownerId: teamMembers[index % teamMembers.length].id,
-      ownerName: teamMembers[index % teamMembers.length].name,
-    }));
+// 计算团队排名数据 - 使用 API
+export function useTeamRankingApi(timeRange: 'month' | 'quarter' | 'year' | 'all') {
+  const [rankingData, setRankingData] = useState<RankingData[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-    // 过滤时间范围
-    let filteredOpps = [...opportunitiesWithOwner];
-    if (timeRange !== 'all') {
-      filteredOpps = opportunitiesWithOwner.filter(opp => {
-        const createdAt = new Date(opp.createdAt);
-        switch (timeRange) {
-          case 'month':
-            return createdAt >= new Date(now.getFullYear(), now.getMonth(), 1);
-          case 'quarter':
-            const quarterMonth = Math.floor(now.getMonth() / 3) * 3;
-            return createdAt >= new Date(now.getFullYear(), quarterMonth, 1);
-          case 'year':
-            return createdAt >= new Date(now.getFullYear(), 0, 1);
-          default:
-            return true;
+  useEffect(() => {
+    async function fetchData() {
+      setLoading(true);
+      setError(null);
+      try {
+        const response = await fetch(`/api/reports?type=ranking&timeRange=${timeRange}`);
+        if (!response.ok) {
+          throw new Error('获取排行数据失败');
         }
-      });
+        const result: ApiRankingResponse = await response.json();
+        
+        if (result.success) {
+          // 转换数据格式
+          const transformedData: RankingData[] = result.data.map(member => ({
+            member: {
+              id: member.memberId,
+              name: member.memberName,
+            },
+            metrics: {
+              wonAmount: member.wonAmount,
+              wonCount: member.wonCount,
+              newOpps: member.newOpportunities,
+              pipelineAmount: member.pipelineAmount,
+              conversionRate: member.conversionRate,
+              avgDealSize: member.avgDealSize,
+              growth: 0, // API 未返回增长率
+            },
+          }));
+          
+          setRankingData(transformedData);
+        } else {
+          throw new Error('获取数据失败');
+        }
+      } catch (err) {
+        setError(err instanceof Error ? err.message : '未知错误');
+      } finally {
+        setLoading(false);
+      }
     }
+    
+    fetchData();
+  }, [timeRange]);
 
-    // 按成员分组计算指标
-    const rankingData: RankingData[] = teamMembers.map(member => {
-      const memberOpps = filteredOpps.filter(opp => opp.ownerId === member.id);
-      const wonOpps = memberOpps.filter(opp => opp.stage === 'closed_won');
-      const activeOpps = memberOpps.filter(opp => !['closed_won', 'closed_lost'].includes(opp.stage));
-      
-      const wonAmount = wonOpps.reduce((sum, opp) => sum + opp.value, 0);
-      const pipelineAmount = activeOpps.reduce((sum, opp) => sum + opp.value, 0);
-      const totalClosed = wonOpps.length + memberOpps.filter(opp => opp.stage === 'closed_lost').length;
-      
-      return {
-        member,
-        metrics: {
-          wonAmount,
-          wonCount: wonOpps.length,
-          newOpps: memberOpps.length,
-          pipelineAmount,
-          conversionRate: totalClosed > 0 ? (wonOpps.length / totalClosed) * 100 : 0,
-          avgDealSize: wonOpps.length > 0 ? wonAmount / wonOpps.length : 0,
-          growth: Math.random() * 40 - 10, // 模拟环比增长率
-        },
-      };
-    });
-
-    return rankingData.sort((a, b) => b.metrics.wonAmount - a.metrics.wonAmount);
-  }, [opportunities, timeRange, teamMembers]);
+  return {
+    rankingData,
+    loading,
+    error,
+  };
 }

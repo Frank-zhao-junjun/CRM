@@ -32,6 +32,7 @@ import {
 import { useState, useEffect, useCallback } from 'react';
 import { format } from 'date-fns';
 import { zhCN } from 'date-fns/locale';
+import { ActivityTimeline } from '@/components/crm/activity-timeline';
 import { FollowUpTimeline } from '@/components/crm/follow-up-timeline';
 import { FOLLOW_UP_METHOD_CONFIG, type FollowUpMethod } from '@/lib/crm-types';
 
@@ -484,6 +485,14 @@ export default function OpportunityDetailPage() {
           </div>
         </CardContent>
       </Card>
+
+      {/* 活动追踪 */}
+      <ActivityTimeline 
+        entityId={opportunity.id}
+        entityType="opportunity"
+        showFilters={false}
+        title={`关于 "${opportunity.title}" 的活动`}
+      />
 
       {/* ====== 报价单列表 ====== */}
       <div className="space-y-4">

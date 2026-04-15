@@ -612,3 +612,44 @@ export type EmailTemplate = typeof emailTemplates.$inferSelect;
 export type InsertEmailTemplate = typeof emailTemplates.$inferInsert;
 export type EmailLog = typeof emailLogs.$inferSelect;
 export type InsertEmailLog = typeof emailLogs.$inferInsert;
+
+// ============ 客户标签 ============
+
+// 标签表
+export const tags = pgTable(
+  'tags',
+  {
+    id: varchar('id', { length: 36 }).primaryKey().default(sql`gen_random_uuid()`),
+    name: varchar('name', { length: 64 }).notNull(),
+    color: varchar('color', { length: 7 }).notNull().default('#6B7280'),
+    icon: varchar('icon', { length: 50 }).default('tag'),
+    description: text('description'),
+    usage_count: integer('usage_count').default(0).notNull(),
+    created_at: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+    updated_at: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => [
+    index('tags_name_idx').on(table.name),
+  ]
+);
+
+// 客户标签关联表
+export const customerTags = pgTable(
+  'customer_tags',
+  {
+    id: varchar('id', { length: 36 }).primaryKey().default(sql`gen_random_uuid()`),
+    customer_id: varchar('customer_id', { length: 36 }).notNull().references(() => customers.id, { onDelete: 'cascade' }),
+    tag_id: varchar('tag_id', { length: 36 }).notNull().references(() => tags.id, { onDelete: 'cascade' }),
+    created_at: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => [
+    index('customer_tags_customer_id_idx').on(table.customer_id),
+    index('customer_tags_tag_id_idx').on(table.tag_id),
+  ]
+);
+
+// 标签类型导出
+export type Tag = typeof tags.$inferSelect;
+export type InsertTag = typeof tags.$inferInsert;
+export type CustomerTag = typeof customerTags.$inferSelect;
+export type InsertCustomerTag = typeof customerTags.$inferInsert;

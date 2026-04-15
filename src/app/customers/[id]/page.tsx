@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
-import { ArrowLeft, Edit, Trash2, Mail, Phone, Globe, MapPin, FileText } from 'lucide-react';
+import { ArrowLeft, Edit, Trash2, Mail, Phone, Globe, MapPin, FileText, Send } from 'lucide-react';
 import Link from 'next/link';
 import { CustomerStatus } from '@/lib/crm-types';
 import { cn } from '@/lib/utils';
@@ -22,6 +22,7 @@ import { useState } from 'react';
 import { format } from 'date-fns';
 import { ActivityTimeline } from '@/components/crm/activity-timeline';
 import { zhCN } from 'date-fns/locale';
+import { SendEmailDialog } from '@/components/email/send-email-dialog';
 
 const statusLabels: Record<CustomerStatus, { label: string; className: string }> = {
   active: { label: '活跃', className: 'bg-green-500/10 text-green-500 border-green-500/20' },
@@ -34,6 +35,7 @@ export default function CustomerDetailPage() {
   const router = useRouter();
   const { customers, contacts, opportunities, deleteCustomer } = useCRM();
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [showEmailDialog, setShowEmailDialog] = useState(false);
 
   const customer = customers.find(c => c.id === params.id);
   const customerContacts = contacts.filter(c => c.customerId === params.id);
@@ -67,6 +69,12 @@ export default function CustomerDetailPage() {
           </div>
         </div>
         <div className="flex gap-2">
+          {customer.email && (
+            <Button variant="outline" onClick={() => setShowEmailDialog(true)}>
+              <Send className="h-4 w-4 mr-2" />
+              发送邮件
+            </Button>
+          )}
           <Button variant="outline" asChild>
             <Link href={`/customers/${customer.id}/edit`}>
               <Edit className="h-4 w-4 mr-2" />
@@ -268,6 +276,17 @@ export default function CustomerDetailPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Send Email Dialog */}
+      <SendEmailDialog
+        open={showEmailDialog}
+        onOpenChange={setShowEmailDialog}
+        entityType="customer"
+        entityId={customer.id}
+        entityName={customer.name}
+        toEmail={customer.email || ''}
+        toName={customer.name}
+      />
     </div>
   );
 }

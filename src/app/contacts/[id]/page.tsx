@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
-import { ArrowLeft, Edit, Trash2, Mail, Phone, User, Building2 } from 'lucide-react';
+import { ArrowLeft, Edit, Trash2, Mail, Phone, User, Building2, Send } from 'lucide-react';
 import Link from 'next/link';
 import {
   Dialog,
@@ -19,12 +19,14 @@ import {
 import { useState } from 'react';
 import { format } from 'date-fns';
 import { zhCN } from 'date-fns/locale';
+import { SendEmailDialog } from '@/components/email/send-email-dialog';
 
 export default function ContactDetailPage() {
   const params = useParams();
   const router = useRouter();
   const { contacts, opportunities, deleteContact } = useCRM();
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [showEmailDialog, setShowEmailDialog] = useState(false);
 
   const contact = contacts.find(c => c.id === params.id);
   const contactOpportunities = opportunities.filter(o => o.contactId === params.id);
@@ -67,6 +69,12 @@ export default function ContactDetailPage() {
           </div>
         </div>
         <div className="flex gap-2">
+          {contact.email && (
+            <Button variant="outline" onClick={() => setShowEmailDialog(true)}>
+              <Send className="h-4 w-4 mr-2" />
+              发送邮件
+            </Button>
+          )}
           <Button variant="outline" asChild>
             <Link href={`/contacts/${contact.id}/edit`}>
               <Edit className="h-4 w-4 mr-2" />
@@ -174,6 +182,17 @@ export default function ContactDetailPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Send Email Dialog */}
+      <SendEmailDialog
+        open={showEmailDialog}
+        onOpenChange={setShowEmailDialog}
+        entityType="contact"
+        entityId={contact.id}
+        entityName={`${contact.lastName}${contact.firstName}`}
+        toEmail={contact.email || ''}
+        toName={`${contact.lastName}${contact.firstName}`}
+      />
     </div>
   );
 }

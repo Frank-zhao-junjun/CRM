@@ -35,6 +35,7 @@ import { zhCN } from 'date-fns/locale';
 import { ActivityTimeline } from '@/components/crm/activity-timeline';
 import { FollowUpTimeline } from '@/components/crm/follow-up-timeline';
 import { FOLLOW_UP_METHOD_CONFIG, type FollowUpMethod } from '@/lib/crm-types';
+import { SendEmailDialog } from '@/components/email/send-email-dialog';
 
 const stageLabels: Record<OpportunityStage, { label: string; className: string; description: string }> = {
   qualified: { label: '商机确认', className: 'bg-blue-500/10 text-blue-500 border-blue-500/20', description: '商机已确认，待深入沟通' },
@@ -60,6 +61,7 @@ export default function OpportunityDetailPage() {
   const router = useRouter();
   const { opportunities, deleteOpportunity } = useCRM();
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [showEmailDialog, setShowEmailDialog] = useState(false);
 
   // Quotes state
   const [quotes, setQuotes] = useState<Quote[]>([]);
@@ -267,6 +269,10 @@ export default function OpportunityDetailPage() {
           <Button onClick={() => setShowCreateQuote(true)} className="gap-2">
             <FileText className="h-4 w-4" />
             {quotes.length > 0 ? '新建报价版本' : '新建报价单'}
+          </Button>
+          <Button variant="outline" onClick={() => setShowEmailDialog(true)}>
+            <Send className="h-4 w-4 mr-2" />
+            发送邮件
           </Button>
           <Button variant="outline" asChild>
             <Link href={`/opportunities/${opportunity.id}/edit`}>
@@ -811,6 +817,16 @@ export default function OpportunityDetailPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Send Email Dialog */}
+      <SendEmailDialog
+        open={showEmailDialog}
+        onOpenChange={setShowEmailDialog}
+        entityType="opportunity"
+        entityId={opportunity.id}
+        entityName={opportunity.title}
+        toEmail={opportunity.contactName ? '' : ''}
+      />
     </div>
   );
 }

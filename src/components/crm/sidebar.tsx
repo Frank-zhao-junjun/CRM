@@ -19,6 +19,7 @@ import {
   Clock,
   FileBarGraph,
   Receipt,
+  Activity as ActivityIcon,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
@@ -106,6 +107,12 @@ const navigation: NavItemType[] = [
     href: '/follow-ups', 
     icon: Clock,
     gradient: 'from-rose-500 to-pink-500',
+  },
+  { 
+    name: '活动追踪', 
+    href: '/activities', 
+    icon: ActivityIcon,
+    gradient: 'from-blue-500 to-indigo-500',
   },
   { 
     name: '报表中心', 

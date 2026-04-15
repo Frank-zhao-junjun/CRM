@@ -37,7 +37,8 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Plus, Search, Building2, DollarSign, Lightbulb, MoreVertical, ArrowRightLeft, XCircle, Trash2, Sparkles, Clock } from 'lucide-react';
+import { Plus, Search, Building2, DollarSign, Lightbulb, MoreVertical, ArrowRightLeft, XCircle, Trash2, Sparkles, Clock, LayoutGrid } from 'lucide-react';
+import Link from 'next/link';
 import { LEAD_STATUS_CONFIG, LEAD_SOURCE_CONFIG } from '@/lib/crm-types';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
@@ -142,6 +143,12 @@ export default function LeadsPage() {
             <Plus className="h-4 w-4" />
             新建线索
           </Button>
+          <Link href="/leads/kanban">
+            <Button variant="outline" className="gap-2">
+              <LayoutGrid className="h-4 w-4" />
+              看板视图
+            </Button>
+          </Link>
         </div>
       </div>
 

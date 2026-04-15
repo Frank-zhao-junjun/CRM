@@ -22,7 +22,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Plus, Search, DollarSign, Building2, Calendar, Briefcase, ChevronRight, Trash2, TrendingUp, Clock } from 'lucide-react';
+import { Plus, Search, DollarSign, Building2, Calendar, Briefcase, ChevronRight, Trash2, TrendingUp, Clock, LayoutGrid } from 'lucide-react';
+import Link from 'next/link';
 import { OpportunityStage } from '@/lib/crm-types';
 import { cn } from '@/lib/utils';
 import { QuickFollowUp } from '@/components/crm/quick-follow-up';
@@ -142,9 +143,13 @@ export default function OpportunitiesPage() {
             <Plus className="h-4 w-4" />
             新建机会
           </Button>
+          <Link href="/opportunities/kanban">
+            <Button variant="outline" className="gap-2">
+              <LayoutGrid className="h-4 w-4" />
+              看板视图
+            </Button>
+          </Link>
         </div>
-      </div>
-
       {/* Filters */}
       <Card className="card-hover">
         <CardContent className="p-4">

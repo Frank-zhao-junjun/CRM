@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
-import { ArrowLeft, Edit, Trash2, Mail, Phone, Globe, MapPin, FileText, Send } from 'lucide-react';
+import { ArrowLeft, Edit, Trash2, Mail, Phone, Globe, MapPin, FileText, Send, Tag } from 'lucide-react';
 import Link from 'next/link';
 import { CustomerStatus } from '@/lib/crm-types';
 import { cn } from '@/lib/utils';
@@ -18,11 +18,12 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { format } from 'date-fns';
 import { ActivityTimeline } from '@/components/crm/activity-timeline';
 import { zhCN } from 'date-fns/locale';
 import { SendEmailDialog } from '@/components/email/send-email-dialog';
+import type { Tag as TagType } from '@/storage/database/shared/schema';
 
 const statusLabels: Record<CustomerStatus, { label: string; className: string }> = {
   active: { label: '活跃', className: 'bg-green-500/10 text-green-500 border-green-500/20' },
@@ -36,10 +37,95 @@ export default function CustomerDetailPage() {
   const { customers, contacts, opportunities, deleteCustomer } = useCRM();
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [showEmailDialog, setShowEmailDialog] = useState(false);
+  const [customerTags, setCustomerTags] = useState<TagType[]>([]);
+  const [allTags, setAllTags] = useState<TagType[]>([]);
+  const [showTagSelector, setShowTagSelector] = useState(false);
+  const [loadingTags, setLoadingTags] = useState(false);
 
   const customer = customers.find(c => c.id === params.id);
   const customerContacts = contacts.filter(c => c.customerId === params.id);
   const customerOpportunities = opportunities.filter(o => o.customerId === params.id);
+
+  // 获取客户标签
+  const fetchCustomerTags = useCallback(async () => {
+    if (!customer?.id) return;
+    try {
+      const res = await fetch(`/api/customers/tags?customerId=${customer.id}`);
+      if (res.ok) {
+        const data = await res.json();
+        setCustomerTags(data);
+      }
+    } catch (err) {
+      console.error('获取客户标签失败:', err);
+    }
+  }, [customer?.id]);
+
+  // 获取所有标签
+  const fetchAllTags = useCallback(async () => {
+    try {
+      const res = await fetch('/api/tags');
+      if (res.ok) {
+        const data = await res.json();
+        setAllTags(data);
+      }
+    } catch (err) {
+      console.error('获取标签列表失败:', err);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchCustomerTags();
+  }, [fetchCustomerTags]);
+
+  // 添加标签到客户
+  const addTagToCustomer = async (tagId: string) => {
+    if (!customer?.id) return;
+    setLoadingTags(true);
+    try {
+      const res = await fetch('/api/customers/tags', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ customerId: customer.id, tagId }),
+      });
+      if (res.ok) {
+        await fetchCustomerTags();
+      } else {
+        const error = await res.json();
+        alert(error.error || '添加标签失败');
+      }
+    } catch (err) {
+      console.error('添加标签失败:', err);
+    } finally {
+      setLoadingTags(false);
+    }
+  };
+
+  // 从客户移除标签
+  const removeTagFromCustomer = async (tagId: string) => {
+    if (!customer?.id) return;
+    setLoadingTags(true);
+    try {
+      const res = await fetch(`/api/customers/tags?customerId=${customer.id}&tagId=${tagId}`, {
+        method: 'DELETE',
+      });
+      if (res.ok) {
+        await fetchCustomerTags();
+      } else {
+        const error = await res.json();
+        alert(error.error || '移除标签失败');
+      }
+    } catch (err) {
+      console.error('移除标签失败:', err);
+    } finally {
+      setLoadingTags(false);
+    }
+  };
+
+  // 打开标签选择器
+  const openTagSelector = async () => {
+    await fetchAllTags();
+    setShowTagSelector(true);
+  };
 
   if (!customer) {
     return (
@@ -53,6 +139,11 @@ export default function CustomerDetailPage() {
     deleteCustomer(customer.id);
     router.push('/customers');
   };
+
+  // 未分配的标签
+  const unassignedTags = allTags.filter(
+    tag => !customerTags.some(ct => ct.id === tag.id)
+  );
 
   return (
     <div className="space-y-6">
@@ -87,6 +178,51 @@ export default function CustomerDetailPage() {
           </Button>
         </div>
       </div>
+
+      {/* 客户标签 */}
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between pb-3">
+          <CardTitle className="text-base flex items-center gap-2">
+            <Tag className="h-4 w-4" />
+            客户标签
+          </CardTitle>
+          <Button variant="ghost" size="sm" onClick={openTagSelector}>
+            <Edit className="h-3 w-3 mr-1" />
+            管理标签
+          </Button>
+        </CardHeader>
+        <CardContent>
+          {customerTags.length > 0 ? (
+            <div className="flex flex-wrap gap-2">
+              {customerTags.map(tag => (
+                <span
+                  key={tag.id}
+                  className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-sm font-medium"
+                  style={{
+                    backgroundColor: `${tag.color}15`,
+                    color: tag.color,
+                    border: `1px solid ${tag.color}30`,
+                  }}
+                >
+                  {tag.name}
+                  <button
+                    type="button"
+                    onClick={() => removeTagFromCustomer(tag.id)}
+                    className="ml-1 hover:opacity-70 rounded-full p-0.5 hover:bg-black/10"
+                    disabled={loadingTags}
+                  >
+                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                </span>
+              ))}
+            </div>
+          ) : (
+            <p className="text-sm text-muted-foreground">暂无标签</p>
+          )}
+        </CardContent>
+      </Card>
 
       <div className="grid gap-6 lg:grid-cols-3">
         {/* 基本信息 */}
@@ -248,7 +384,6 @@ export default function CustomerDetailPage() {
         </CardContent>
       </Card>
 
-
       {/* 活动追踪 */}
       <ActivityTimeline 
         entityId={customer.id}
@@ -287,6 +422,59 @@ export default function CustomerDetailPage() {
         toEmail={customer.email || ''}
         toName={customer.name}
       />
+
+      {/* 标签选择器 Dialog */}
+      <Dialog open={showTagSelector} onOpenChange={setShowTagSelector}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>管理客户标签</DialogTitle>
+            <DialogDescription>
+              选择要添加到该客户的标签
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            {unassignedTags.length > 0 ? (
+              <div className="flex flex-wrap gap-2">
+                {unassignedTags.map(tag => (
+                  <button
+                    key={tag.id}
+                    type="button"
+                    onClick={() => addTagToCustomer(tag.id)}
+                    disabled={loadingTags}
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium transition-all hover:scale-105"
+                    style={{
+                      backgroundColor: `${tag.color}15`,
+                      color: tag.color,
+                      border: `1px solid ${tag.color}30`,
+                    }}
+                  >
+                    <span className="text-base">+</span>
+                    {tag.name}
+                  </button>
+                ))}
+              </div>
+            ) : (
+              <p className="text-sm text-muted-foreground text-center py-4">
+                所有标签已添加，或暂无可用标签
+              </p>
+            )}
+            <Separator />
+            <div className="text-sm text-muted-foreground">
+              <p>已有标签：点击标签右上角 × 可移除</p>
+              <p className="mt-1">
+                <Link href="/settings/tags" className="text-blue-600 hover:underline" onClick={() => setShowTagSelector(false)}>
+                  创建新标签
+                </Link>
+              </p>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowTagSelector(false)}>
+              完成
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

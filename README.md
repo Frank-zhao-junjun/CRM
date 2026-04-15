@@ -99,6 +99,70 @@
 - 分页支持
 - 金额自动计算（小计、折扣、税额、价税合计）
 
+### 12. 权限管理 (RBAC)
+基于角色的访问控制（Role-Based Access Control）系统
+
+#### 功能模块
+- **角色管理**：创建、编辑、删除角色，配置角色权限
+- **权限定义**：43 项细粒度权限，覆盖所有业务模块
+- **用户角色分配**：为用户分配角色，管理用户权限
+- **权限检查中间件**：API 级别和 UI 级别的双重权限控制
+- **UI 权限组件**：PermissionGuard、RoleBadge 等组件
+
+#### 预设角色
+- **管理员 (admin)**：系统管理员，拥有所有权限
+- **销售经理 (sales_manager)**：管理团队和销售流程
+- **销售人员 (sales_rep)**：负责客户跟进
+- **访客 (guest)**：只有查看权限
+
+#### 权限分类
+- 客户权限（查看、创建、编辑、删除、导出）
+- 线索权限（查看、创建、编辑、删除、认定）
+- 商机权限（查看、创建、编辑、删除、关闭、导出）
+- 合同权限（查看、创建、编辑、删除、签署）
+- 发票权限（查看、创建、编辑、删除、发送）
+- 订单权限（查看、创建、编辑、删除）
+- 报价权限（查看、创建、编辑、删除、发送）
+- 报表权限（查看、导出、团队报表）
+- 设置权限（查看、编辑、自定义字段、工作流、角色管理）
+- 用户权限（查看、创建、编辑、删除）
+
+#### 使用示例
+```tsx
+// 使用 PermissionGuard 组件控制按钮权限
+import { PermissionGuard } from '@/components/crm/permission-guard';
+
+<PermissionGuard permission="customers.create">
+  <Button>创建客户</Button>
+</PermissionGuard>
+
+// 使用 withPermissionGuard 保护 API 路由
+import { withPermissionGuard } from '@/lib/api-permission';
+
+export async function POST(request: NextRequest) {
+  return withPermissionGuard(request, 'customers.create', async (userId) => {
+    // 业务逻辑
+    return NextResponse.json({ success: true });
+  });
+}
+
+// 使用角色标签组件
+import { RoleBadge, RoleBadgeGroup } from '@/components/crm/role-badge';
+
+<RoleBadge role="admin" />
+<RoleBadgeGroup roles={user.roles} />
+```
+
+#### 相关文件
+- 权限检查核心：`src/lib/permissions.ts`
+- API 权限中间件：`src/lib/api-permission.ts`
+- 权限守卫组件：`src/components/crm/permission-guard.tsx`
+- 角色标签组件：`src/components/crm/role-badge.tsx`
+- 角色管理页面：`src/app/settings/roles/page.tsx`
+- 用户角色页面：`src/app/settings/users/page.tsx`
+- 数据库 Schema：`src/storage/database/shared/schema.ts`
+
+
 ### 12. 产品管理
 - 产品列表（支持搜索和分类筛选）
 - 新建/编辑/删除产品
@@ -205,12 +269,17 @@ src/
 │ │ ├── global-search.tsx  # 全局搜索组件
 │ │ ├── sidebar.tsx        # 侧边栏
 │ │ ├── header.tsx         # 顶部栏
-│ │ └── layout.tsx         # CRM布局
+│ │ ├── layout.tsx         # CRM布局
+│ │ ├── permission-guard.tsx  # 权限守卫组件
+│ │ └── role-badge.tsx        # 角色标签组件
 │ └── ui/             # shadcn/ui组件
 └── lib/
  ├── crm-context.tsx   # CRM状态管理
  ├── crm-database.ts   # 数据库服务
- └── crm-types.ts     # 类型定义
+ ├── crm-types.ts     # 类型定义
+ ├── permissions.ts   # 权限检查核心函数
+ ├── api-permission.ts # API权限中间件
+ └── permission-middleware.ts # 权限中间件装饰器
 ```
 
 ## 数据说明
@@ -229,6 +298,21 @@ src/
 MIT
 
 ## 更新日志
+
+### V4.3 (2026-04-15)
+- **新增权限管理功能 (RBAC)**
+  - 权限管理核心模块（43 项细粒度权限）
+  - 角色管理页面（创建、编辑、删除角色）
+  - 用户角色分配页面（分配和管理用户角色）
+  - API 权限检查中间件
+  - UI 权限守卫组件（PermissionGuard）
+  - 角色标签组件（RoleBadge、RoleBadgeGroup）
+  - 预设角色（管理员、销售经理、销售人员、访客）
+  - 数据库 Schema（roles、permissions、role_permissions、user_roles）
+  - 权限缓存机制（5分钟 TTL）
+  - 权限分组（按模块分类）
+  - API 示例代码
+  - 详细使用文档
 
 ### V4.2 (2026-04-15)
 - 新增活动追踪功能（P0 优先级）

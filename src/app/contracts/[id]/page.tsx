@@ -37,6 +37,7 @@ import Link from 'next/link';
 import { CONTRACT_STATUS_CONFIG, type Contract, type ContractStatus, type ContractMilestone } from '@/lib/crm-types';
 import { format } from 'date-fns';
 import { zhCN } from 'date-fns/locale';
+import { ActivityTimeline } from '@/components/crm/activity-timeline';
 import { cn } from '@/lib/utils';
 
 export default function ContractDetailPage() {
@@ -392,6 +393,14 @@ export default function ContractDetailPage() {
           </Card>
         </div>
       </div>
+
+      {/* 活动追踪 */}
+      <ActivityTimeline 
+        entityId={contract.id}
+        entityType="contract"
+        showFilters={false}
+        title={`关于合同 "${contract.contractNumber}" 的活动`}
+      />
 
       {/* Delete Dialog */}
       <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>

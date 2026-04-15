@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo } from 'react';
+import { useState, useEffect } from 'react';
 import { 
   LineChart, 
   Line, 
@@ -13,7 +13,27 @@ import {
   Area,
   ComposedChart
 } from 'recharts';
-import { SalesOpportunity, OPPORTUNITY_STAGE_CONFIG } from '@/lib/crm-types';
+
+// API 数据类型
+interface ForecastItem {
+  id: string;
+  title: string;
+  customerName: string;
+  value: number;
+  stage: string;
+  probability: number;
+  expectedValue: number;
+  expectedCloseDate: string;
+}
+
+interface ForecastData {
+  opportunities: ForecastItem[];
+  summary: {
+    totalPipeline: number;
+    totalExpected: number;
+    opportunityCount: number;
+  };
+}
 
 interface ForecastPoint {
   month: string;
@@ -112,9 +132,57 @@ export function ForecastChart({ data }: ForecastChartProps) {
   );
 }
 
-// 计算收入预测数据
-export function useForecastData(opportunities: SalesOpportunity[], period: 'quarter' | 'half' | 'year') {
-  return useMemo(() => {
+// API 响应类型
+interface ApiForecastResponse {
+  success: boolean;
+  data: ForecastData;
+  timestamp: string;
+}
+
+// 计算收入预测数据 - 使用 API
+export function useForecastApiData(timeRange: 'month' | 'quarter' | 'year' | 'all') {
+  const [forecastData, setForecastData] = useState<ForecastData | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    async function fetchData() {
+      setLoading(true);
+      setError(null);
+      try {
+        const response = await fetch(`/api/reports?type=forecast&timeRange=${timeRange}`);
+        if (!response.ok) {
+          throw new Error('获取预测数据失败');
+        }
+        const result: ApiForecastResponse = await response.json();
+        
+        if (result.success) {
+          setForecastData(result.data);
+        } else {
+          throw new Error('获取数据失败');
+        }
+      } catch (err) {
+        setError(err instanceof Error ? err.message : '未知错误');
+      } finally {
+        setLoading(false);
+      }
+    }
+    
+    fetchData();
+  }, [timeRange]);
+
+  return {
+    forecastData,
+    loading,
+    error,
+  };
+}
+
+// 根据机会列表生成预测图表数据（用于时间线图表）
+export function useForecastTimeline(opportunities: ForecastItem[], period: 'quarter' | 'half' | 'year') {
+  const [chartData, setChartData] = useState<ForecastPoint[]>([]);
+  
+  useEffect(() => {
     const now = new Date();
     const currentMonth = now.getMonth();
     const currentYear = now.getFullYear();
@@ -124,20 +192,6 @@ export function useForecastData(opportunities: SalesOpportunity[], period: 'quar
     if (period === 'half') months = 6;
     if (period === 'year') months = 12;
     
-    // 按阶段概率计算权重
-    const stageWeights: Record<string, number> = {
-      qualified: 0.1,
-      discovery: 0.25,
-      proposal: 0.5,
-      negotiation: 0.75,
-      contract: 0.9,
-    };
-    
-    // 过滤活跃商机
-    const activeOpps = opportunities.filter(
-      opp => !['closed_won', 'closed_lost'].includes(opp.stage)
-    );
-    
     // 计算各月预测
     const forecastData: ForecastPoint[] = [];
     
@@ -146,59 +200,31 @@ export function useForecastData(opportunities: SalesOpportunity[], period: 'quar
       const monthName = `${monthDate.getMonth() + 1}月`;
       
       // 计算该月到期的商机
-      const dueOpps = activeOpps.filter(opp => {
+      const dueOpps = opportunities.filter(opp => {
         const dueDate = new Date(opp.expectedCloseDate);
         return dueDate.getFullYear() === monthDate.getFullYear() && 
                dueDate.getMonth() === monthDate.getMonth();
       });
       
-      // 计算预期金额（按概率加权）
-      const expectedAmount = dueOpps.reduce((sum, opp) => {
-        const weight = stageWeights[opp.stage] || 0.5;
-        return sum + (opp.value * weight);
-      }, 0);
+      // 计算预期金额
+      const expectedAmount = dueOpps.reduce((sum, opp) => sum + opp.expectedValue, 0);
       
       // 乐观：所有商机都成交
       const optimisticAmount = dueOpps.reduce((sum, opp) => sum + opp.value, 0);
       
-      // 保守：只有高概率商机成交
-      const conservativeAmount = dueOpps.reduce((sum, opp) => {
-        const weight = stageWeights[opp.stage] || 0.5;
-        return sum + (opp.value * weight * 0.6);
-      }, 0);
-      
-      // 实际收入（仅过去月份有）
-      let actualAmount: number | undefined;
-      if (i < 0) { // 假设只有过去月份有实际数据
-        actualAmount = opportunities
-          .filter(opp => {
-            const closeDate = new Date(opp.updatedAt);
-            return opp.stage === 'closed_won' &&
-                   closeDate.getFullYear() === monthDate.getFullYear() &&
-                   closeDate.getMonth() === monthDate.getMonth();
-          })
-          .reduce((sum, opp) => sum + opp.value, 0);
-      }
+      // 保守：概率打6折
+      const conservativeAmount = dueOpps.reduce((sum, opp) => sum + opp.expectedValue * 0.6, 0);
       
       forecastData.push({
         month: monthName,
         optimistic: optimisticAmount,
         expected: expectedAmount,
         conservative: conservativeAmount,
-        actual: actualAmount,
       });
     }
     
-    // 计算总计
-    const totals = forecastData.reduce(
-      (acc, point) => ({
-        optimistic: acc.optimistic + point.optimistic,
-        expected: acc.expected + point.expected,
-        conservative: acc.conservative + point.conservative,
-      }),
-      { optimistic: 0, expected: 0, conservative: 0 }
-    );
-    
-    return { forecastData, totals };
+    setChartData(forecastData);
   }, [opportunities, period]);
+
+  return chartData;
 }

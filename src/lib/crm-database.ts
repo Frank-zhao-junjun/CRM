@@ -312,6 +312,26 @@ export async function deleteOpportunity(id: string): Promise<void> {
 
 // ============ Activity 操作 ============
 
+// 活动筛选参数
+export interface ActivityFilters {
+  entity_type?: string;
+  entity_id?: string;
+  type?: string;
+  start_date?: string;
+  end_date?: string;
+  page?: number;
+  pageSize?: number;
+}
+
+// 活动分页结果
+export interface ActivityListResult {
+  activities: Activity[];
+  total: number;
+  page: number;
+  pageSize: number;
+  totalPages: number;
+}
+
 export async function getRecentActivities(limit: number = 50): Promise<Activity[]> {
   const client = getSupabaseClient();
   const { data, error } = await client
@@ -320,6 +340,71 @@ export async function getRecentActivities(limit: number = 50): Promise<Activity[
     .order('timestamp', { ascending: false })
     .limit(limit);
   if (error) throw new Error(`获取活动记录失败: ${error.message}`);
+  return data as Activity[];
+}
+
+export async function getActivities(filters: ActivityFilters = {}): Promise<ActivityListResult> {
+  const client = getSupabaseClient();
+  
+  const {
+    entity_type,
+    entity_id,
+    type,
+    start_date,
+    end_date,
+    page = 1,
+    pageSize = 20,
+  } = filters;
+
+  let query = client
+    .from('activities')
+    .select('*', { count: 'exact' });
+
+  // 应用筛选条件
+  if (entity_type) {
+    query = query.eq('entity_type', entity_type);
+  }
+  if (entity_id) {
+    query = query.eq('entity_id', entity_id);
+  }
+  if (type) {
+    query = query.eq('type', type);
+  }
+  if (start_date) {
+    query = query.gte('timestamp', start_date);
+  }
+  if (end_date) {
+    query = query.lte('timestamp', end_date);
+  }
+
+  // 分页
+  const from = (page - 1) * pageSize;
+  const to = from + pageSize - 1;
+  
+  const { data, error, count } = await query
+    .order('timestamp', { ascending: false })
+    .range(from, to);
+
+  if (error) throw new Error(`获取活动列表失败: ${error.message}`);
+
+  const total = count || 0;
+  return {
+    activities: data as Activity[],
+    total,
+    page,
+    pageSize,
+    totalPages: Math.ceil(total / pageSize),
+  };
+}
+
+export async function getActivitiesByEntityId(entityId: string): Promise<Activity[]> {
+  const client = getSupabaseClient();
+  const { data, error } = await client
+    .from('activities')
+    .select('*')
+    .eq('entity_id', entityId)
+    .order('timestamp', { ascending: false });
+  if (error) throw new Error(`获取实体活动失败: ${error.message}`);
   return data as Activity[];
 }
 

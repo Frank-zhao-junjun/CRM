@@ -25,7 +25,7 @@ import {
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
-import { useState } from 'react';
+import { useMobileNav } from './mobile-nav-context';
 
 interface SubMenuItem {
   name: string;
@@ -212,7 +212,7 @@ function NavItem({ href, isActive, icon: Icon, label, collapsed, gradient, badge
 export function Sidebar() {
   const pathname = usePathname();
   const [collapsed, setCollapsed] = useState(false);
-  const [mobileOpen, setMobileOpen] = useState(false);
+  const { isOpen, close } = useMobileNav();
 
   const isActive = (href: string) => {
     if (href === '/') return pathname === '/';
@@ -222,7 +222,7 @@ export function Sidebar() {
   return (
     <>
       {/* Mobile */}
-      <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
+      <Sheet open={isOpen} onOpenChange={(open) => !open && close()}>
         <SheetTrigger asChild className="lg:hidden fixed top-4 left-4 z-50">
           <Button 
             variant="outline" 
@@ -271,7 +271,7 @@ export function Sidebar() {
                         isActive={isActive(subItem.href)}
                         collapsed={false}
                         gradient={item.gradient}
-                        onClick={() => setMobileOpen(false)}
+                        onClick={close}
                       />
                     ))}
                   </div>
@@ -285,7 +285,7 @@ export function Sidebar() {
                     isActive={isActive(item.href)}
                     collapsed={false}
                     gradient={item.gradient}
-                    onClick={() => setMobileOpen(false)}
+                    onClick={close}
                   />
                 )
               ))}
@@ -301,7 +301,7 @@ export function Sidebar() {
                 isActive={pathname === '/settings'}
                 collapsed={false}
                 gradient="from-gray-500 to-slate-500"
-                onClick={() => setMobileOpen(false)}
+                onClick={close}
               />
               
               {/* Version info */}

@@ -20,6 +20,7 @@ import {
 } from '@/components/ui/dialog';
 import { useState } from 'react';
 import { format } from 'date-fns';
+import { ActivityTimeline } from '@/components/crm/activity-timeline';
 import { zhCN } from 'date-fns/locale';
 
 const statusLabels: Record<CustomerStatus, { label: string; className: string }> = {
@@ -238,6 +239,15 @@ export default function CustomerDetailPage() {
           </div>
         </CardContent>
       </Card>
+
+
+      {/* 活动追踪 */}
+      <ActivityTimeline 
+        entityId={customer.id}
+        entityType="customer"
+        showFilters={false}
+        title={`关于 "${customer.name}" 的活动`}
+      />
 
       {/* Delete Dialog */}
       <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>

@@ -113,6 +113,14 @@ export async function GET(request: NextRequest) {
       return NextResponse.json(opportunities);
     }
     
+    // 产品管理 (products) - V3.2 新增
+    if (type === 'products') {
+      // 注意: 产品管理功能需要数据库表支持
+      // 目前返回空数组，前端将使用本地状态
+      console.log('[Products API] Products table not yet created in database');
+      return NextResponse.json([]);
+    }
+    
     // 默认返回所有客户
     const customers = await db.getAllCustomers();
     return NextResponse.json(customers);
@@ -381,6 +389,39 @@ export async function POST(request: NextRequest) {
           timestamp: new Date(),
         });
         return NextResponse.json(task);
+      }
+      
+      // Product (产品管理 V3.2) - 注意: 需要数据库表支持
+      case 'addProduct': {
+        console.log('[Products API] addProduct called but products table not available');
+        // 返回成功响应，前端将使用本地状态
+        return NextResponse.json({ 
+          id: data.id || `prod_${Date.now()}`,
+          name: data.name,
+          sku: data.sku,
+          category: data.category,
+          description: data.description,
+          unitPrice: data.unitPrice,
+          unit: data.unit,
+          cost: data.cost,
+          stock: data.stock || 0,
+          isActive: data.isActive !== false,
+          createdAt: data.createdAt || new Date().toISOString(),
+          updatedAt: data.updatedAt || new Date().toISOString(),
+          _note: 'Product created in local state (database table pending)'
+        });
+      }
+      
+      // Update Product (产品管理 V3.2)
+      case 'updateProduct': {
+        console.log('[Products API] updateProduct called but products table not available');
+        // 返回成功响应，前端将使用本地状态
+        return NextResponse.json({ 
+          id: id,
+          ...data,
+          updatedAt: new Date().toISOString(),
+          _note: 'Product updated in local state (database table pending)'
+        });
       }
       
       default:
@@ -687,6 +728,13 @@ export async function DELETE(request: NextRequest) {
       case 'deleteTask': {
         await db.deleteTask(id);
         return NextResponse.json({ success: true });
+      }
+      
+      // Product (产品管理 V3.2) - 注意: 需要数据库表支持
+      case 'deleteProduct': {
+        console.log('[Products API] deleteProduct called but products table not available');
+        // 返回成功响应，前端将使用本地状态
+        return NextResponse.json({ success: true, _note: 'Product deleted in local state (database table pending)' });
       }
       
       default:

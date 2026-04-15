@@ -336,3 +336,114 @@ export type Contract = typeof contracts.$inferSelect;
 export type InsertContract = typeof contracts.$inferInsert;
 export type ContractMilestone = typeof contractMilestones.$inferSelect;
 export type InsertContractMilestone = typeof contractMilestones.$inferInsert;
+
+// ============ 工作流自动化 ============
+
+// 触发器类型枚举
+export type TriggerType = 
+  | 'customer.created' 
+  | 'customer.updated' 
+  | 'opportunity.created' 
+  | 'opportunity.stage_changed' 
+  | 'opportunity.updated' 
+  | 'contract.created' 
+  | 'contract.signed'
+  | 'contract.status_changed'
+  | 'payment.overdue'
+  | 'followup.overdue'
+  | 'manual';
+
+// 动作类型枚举
+export type ActionType = 
+  | 'send_email'
+  | 'create_task'
+  | 'update_field'
+  | 'add_tag'
+  | 'remove_tag'
+  | 'create_followup'
+  | 'send_notification'
+  | 'webhook';
+
+// 工作流定义表
+export const workflows = pgTable(
+  'workflows',
+  {
+    id: varchar('id', { length: 36 }).primaryKey().default(sql`gen_random_uuid()`),
+    name: varchar('name', { length: 255 }).notNull(),
+    description: text('description'),
+    trigger_type: varchar('trigger_type', { length: 50 }).notNull(),
+    trigger_config: text('trigger_config').notNull().default('{}'), // JSON配置
+    actions: text('actions').notNull().default('[]'), // JSON数组，包含多个动作
+    conditions: text('conditions').default('[]'), // JSON数组，条件过滤
+    is_active: boolean('is_active').default(true).notNull(),
+    is_template: boolean('is_template').default(false).notNull(),
+    template_name: varchar('template_name', { length: 100 }),
+    execution_count: integer('execution_count').default(0).notNull(),
+    success_count: integer('success_count').default(0).notNull(),
+    failure_count: integer('failure_count').default(0).notNull(),
+    last_executed_at: timestamp('last_executed_at', { withTimezone: true }),
+    created_at: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+    updated_at: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => [
+    index('workflows_trigger_type_idx').on(table.trigger_type),
+    index('workflows_is_active_idx').on(table.is_active),
+    index('workflows_is_template_idx').on(table.is_template),
+  ]
+);
+
+// 工作流执行记录表
+export const workflowExecutions = pgTable(
+  'workflow_executions',
+  {
+    id: varchar('id', { length: 36 }).primaryKey().default(sql`gen_random_uuid()`),
+    workflow_id: varchar('workflow_id', { length: 36 }).notNull().references(() => workflows.id, { onDelete: 'cascade' }),
+    workflow_name: varchar('workflow_name', { length: 255 }).notNull(),
+    trigger_type: varchar('trigger_type', { length: 50 }).notNull(),
+    entity_type: varchar('entity_type', { length: 50 }),
+    entity_id: varchar('entity_id', { length: 36 }),
+    entity_name: varchar('entity_name', { length: 255 }),
+    status: varchar('status', { length: 20 }).notNull().default('pending'), // pending, running, success, failed, cancelled
+    input_data: text('input_data').default('{}'), // JSON，触发时的输入数据
+    output_data: text('output_data').default('{}'), // JSON，执行结果
+    error_message: text('error_message'),
+    started_at: timestamp('started_at', { withTimezone: true }).defaultNow().notNull(),
+    completed_at: timestamp('completed_at', { withTimezone: true }),
+    duration_ms: integer('duration_ms'), // 执行耗时（毫秒）
+  },
+  (table) => [
+    index('workflow_executions_workflow_id_idx').on(table.workflow_id),
+    index('workflow_executions_status_idx').on(table.status),
+    index('workflow_executions_started_at_idx').on(table.started_at),
+  ]
+);
+
+// 工作流执行日志表
+export const workflowExecutionLogs = pgTable(
+  'workflow_execution_logs',
+  {
+    id: varchar('id', { length: 36 }).primaryKey().default(sql`gen_random_uuid()`),
+    execution_id: varchar('execution_id', { length: 36 }).notNull().references(() => workflowExecutions.id, { onDelete: 'cascade' }),
+    action_index: integer('action_index').notNull().default(0), // 第几个动作
+    action_type: varchar('action_type', { length: 50 }).notNull(),
+    action_name: varchar('action_name', { length: 255 }),
+    status: varchar('status', { length: 20 }).notNull().default('pending'), // pending, running, success, failed, skipped
+    input_data: text('input_data').default('{}'),
+    output_data: text('output_data').default('{}'),
+    error_message: text('error_message'),
+    started_at: timestamp('started_at', { withTimezone: true }).defaultNow().notNull(),
+    completed_at: timestamp('completed_at', { withTimezone: true }),
+    duration_ms: integer('duration_ms'),
+  },
+  (table) => [
+    index('workflow_execution_logs_execution_id_idx').on(table.execution_id),
+  ]
+);
+
+// 类型导出
+export type Workflow = typeof workflows.$inferSelect;
+export type InsertWorkflow = typeof workflows.$inferInsert;
+export type WorkflowExecution = typeof workflowExecutions.$inferSelect;
+export type InsertWorkflowExecution = typeof workflowExecutions.$inferInsert;
+export type WorkflowExecutionLog = typeof workflowExecutionLogs.$inferSelect;
+export type InsertWorkflowExecutionLog = typeof workflowExecutionLogs.$inferInsert;

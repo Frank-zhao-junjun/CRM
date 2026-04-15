@@ -17,6 +17,7 @@ import {
   Package,
   Package2,
   Clock,
+  Calendar as CalendarIcon,
   FileBarGraph,
   Receipt,
   Activity as ActivityIcon,
@@ -109,6 +110,13 @@ const navigation: NavItemType[] = [
     gradient: 'from-rose-500 to-pink-500',
   },
   { 
+    name: '日历视图', 
+    href: '/calendar', 
+    icon: CalendarIcon,
+    gradient: 'from-pink-500 to-rose-500',
+    badge: 'NEW',
+  },
+  { 
     name: '活动追踪', 
     href: '/activities', 
     icon: ActivityIcon,
@@ -136,10 +144,11 @@ interface NavItemProps {
   label: string;
   collapsed: boolean;
   gradient: string;
+  badge?: string;
   onClick?: () => void;
 }
 
-function NavItem({ href, isActive, icon: Icon, label, collapsed, gradient, onClick }: NavItemProps) {
+function NavItem({ href, isActive, icon: Icon, label, collapsed, gradient, badge, onClick }: NavItemProps) {
   return (
     <Link
       href={href}
@@ -175,6 +184,13 @@ function NavItem({ href, isActive, icon: Icon, label, collapsed, gradient, onCli
       
       {!collapsed && (
         <span className="relative flex-1">{label}</span>
+      )}
+      
+      {/* Badge */}
+      {!collapsed && badge && (
+        <span className="relative text-xs px-1.5 py-0.5 rounded-full bg-primary/20 text-primary">
+          {badge}
+        </span>
       )}
       
       {/* Hover glow effect */}
@@ -219,6 +235,7 @@ export function Sidebar() {
               <div className="absolute right-0 top-0 w-24 h-24 bg-gradient-to-br from-primary/10 rounded-full blur-2xl" />
               
               <div className="relative flex items-center gap-3">
+
                 <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-gradient-to-br from-primary to-purple-600 shadow-lg shadow-primary/30">
                   <Zap className="h-5 w-5 text-white" />
                 </div>
@@ -256,6 +273,7 @@ export function Sidebar() {
                     href={item.href}
                     icon={item.icon}
                     label={item.name}
+                    badge={item.badge}
                     isActive={isActive(item.href)}
                     collapsed={false}
                     gradient={item.gradient}
@@ -267,6 +285,7 @@ export function Sidebar() {
 
             {/* Footer */}
             <div className="px-3 py-4 border-t/50">
+
               <NavItem
                 href="/settings"
                 icon={Settings}
@@ -329,6 +348,7 @@ export function Sidebar() {
           
           {/* Navigation */}
           <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto scrollbar-thin">
+
             {navigation.map((item) => (
               item.isSection && item.subMenu ? (
                 <div key={item.name} className="space-y-1">
@@ -356,6 +376,7 @@ export function Sidebar() {
                   href={item.href}
                   icon={item.icon}
                   label={item.name}
+                  badge={item.badge}
                   isActive={isActive(item.href)}
                   collapsed={collapsed}
                   gradient={item.gradient}

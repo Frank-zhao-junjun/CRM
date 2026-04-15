@@ -89,6 +89,12 @@ const navigation: NavItemType[] = [
     gradient: 'from-emerald-500 to-green-500',
   },
   { 
+  { 
+    name: '发票', 
+    href: '/invoices', 
+    icon: FileText,
+    gradient: 'from-teal-500 to-cyan-500',
+  },
     name: '联系人', 
     href: '/contacts', 
     icon: Contact2,

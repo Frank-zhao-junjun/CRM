@@ -396,3 +396,51 @@ export const LEAD_SOURCE_CONFIG: Record<LeadSourceType, { label: string; icon: s
   advertisement: { label: '广告投放', icon: '📺' },
   other: { label: '其他来源', icon: '📌' },
 };
+
+// ============ 发票管理类型 (V3.3 新增) ============
+export type InvoiceStatus = 'draft' | 'issued' | 'paid' | 'overdue' | 'cancelled' | 'refunded';
+
+export interface InvoiceItem {
+  id: string;
+  invoiceId: string;
+  productName: string;
+  description?: string;
+  quantity: number;
+  unitPrice: number;
+  discount: number;
+  subtotal: number;
+  sortOrder: number;
+}
+
+export interface Invoice {
+  id: string;
+  invoiceNumber: string;
+  orderId?: string;
+  orderNumber?: string;
+  customerId: string;
+  customerName: string;
+  taxId?: string;
+  billingAddress?: string;
+  status: InvoiceStatus;
+  issueDate: string;
+  dueDate?: string;
+  subtotal: number;
+  taxRate: number;
+  tax: number;
+  total: number;
+  paidDate?: string;
+  paymentMethod?: 'bank_transfer' | 'cash' | 'credit_card' | 'other';
+  notes?: string;
+  items?: InvoiceItem[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+export const INVOICE_STATUS_CONFIG: Record<InvoiceStatus, { label: string; className: string; color: string }> = {
+  draft: { label: '草稿', className: 'bg-gray-500/10 text-gray-600 dark:text-gray-400 border-gray-500/20', color: 'text-gray-600 dark:text-gray-400' },
+  issued: { label: '已开票', className: 'bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20', color: 'text-blue-600 dark:text-blue-400' },
+  paid: { label: '已收款', className: 'bg-green-500/10 text-green-600 dark:text-green-400 border-green-500/20', color: 'text-green-600 dark:text-green-400' },
+  overdue: { label: '逾期', className: 'bg-red-500/10 text-red-600 dark:text-red-400 border-red-500/20', color: 'text-red-600 dark:text-red-400' },
+  cancelled: { label: '已作废', className: 'bg-stone-500/10 text-stone-600 dark:text-stone-400 border-stone-500/20', color: 'text-stone-600 dark:text-stone-400' },
+  refunded: { label: '已退款', className: 'bg-orange-500/10 text-orange-600 dark:text-orange-400 border-orange-500/20', color: 'text-orange-600 dark:text-orange-400' },
+};

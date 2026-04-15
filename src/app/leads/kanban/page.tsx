@@ -37,7 +37,7 @@ import {
   User,
   Phone,
 } from 'lucide-react';
-import { Link } from 'next/link';
+import Link from 'next/link';
 import {
   LeadStatusType,
   LEAD_STATUS_CONFIG,
@@ -199,9 +199,8 @@ function LeadCard({ lead, onClick }: LeadCardProps) {
 
 export default function LeadsKanbanPage() {
   const router = useRouter();
-  const { getLeads, updateLead } = useCRM();
+  const { leads, updateLead } = useCRM();
 
-  const leads = getLeads();
   const [activeId, setActiveId] = useState<string | null>(null);
 
   const sensors = useSensors(
@@ -213,7 +212,7 @@ export default function LeadsKanbanPage() {
     })
   );
 
-  const leadsByStatus = useMemo(() => {
+  const leadsByStatus: Record<LeadStatusType, SalesLead[]> = useMemo(() => {
     const grouped: Record<LeadStatusType, SalesLead[]> = {
       new: [],
       contacted: [],
@@ -221,7 +220,7 @@ export default function LeadsKanbanPage() {
       disqualified: [],
     };
 
-    leads.forEach((lead) => {
+    (leads as SalesLead[]).forEach((lead: SalesLead) => {
       if (grouped[lead.status]) {
         grouped[lead.status].push(lead);
       }
@@ -236,7 +235,7 @@ export default function LeadsKanbanPage() {
   }, [activeId, leads]);
 
   const handleDragStart = (event: DragStartEvent) => {
-    setActiveId(event.id as string);
+    setActiveId(event.active.id as string);
   };
 
   const handleDragEnd = (event: DragEndEvent) => {

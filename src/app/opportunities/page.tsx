@@ -149,6 +149,7 @@ export default function OpportunitiesPage() {
               看板视图
             </Button>
           </Link>
+      </div>
         </div>
       {/* Filters */}
       <Card className="card-hover">

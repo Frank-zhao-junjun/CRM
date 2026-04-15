@@ -22,14 +22,14 @@ import {
   ArrowLeft,
 } from 'lucide-react';
 import { OpportunityStage, OPPORTUNITY_STAGE_CONFIG } from '@/lib/crm-types';
-import { Link } from 'next/link';
+import Link from 'next/link';
 import { cn } from '@/lib/utils';
 
 export default function OpportunitiesKanbanPage() {
   const router = useRouter();
-  const { getOpportunities, updateOpportunity } = useCRM();
+  const { opportunities: opportunitiesData, updateOpportunity } = useCRM();
   
-  const opportunities = getOpportunities();
+  const opportunities = opportunitiesData;
   
   const handleOpportunityMove = useCallback(
     (opportunityId: string, newStage: OpportunityStage) => {

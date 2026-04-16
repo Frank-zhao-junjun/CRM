@@ -13,6 +13,7 @@ import {
   Menu,
   Zap,
   Lightbulb,
+  Target,
   FileText,
   Package,
   Package2,
@@ -148,6 +149,13 @@ const navigation: NavItemType[] = [
     href: '/automation', 
     icon: Zap,
     gradient: 'from-yellow-500 to-orange-500',
+    badge: 'NEW',
+  },
+  { 
+    name: '销售目标', 
+    href: '/targets', 
+    icon: Target,
+    gradient: 'from-red-500 to-pink-500',
     badge: 'NEW',
   },
 ];

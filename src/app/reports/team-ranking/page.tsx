@@ -1,258 +1,227 @@
 'use client';
 
-import { useState } from 'react';
-import { useCRM } from '@/lib/crm-context';
-import { TeamRankingChart, useTeamRanking } from '@/components/reports/team-ranking';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Download, Trophy, TrendingUp, TrendingDown, Medal, Award, Target } from 'lucide-react';
-import { formatCurrency } from '@/lib/utils';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
-
-type TimeRange = 'month' | 'quarter' | 'year' | 'all';
-type SortBy = 'wonAmount' | 'wonCount' | 'conversionRate' | 'newOpps';
+import { useState, useEffect } from 'react';
+import { Download, Trophy, TrendingUp, TrendingDown, Users } from 'lucide-react';
+import type { TeamRankingReport, TimeRange } from '@/lib/report-types';
 
 export default function TeamRankingPage() {
-  const { opportunities } = useCRM();
-  const [timeRange, setTimeRange] = useState<TimeRange>('all');
-  const [sortBy, setSortBy] = useState<SortBy>('wonAmount');
-  
-  const rankingData = useTeamRanking(opportunities, timeRange);
+  const [report, setReport] = useState<TeamRankingReport | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [timeRange, setTimeRange] = useState<TimeRange>('this_month');
+  const [sortBy, setSortBy] = useState<'closedAmount' | 'newOpportunities' | 'conversionRate'>('closedAmount');
 
-  const handleExport = () => {
-    const headers = ['排名', '成员', '成交金额', '成交数量', '新增商机', '管道金额', '转化率', '环比增长'];
-    const rows = rankingData.map((item, index) => [
-      (index + 1).toString(),
-      item.member.name,
-      `¥${item.metrics.wonAmount.toLocaleString()}`,
-      item.metrics.wonCount.toString(),
-      item.metrics.newOpps.toString(),
-      `¥${item.metrics.pipelineAmount.toLocaleString()}`,
-      `${item.metrics.conversionRate.toFixed(1)}%`,
-      `${item.metrics.growth > 0 ? '+' : ''}${item.metrics.growth.toFixed(1)}%`,
+  useEffect(() => {
+    setLoading(true);
+    fetch(`/api/reports?range=${timeRange}`)
+      .then(res => res.json())
+      .then(data => {
+        setReport(data.teamRanking);
+        setLoading(false);
+      });
+  }, [timeRange]);
+
+  const exportCSV = () => {
+    if (!report) return;
+    
+    const headers = ['排名', '姓名', '成交金额', '新商机', '转化率', '环比增长'];
+    const rows = report.members.map(m => [
+      m.rank.toString(),
+      m.userName,
+      m.closedAmount.toString(),
+      m.newOpportunities.toString(),
+      `${m.conversionRate.toFixed(1)}%`,
+      `${m.growthRate >= 0 ? '+' : ''}${m.growthRate.toFixed(1)}%`
     ]);
     
-    const csvContent = [
-      headers.join(','),
-      ...rows.map(row => row.join(',')),
-    ].join('\n');
-    
-    const blob = new Blob(['\ufeff' + csvContent], { type: 'text/csv;charset=utf-8;' });
-    const link = document.createElement('a');
+    const csv = [headers, ...rows].map(row => row.join(',')).join('\n');
+    const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8' });
     const url = URL.createObjectURL(blob);
-    link.setAttribute('href', url);
-    link.setAttribute('download', `团队业绩排名_${new Date().toISOString().split('T')[0]}.csv`);
-    link.style.visibility = 'hidden';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `团队排名_${new Date().toISOString().split('T')[0]}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
   };
 
-  // 计算团队总计
-  const totalWonAmount = rankingData.reduce((sum, item) => sum + item.metrics.wonAmount, 0);
-  const totalWonCount = rankingData.reduce((sum, item) => sum + item.metrics.wonCount, 0);
-  const totalNewOpps = rankingData.reduce((sum, item) => sum + item.metrics.newOpps, 0);
-  const avgConversionRate = rankingData.reduce((sum, item) => sum + item.metrics.conversionRate, 0) / Math.max(rankingData.length, 1);
+  const sortedMembers = report?.members 
+    ? [...report.members].sort((a, b) => {
+        if (sortBy === 'closedAmount') return b.closedAmount - a.closedAmount;
+        if (sortBy === 'newOpportunities') return b.newOpportunities - a.newOpportunities;
+        return b.conversionRate - a.conversionRate;
+      }).map((m, idx) => ({ ...m, rank: idx + 1 }))
+    : [];
 
-  const getRankIcon = (rank: number) => {
-    switch (rank) {
-      case 1:
-        return <Trophy className="h-5 w-5 text-yellow-500" />;
-      case 2:
-        return <Medal className="h-5 w-5 text-gray-400" />;
-      case 3:
-        return <Award className="h-5 w-5 text-amber-600" />;
-      default:
-        return <span className="text-muted-foreground font-medium">{rank}</span>;
-    }
-  };
+  const topPerformer = sortedMembers[0];
+  const avgPerformance = report?.members 
+    ? {
+        avgAmount: report.members.reduce((sum, m) => sum + m.closedAmount, 0) / report.members.length,
+        avgConversion: report.members.reduce((sum, m) => sum + m.conversionRate, 0) / report.members.length
+      }
+    : { avgAmount: 0, avgConversion: 0 };
 
   return (
     <div className="space-y-6">
-      {/* 页面标题和操作 */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">团队业绩排行</h1>
-          <p className="text-muted-foreground mt-1">
-            销售团队成员业绩排名，激励良性竞争
-          </p>
-        </div>
-        <div className="flex items-center gap-2">
-          <Select value={timeRange} onValueChange={(v) => setTimeRange(v as TimeRange)}>
-            <SelectTrigger className="w-[140px]">
-              <SelectValue placeholder="选择时间范围" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="month">本月</SelectItem>
-              <SelectItem value="quarter">本季度</SelectItem>
-              <SelectItem value="year">本年</SelectItem>
-              <SelectItem value="all">全部</SelectItem>
-            </SelectContent>
-          </Select>
-          <Button variant="outline" onClick={handleExport}>
-            <Download className="h-4 w-4 mr-2" />
-            导出CSV
-          </Button>
-        </div>
-      </div>
-
-      {/* 团队总计卡片 */}
-      <div className="grid gap-4 md:grid-cols-4">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">团队总成交</CardTitle>
-            <Target className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{formatCurrency(totalWonAmount)}</div>
-            <p className="text-xs text-muted-foreground">
-              {totalWonCount} 个成交项目
-            </p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">新增商机</CardTitle>
-            <Badge variant="secondary" className="text-xs">总计</Badge>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{totalNewOpps}</div>
-            <p className="text-xs text-muted-foreground">
-              本周期新增
-            </p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">平均转化率</CardTitle>
-            <TrendingUp className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{avgConversionRate.toFixed(1)}%</div>
-            <p className="text-xs text-muted-foreground">
-              团队平均
-            </p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">冠军</CardTitle>
-            <Trophy className="h-4 w-4 text-yellow-500" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{rankingData[0]?.member.name || '-'}</div>
-            <p className="text-xs text-muted-foreground">
-              {formatCurrency(rankingData[0]?.metrics.wonAmount || 0)}
-            </p>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* 图表 */}
-      <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <div>
-              <CardTitle>业绩对比图</CardTitle>
-              <CardDescription>各成员成交金额与新增商机对比</CardDescription>
-            </div>
-            <Select value={sortBy} onValueChange={(v) => setSortBy(v as SortBy)}>
-              <SelectTrigger className="w-[160px]">
-                <SelectValue placeholder="排序方式" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="wonAmount">按成交金额</SelectItem>
-                <SelectItem value="wonCount">按成交数量</SelectItem>
-                <SelectItem value="conversionRate">按转化率</SelectItem>
-                <SelectItem value="newOpps">按新增商机</SelectItem>
-              </SelectContent>
-            </Select>
+      {/* 页面标题 */}
+      <div className="bg-white rounded-lg border shadow-sm p-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-bold">团队业绩排行</h1>
+            <p className="text-gray-500 mt-1">销售团队成员业绩排名，激励良性竞争</p>
           </div>
-        </CardHeader>
-        <CardContent>
-          <TeamRankingChart data={rankingData} sortBy={sortBy} />
-        </CardContent>
-      </Card>
+          <div className="flex items-center gap-3">
+            <select
+              value={timeRange}
+              onChange={e => setTimeRange(e.target.value as TimeRange)}
+              className="px-3 py-2 border rounded-md text-sm"
+            >
+              <option value="this_month">本月</option>
+              <option value="last_month">上月</option>
+              <option value="this_quarter">本季度</option>
+              <option value="this_year">本年</option>
+            </select>
+            <button
+              onClick={exportCSV}
+              className="flex items-center gap-2 px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-md text-sm"
+            >
+              <Download className="h-4 w-4" />
+              导出CSV
+            </button>
+          </div>
+        </div>
+      </div>
 
-      {/* 排名表格 */}
-      <Card>
-        <CardHeader>
-          <CardTitle>详细排名</CardTitle>
-          <CardDescription>各成员详细业绩指标</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead className="w-[60px]">排名</TableHead>
-                <TableHead>成员</TableHead>
-                <TableHead className="text-right">成交金额</TableHead>
-                <TableHead className="text-right">成交数量</TableHead>
-                <TableHead className="text-right">新增商机</TableHead>
-                <TableHead className="text-right">管道金额</TableHead>
-                <TableHead className="text-right">转化率</TableHead>
-                <TableHead className="text-right">环比增长</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {rankingData.map((item, index) => (
-                <TableRow key={item.member.id}>
-                  <TableCell>
-                    <div className="flex items-center justify-center">
-                      {getRankIcon(index + 1)}
-                    </div>
-                  </TableCell>
-                  <TableCell className="font-medium">
-                    <div className="flex items-center gap-2">
-                      <span>{item.member.name}</span>
-                      {index < 3 && (
-                        <Badge variant="outline" className="text-xs">
-                          Top {index + 1}
-                        </Badge>
-                      )}
-                    </div>
-                  </TableCell>
-                  <TableCell className="text-right font-medium text-green-600">
-                    {formatCurrency(item.metrics.wonAmount)}
-                  </TableCell>
-                  <TableCell className="text-right">{item.metrics.wonCount}</TableCell>
-                  <TableCell className="text-right">{item.metrics.newOpps}</TableCell>
-                  <TableCell className="text-right text-blue-600">
-                    {formatCurrency(item.metrics.pipelineAmount)}
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <Badge variant={item.metrics.conversionRate >= 50 ? 'default' : 'secondary'}>
-                      {item.metrics.conversionRate.toFixed(1)}%
-                    </Badge>
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <div className="flex items-center justify-end gap-1">
-                      {item.metrics.growth >= 0 ? (
-                        <TrendingUp className="h-4 w-4 text-green-500" />
-                      ) : (
-                        <TrendingDown className="h-4 w-4 text-red-500" />
-                      )}
-                      <span className={item.metrics.growth >= 0 ? 'text-green-600' : 'text-red-600'}>
-                        {item.metrics.growth > 0 ? '+' : ''}{item.metrics.growth.toFixed(1)}%
-                      </span>
-                    </div>
-                  </TableCell>
-                </TableRow>
+      {loading ? (
+        <div className="bg-white rounded-lg border shadow-sm p-8">
+          <div className="animate-pulse space-y-4">
+            <div className="h-8 bg-gray-200 rounded w-1/4"></div>
+            <div className="space-y-3">
+              {[1, 2, 3, 4, 5].map(i => (
+                <div key={i} className="h-20 bg-gray-200 rounded"></div>
               ))}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
+            </div>
+          </div>
+        </div>
+      ) : report ? (
+        <>
+          {/* 冠军卡片 */}
+          {topPerformer && (
+            <div className="bg-gradient-to-r from-yellow-500 to-orange-500 rounded-lg shadow-lg p-6 text-white">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-4">
+                  <div className="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center">
+                    <Trophy className="h-8 w-8" />
+                  </div>
+                  <div>
+                    <p className="text-white/80 text-sm">本月销冠</p>
+                    <p className="text-2xl font-bold">{topPerformer.userName}</p>
+                  </div>
+                </div>
+                <div className="text-right">
+                  <p className="text-3xl font-bold">¥{(topPerformer.closedAmount / 10000).toFixed(1)}万</p>
+                  <p className="text-white/80">成交金额</p>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* 排序选项 */}
+          <div className="bg-white rounded-lg border shadow-sm p-4">
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-gray-500">排序：</span>
+              <button
+                onClick={() => setSortBy('closedAmount')}
+                className={`px-3 py-1 rounded-md text-sm ${sortBy === 'closedAmount' ? 'bg-blue-100 text-blue-600' : 'hover:bg-gray-100'}`}
+              >
+                成交金额
+              </button>
+              <button
+                onClick={() => setSortBy('newOpportunities')}
+                className={`px-3 py-1 rounded-md text-sm ${sortBy === 'newOpportunities' ? 'bg-blue-100 text-blue-600' : 'hover:bg-gray-100'}`}
+              >
+                新商机数
+              </button>
+              <button
+                onClick={() => setSortBy('conversionRate')}
+                className={`px-3 py-1 rounded-md text-sm ${sortBy === 'conversionRate' ? 'bg-blue-100 text-blue-600' : 'hover:bg-gray-100'}`}
+              >
+                转化率
+              </button>
+            </div>
+          </div>
+
+          {/* 排名列表 */}
+          <div className="bg-white rounded-lg border shadow-sm">
+            <div className="divide-y">
+              {sortedMembers.map((member) => (
+                <div key={member.userId} className="flex items-center gap-4 p-4 hover:bg-gray-50">
+                  {/* 排名 */}
+                  <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold ${
+                    member.rank === 1 ? 'bg-yellow-100 text-yellow-600' :
+                    member.rank === 2 ? 'bg-gray-100 text-gray-600' :
+                    member.rank === 3 ? 'bg-orange-100 text-orange-600' :
+                    'bg-gray-50 text-gray-500'
+                  }`}>
+                    {member.rank <= 3 ? <Trophy className="h-5 w-5" /> : member.rank}
+                  </div>
+                  
+                  {/* 姓名 */}
+                  <div className="w-32">
+                    <p className="font-medium">{member.userName}</p>
+                  </div>
+                  
+                  {/* 成交金额 */}
+                  <div className="flex-1">
+                    <div className="flex items-center justify-between text-sm mb-1">
+                      <span className="text-gray-500">成交金额</span>
+                      <span className="font-semibold">¥{member.closedAmount.toLocaleString()}</span>
+                    </div>
+                    <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
+                      <div 
+                        className="h-full bg-blue-500 rounded-full"
+                        style={{ width: `${Math.min((member.closedAmount / (topPerformer?.closedAmount || 1)) * 100, 100)}%` }}
+                      />
+                    </div>
+                  </div>
+                  
+                  {/* 新商机 */}
+                  <div className="w-24 text-center">
+                    <p className="text-2xl font-bold">{member.newOpportunities}</p>
+                    <p className="text-xs text-gray-500">新商机</p>
+                  </div>
+                  
+                  {/* 转化率 */}
+                  <div className="w-24 text-center">
+                    <p className="text-2xl font-bold text-green-600">{member.conversionRate.toFixed(1)}%</p>
+                    <p className="text-xs text-gray-500">转化率</p>
+                  </div>
+                  
+                  {/* 环比增长 */}
+                  <div className={`w-24 text-right flex items-center justify-end gap-1 ${member.growthRate >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                    {member.growthRate >= 0 ? (
+                      <TrendingUp className="h-4 w-4" />
+                    ) : (
+                      <TrendingDown className="h-4 w-4" />
+                    )}
+                    <span className="font-medium">{member.growthRate >= 0 ? '+' : ''}{member.growthRate.toFixed(1)}%</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* 平均水平 */}
+          <div className="grid grid-cols-2 gap-6">
+            <div className="bg-white rounded-lg border shadow-sm p-6">
+              <p className="text-sm text-gray-500">团队平均成交</p>
+              <p className="text-3xl font-bold mt-2">¥{(avgPerformance.avgAmount / 10000).toFixed(1)}万</p>
+            </div>
+            <div className="bg-white rounded-lg border shadow-sm p-6">
+              <p className="text-sm text-gray-500">团队平均转化</p>
+              <p className="text-3xl font-bold mt-2 text-green-600">{avgPerformance.avgConversion.toFixed(1)}%</p>
+            </div>
+          </div>
+        </>
+      ) : null}
     </div>
   );
 }

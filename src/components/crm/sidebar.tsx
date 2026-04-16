@@ -24,6 +24,7 @@ import {
   Activity as ActivityIcon,
   CheckSquare,
   Heart,
+  AlertTriangle,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
@@ -150,7 +151,13 @@ const navigation: NavItemType[] = [
     href: '/health', 
     icon: Heart,
     gradient: 'from-rose-500 to-pink-500',
-    badge: 'NEW',
+  },
+  { 
+    name: '流失预警', 
+    href: '/churn', 
+    icon: AlertTriangle,
+    gradient: 'from-orange-500 to-red-500',
+    badge: 'AI',
   },
   { 
     name: '流程自动化', 

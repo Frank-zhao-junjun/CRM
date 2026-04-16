@@ -1718,3 +1718,216 @@ export async function completeTask(id: string): Promise<any> {
 
   return rowToTask(data as TaskRow);
 }
+
+// ============ 健康度评分系统 (V4.5) ============
+
+// 权重配置
+const HEALTH_WEIGHTS = {
+  interaction: 0.25,    // 互动频率 25%
+  salesAmount: 0.30,    // 销售金额 30%
+  orderFrequency: 0.20, // 订单频次 20%
+  opportunityActivity: 0.15, // 商机关怀 15%
+  paymentTimeliness: 0.10, // 回款及时 10%
+};
+
+// 健康度等级
+export type HealthLevel = 'healthy' | 'good' | 'fair' | 'risk';
+
+export interface HealthScore {
+  customerId: string;
+  customerName: string;
+  totalScore: number;       // 总分 0-100
+  level: HealthLevel;        // 等级
+  levelLabel: string;        // 等级标签
+  dimensions: {
+    interaction: { score: number; maxScore: number; value: number; label: string };
+    salesAmount: { score: number; maxScore: number; value: number; label: string };
+    orderFrequency: { score: number; maxScore: number; value: number; label: string };
+    opportunityActivity: { score: number; maxScore: number; value: number; label: string };
+    paymentTimeliness: { score: number; maxScore: number; value: number; label: string };
+  };
+  rank: number;              // 排名
+  updatedAt: string;
+}
+
+// 获取客户健康度评分
+export async function getCustomerHealthScores(): Promise<HealthScore[]> {
+  const client = await getSupabaseClient();
+  
+  // 获取所有客户
+  const { data: customers, error: customersError } = await client
+    .from('customers')
+    .select('id, name, company')
+    .order('name');
+
+  if (customersError || !customers) {
+    console.error('获取客户列表失败:', customersError);
+    return [];
+  }
+
+  // 获取所有订单（用于计算销售金额和订单频次）
+  const { data: orders } = await client
+    .from('orders')
+    .select('id, customer_id, total_amount, created_at');
+
+  // 获取所有商机（用于计算商机关怀）
+  const { data: opportunities } = await client
+    .from('opportunities')
+    .select('id, customer_id, stage, value, updated_at');
+
+  // 获取所有回款记录（用于计算回款及时性）
+  const { data: payments } = await client
+    .from('payment_plans')
+    .select('id, customer_id, amount, paid_amount, status, due_date');
+
+  // 获取最近90天的活动记录（用于计算互动频率）
+  const ninetyDaysAgo = new Date();
+  ninetyDaysAgo.setDate(ninetyDaysAgo.getDate() - 90);
+  const { data: activities } = await client
+    .from('activities')
+    .select('id, customer_id, created_at')
+    .gte('created_at', ninetyDaysAgo.toISOString());
+
+  // 计算每个客户的健康度评分
+  const healthScores: HealthScore[] = customers.map((customer: { id: string; name: string; company?: string }) => {
+    const customerId = customer.id;
+    const customerName = customer.name;
+
+    // 1. 互动频率 (25%) - 基于90天内活动记录数量
+    const interactionCount = activities?.filter((a: any) => a.customer_id === customerId).length || 0;
+    const interactionScore = Math.min(25, interactionCount * 5); // 每1次活动得5分，最高25分
+
+    // 2. 销售金额 (30%) - 基于成交订单总金额
+    const customerOrders = orders?.filter((o: any) => o.customer_id === customerId) || [];
+    const totalSalesAmount = customerOrders.reduce((sum: number, o: any) => sum + Number(o.total_amount || 0), 0);
+    const salesAmountScore = Math.min(30, (totalSalesAmount / 100000) * 30); // 每10万得30分
+
+    // 3. 订单频次 (20%) - 基于订单数量
+    const orderCount = customerOrders.length;
+    const orderFrequencyScore = Math.min(20, orderCount * 4); // 每1个订单得4分
+
+    // 4. 商机关怀 (15%) - 基于活跃商机数量
+    const activeOpportunities = opportunities?.filter(
+      (o: any) => o.customer_id === customerId && !['closed_won', 'closed_lost'].includes(o.stage)
+    ) || [];
+    const opportunityValue = activeOpportunities.reduce((sum: number, o: any) => sum + Number(o.value || 0), 0);
+    const opportunityScore = Math.min(15, (activeOpportunities.length * 3) + (opportunityValue / 50000) * 7);
+
+    // 5. 回款及时性 (10%) - 基于按时回款比例
+    const customerPayments = payments?.filter((p: any) => p.customer_id === customerId) || [];
+    const paidOnTimeCount = customerPayments.filter(
+      (p: any) => p.status === 'completed' || p.status === 'partial'
+    ).length;
+    const paymentScore = customerPayments.length > 0 
+      ? (paidOnTimeCount / customerPayments.length) * 10 
+      : 5; // 默认5分
+
+    // 计算总分
+    const totalScore = Math.round(
+      interactionScore + salesAmountScore + orderFrequencyScore + opportunityScore + paymentScore
+    );
+
+    // 确定等级
+    let level: HealthLevel;
+    let levelLabel: string;
+    if (totalScore >= 80) {
+      level = 'healthy';
+      levelLabel = '健康';
+    } else if (totalScore >= 60) {
+      level = 'good';
+      levelLabel = '良好';
+    } else if (totalScore >= 40) {
+      level = 'fair';
+      levelLabel = '一般';
+    } else {
+      level = 'risk';
+      levelLabel = '风险';
+    }
+
+    return {
+      customerId,
+      customerName,
+      totalScore,
+      level,
+      levelLabel,
+      dimensions: {
+        interaction: { 
+          score: Math.round(interactionScore), 
+          maxScore: 25, 
+          value: interactionCount, 
+          label: '互动频率' 
+        },
+        salesAmount: { 
+          score: Math.round(salesAmountScore), 
+          maxScore: 30, 
+          value: totalSalesAmount, 
+          label: '销售金额' 
+        },
+        orderFrequency: { 
+          score: Math.round(orderFrequencyScore), 
+          maxScore: 20, 
+          value: orderCount, 
+          label: '订单频次' 
+        },
+        opportunityActivity: { 
+          score: Math.round(opportunityScore), 
+          maxScore: 15, 
+          value: activeOpportunities.length, 
+          label: '商机关怀' 
+        },
+        paymentTimeliness: { 
+          score: Math.round(paymentScore), 
+          maxScore: 10, 
+          value: paidOnTimeCount, 
+          label: '回款及时' 
+        },
+      },
+      rank: 0, // 稍后计算
+      updatedAt: new Date().toISOString(),
+    };
+  });
+
+  // 按总分排序并计算排名
+  healthScores.sort((a, b) => b.totalScore - a.totalScore);
+  healthScores.forEach((score, index) => {
+    score.rank = index + 1;
+  });
+
+  return healthScores;
+}
+
+// 获取单个客户健康度详情
+export async function getCustomerHealthDetail(customerId: string): Promise<HealthScore | null> {
+  const allScores = await getCustomerHealthScores();
+  return allScores.find(s => s.customerId === customerId) || null;
+}
+
+// 获取健康度统计
+export async function getHealthStats(): Promise<{
+  total: number;
+  distribution: { healthy: number; good: number; fair: number; risk: number };
+  averageScore: number;
+  topCustomers: HealthScore[];
+  riskCustomers: HealthScore[];
+}> {
+  const scores = await getCustomerHealthScores();
+
+  const distribution = {
+    healthy: scores.filter(s => s.level === 'healthy').length,
+    good: scores.filter(s => s.level === 'good').length,
+    fair: scores.filter(s => s.level === 'fair').length,
+    risk: scores.filter(s => s.level === 'risk').length,
+  };
+
+  const averageScore = scores.length > 0
+    ? Math.round(scores.reduce((sum, s) => sum + s.totalScore, 0) / scores.length)
+    : 0;
+
+  return {
+    total: scores.length,
+    distribution,
+    averageScore,
+    topCustomers: scores.slice(0, 10),
+    riskCustomers: scores.filter(s => s.level === 'risk').slice(0, 10),
+  };
+}

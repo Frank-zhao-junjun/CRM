@@ -23,6 +23,7 @@ import {
   Receipt,
   Activity as ActivityIcon,
   CheckSquare,
+  Heart,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
@@ -143,6 +144,13 @@ const navigation: NavItemType[] = [
       { name: '收入预测', href: '/reports/forecast' },
       { name: '转化分析', href: '/reports/conversion' },
     ],
+  },
+  { 
+    name: '客户健康度', 
+    href: '/health', 
+    icon: Heart,
+    gradient: 'from-rose-500 to-pink-500',
+    badge: 'NEW',
   },
   { 
     name: '流程自动化', 

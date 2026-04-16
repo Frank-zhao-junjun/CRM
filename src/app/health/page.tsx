@@ -24,94 +24,87 @@ import {
   CreditCard,
   ArrowUp,
   ArrowDown,
+  RefreshCw,
 } from 'lucide-react';
-import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from 'recharts';
-
-// 健康度评分类型
-interface HealthScore {
-  customerId: string;
-  customerName: string;
-  totalScore: number;
-  level: 'healthy' | 'good' | 'fair' | 'risk';
-  levelLabel: string;
-  dimensions: {
-    interaction: { score: number; maxScore: number; value: number; label: string };
-    salesAmount: { score: number; maxScore: number; value: number; label: string };
-    orderFrequency: { score: number; maxScore: number; value: number; label: string };
-    opportunityActivity: { score: number; maxScore: number; value: number; label: string };
-    paymentTimeliness: { score: number; maxScore: number; value: number; label: string };
-  };
-  rank: number;
-}
-
-// 统计数据类型
-interface HealthStats {
-  total: number;
-  distribution: { healthy: number; good: number; fair: number; risk: number };
-  averageScore: number;
-  topCustomers: HealthScore[];
-  riskCustomers: HealthScore[];
-}
-
-// 等级配置
-const LEVEL_CONFIG = {
-  healthy: { label: '健康', color: 'text-green-600', bgColor: 'bg-green-100 dark:bg-green-900/30', icon: CheckCircle },
-  good: { label: '良好', color: 'text-blue-600', bgColor: 'bg-blue-100 dark:bg-blue-900/30', icon: TrendingUp },
-  fair: { label: '一般', color: 'text-yellow-600', bgColor: 'bg-yellow-100 dark:bg-yellow-900/30', icon: Activity },
-  risk: { label: '风险', color: 'text-red-600', bgColor: 'bg-red-100 dark:bg-red-900/30', icon: AlertTriangle },
-};
+import { 
+  PieChart, 
+  Pie, 
+  Cell, 
+  ResponsiveContainer, 
+  BarChart, 
+  Bar, 
+  XAxis, 
+  YAxis, 
+  CartesianGrid, 
+  Tooltip, 
+  Legend,
+  FunnelChart,
+  Funnel,
+  LabelList,
+} from 'recharts';
+import type { CustomerHealthScore, HealthStats, HealthLevel } from '@/lib/health-score';
+import { HEALTH_LEVELS } from '@/lib/health-score';
 
 // 饼图颜色
 const COLORS = ['#22c55e', '#3b82f6', '#f59e0b', '#ef4444'];
 
+// 等级配置
+const LEVEL_CONFIG = {
+  healthy: { label: '健康', color: '#22c55e', icon: CheckCircle },
+  good: { label: '良好', color: '#3b82f6', icon: TrendingUp },
+  fair: { label: '一般', color: '#f59e0b', icon: Activity },
+  risk: { label: '风险', color: '#ef4444', icon: AlertTriangle },
+};
+
 export default function HealthDashboardPage() {
-  const [scores, setScores] = useState<HealthScore[]>([]);
+  const [scores, setScores] = useState<CustomerHealthScore[]>([]);
   const [stats, setStats] = useState<HealthStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [levelFilter, setLevelFilter] = useState<string>('all');
-  const [selectedCustomer, setSelectedCustomer] = useState<HealthScore | null>(null);
+  const [selectedCustomer, setSelectedCustomer] = useState<CustomerHealthScore | null>(null);
   const [detailOpen, setDetailOpen] = useState(false);
 
   // 获取数据
-  useEffect(() => {
-    async function fetchData() {
-      setLoading(true);
-      try {
-        // 获取统计数据
-        const statsRes = await fetch('/api/health?action=stats');
-        const statsData = await statsRes.json();
-        if (statsData.success) {
-          setStats(statsData.data);
-        }
-
-        // 获取所有评分
-        const scoresRes = await fetch('/api/health');
-        const scoresData = await scoresRes.json();
-        if (scoresData.success) {
-          setScores(scoresData.data || []);
-        }
-      } catch (error) {
-        console.error('获取健康度数据失败:', error);
-        // 使用模拟数据
-        setStats({
-          total: 25,
-          distribution: { healthy: 8, good: 10, fair: 5, risk: 2 },
-          averageScore: 68,
-          topCustomers: [],
-          riskCustomers: [],
-        });
-        setScores([
-          { customerId: '1', customerName: '北京科技有限公司', totalScore: 92, level: 'healthy', levelLabel: '健康', dimensions: { interaction: { score: 22, maxScore: 25, value: 5, label: '互动频率' }, salesAmount: { score: 28, maxScore: 30, value: 250000, label: '销售金额' }, orderFrequency: { score: 18, maxScore: 20, value: 5, label: '订单频次' }, opportunityActivity: { score: 14, maxScore: 15, value: 3, label: '商机关怀' }, paymentTimeliness: { score: 10, maxScore: 10, value: 5, label: '回款及时' } }, rank: 1 },
-          { customerId: '2', customerName: '上海实业集团', totalScore: 78, level: 'good', levelLabel: '良好', dimensions: { interaction: { score: 15, maxScore: 25, value: 3, label: '互动频率' }, salesAmount: { score: 25, maxScore: 30, value: 180000, label: '销售金额' }, orderFrequency: { score: 16, maxScore: 20, value: 4, label: '订单频次' }, opportunityActivity: { score: 12, maxScore: 15, value: 2, label: '商机关怀' }, paymentTimeliness: { score: 10, maxScore: 10, value: 4, label: '回款及时' } }, rank: 2 },
-          { customerId: '3', customerName: '深圳创新科技', totalScore: 65, level: 'good', levelLabel: '良好', dimensions: { interaction: { score: 10, maxScore: 25, value: 2, label: '互动频率' }, salesAmount: { score: 20, maxScore: 30, value: 120000, label: '销售金额' }, orderFrequency: { score: 14, maxScore: 20, value: 3, label: '订单频次' }, opportunityActivity: { score: 11, maxScore: 15, value: 2, label: '商机关怀' }, paymentTimeliness: { score: 10, maxScore: 10, value: 3, label: '回款及时' } }, rank: 3 },
-          { customerId: '4', customerName: '杭州网络科技', totalScore: 52, level: 'fair', levelLabel: '一般', dimensions: { interaction: { score: 8, maxScore: 25, value: 2, label: '互动频率' }, salesAmount: { score: 15, maxScore: 30, value: 80000, label: '销售金额' }, orderFrequency: { score: 12, maxScore: 20, value: 3, label: '订单频次' }, opportunityActivity: { score: 10, maxScore: 15, value: 2, label: '商机关怀' }, paymentTimeliness: { score: 7, maxScore: 10, value: 2, label: '回款及时' } }, rank: 4 },
-          { customerId: '5', customerName: '成都商贸公司', totalScore: 35, level: 'risk', levelLabel: '风险', dimensions: { interaction: { score: 3, maxScore: 25, value: 0, label: '互动频率' }, salesAmount: { score: 10, maxScore: 30, value: 30000, label: '销售金额' }, orderFrequency: { score: 8, maxScore: 20, value: 2, label: '订单频次' }, opportunityActivity: { score: 7, maxScore: 15, value: 1, label: '商机关怀' }, paymentTimeliness: { score: 7, maxScore: 10, value: 1, label: '回款及时' } }, rank: 5 },
-        ]);
-      } finally {
-        setLoading(false);
+  const fetchData = async () => {
+    setLoading(true);
+    try {
+      // 获取统计数据
+      const statsRes = await fetch('/api/health?action=stats');
+      const statsData = await statsRes.json();
+      if (statsData.success) {
+        setStats(statsData.data);
       }
+
+      // 获取所有评分
+      const scoresRes = await fetch('/api/health');
+      const scoresData = await scoresRes.json();
+      if (scoresData.success) {
+        setScores(scoresData.data || []);
+      }
+    } catch (error) {
+      console.error('获取健康度数据失败:', error);
+      // 使用模拟数据
+      setStats({
+        totalCustomers: 25,
+        distribution: { healthy: 8, good: 10, fair: 5, risk: 2 },
+        averageScore: 68,
+        highRiskCustomers: [],
+        topCustomers: [],
+      });
+      setScores([
+        { customerId: '1', customerName: '北京科技有限公司', company: '北京科技有限公司', totalScore: 92, level: 'healthy', levelLabel: '健康', dimensions: { interaction: { score: 95, maxScore: 100, weight: 0.25, weightedScore: 23.75, rawValue: 5, displayValue: '5天', label: '互动频率' }, salesAmount: { score: 100, maxScore: 100, weight: 0.30, weightedScore: 30, rawValue: 250000, displayValue: '¥25万', label: '销售金额' }, orderFrequency: { score: 100, maxScore: 100, weight: 0.20, weightedScore: 20, rawValue: 12, displayValue: '12单/年', label: '订单频次' }, opportunityActivity: { score: 100, maxScore: 100, weight: 0.15, weightedScore: 15, rawValue: 5, displayValue: '5个', label: '商机关怀' }, paymentTimeliness: { score: 100, maxScore: 100, weight: 0.10, weightedScore: 10, rawValue: 0, displayValue: '及时回款', label: '回款及时' } }, suggestions: ['继续保持优质的服务和合作关系'] },
+        { customerId: '2', customerName: '上海实业集团', company: '上海实业集团', totalScore: 78, level: 'good', levelLabel: '良好', dimensions: { interaction: { score: 50, maxScore: 100, weight: 0.25, weightedScore: 12.5, rawValue: 45, displayValue: '45天', label: '互动频率' }, salesAmount: { score: 80, maxScore: 100, weight: 0.30, weightedScore: 24, rawValue: 80000, displayValue: '¥8万', label: '销售金额' }, orderFrequency: { score: 80, maxScore: 100, weight: 0.20, weightedScore: 16, rawValue: 6, displayValue: '6单/年', label: '订单频次' }, opportunityActivity: { score: 70, maxScore: 100, weight: 0.15, weightedScore: 10.5, rawValue: 2, displayValue: '2个', label: '商机关怀' }, paymentTimeliness: { score: 100, maxScore: 100, weight: 0.10, weightedScore: 10, rawValue: 0, displayValue: '及时回款', label: '回款及时' } }, suggestions: ['建议增加客户互动频次，定期电话或邮件跟进', '可尝试推荐高价值产品或套餐，提升客单价'] },
+        { customerId: '3', customerName: '深圳创新科技', company: '深圳创新科技', totalScore: 65, level: 'good', levelLabel: '良好', dimensions: { interaction: { score: 20, maxScore: 100, weight: 0.25, weightedScore: 5, rawValue: 85, displayValue: '85天', label: '互动频率' }, salesAmount: { score: 60, maxScore: 100, weight: 0.30, weightedScore: 18, rawValue: 35000, displayValue: '¥3.5万', label: '销售金额' }, orderFrequency: { score: 60, maxScore: 100, weight: 0.20, weightedScore: 12, rawValue: 3, displayValue: '3单/年', label: '订单频次' }, opportunityActivity: { score: 50, maxScore: 100, weight: 0.15, weightedScore: 7.5, rawValue: 1, displayValue: '1个', label: '商机关怀' }, paymentTimeliness: { score: 80, maxScore: 100, weight: 0.10, weightedScore: 8, rawValue: 5, displayValue: '5%逾期', label: '回款及时' } }, suggestions: ['建议增加客户互动频次，定期电话或邮件跟进', '可尝试推荐高价值产品或套餐，提升客单价', '建议积极开拓新商机，增加销售机会'] },
+        { customerId: '4', customerName: '杭州网络科技', company: '杭州网络科技', totalScore: 52, level: 'fair', levelLabel: '一般', dimensions: { interaction: { score: 0, maxScore: 100, weight: 0.25, weightedScore: 0, rawValue: 150, displayValue: '150天', label: '互动频率' }, salesAmount: { score: 60, maxScore: 100, weight: 0.30, weightedScore: 18, rawValue: 28000, displayValue: '¥2.8万', label: '销售金额' }, orderFrequency: { score: 60, maxScore: 100, weight: 0.20, weightedScore: 12, rawValue: 3, displayValue: '3单/年', label: '订单频次' }, opportunityActivity: { score: 30, maxScore: 100, weight: 0.15, weightedScore: 4.5, rawValue: 0, displayValue: '无进行中', label: '商机关怀' }, paymentTimeliness: { score: 50, maxScore: 100, weight: 0.10, weightedScore: 5, rawValue: 25, displayValue: '25%逾期', label: '回款及时' } }, suggestions: ['建议增加客户互动频次，定期电话或邮件跟进', '建议积极开拓新商机，增加销售机会', '建议完善合同条款，加强回款管理'] },
+        { customerId: '5', customerName: '成都商贸公司', company: '成都商贸公司', totalScore: 35, level: 'risk', levelLabel: '风险', dimensions: { interaction: { score: 0, maxScore: 100, weight: 0.25, weightedScore: 0, rawValue: 200, displayValue: '200天', label: '互动频率' }, salesAmount: { score: 40, maxScore: 100, weight: 0.30, weightedScore: 12, rawValue: 5000, displayValue: '¥5000', label: '销售金额' }, orderFrequency: { score: 40, maxScore: 100, weight: 0.20, weightedScore: 8, rawValue: 1, displayValue: '1单/年', label: '订单频次' }, opportunityActivity: { score: 30, maxScore: 100, weight: 0.15, weightedScore: 4.5, rawValue: 0, displayValue: '无进行中', label: '商机关怀' }, paymentTimeliness: { score: 0, maxScore: 100, weight: 0.10, weightedScore: 0, rawValue: 50, displayValue: '50%逾期', label: '回款及时' } }, suggestions: ['建议增加客户互动频次，定期电话或邮件跟进', '可尝试推荐高价值产品或套餐，提升客单价', '可设置定期采购提醒，促进复购', '建议积极开拓新商机，增加销售机会', '建议完善合同条款，加强回款管理'] },
+      ]);
+    } finally {
+      setLoading(false);
     }
+  };
+
+  useEffect(() => {
     fetchData();
   }, []);
 
@@ -121,7 +114,8 @@ export default function HealthDashboardPage() {
     
     if (searchTerm) {
       filtered = filtered.filter(c => 
-        c.customerName.toLowerCase().includes(searchTerm.toLowerCase())
+        c.customerName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        c.company.toLowerCase().includes(searchTerm.toLowerCase())
       );
     }
     
@@ -145,16 +139,70 @@ export default function HealthDashboardPage() {
 
   // 排行榜数据
   const rankingData = useMemo(() => {
-    return scores.slice(0, 10).map(s => ({
-      name: s.customerName.length > 8 ? s.customerName.slice(0, 8) + '...' : s.customerName,
+    return scores.slice(0, 10).map((s, idx) => ({
+      rank: idx + 1,
+      name: s.customerName.length > 10 ? s.customerName.slice(0, 10) + '...' : s.customerName,
       score: s.totalScore,
       level: s.level,
     }));
   }, [scores]);
 
-  const handleViewDetail = (customer: HealthScore) => {
+  const handleViewDetail = (customer: CustomerHealthScore) => {
     setSelectedCustomer(customer);
     setDetailOpen(true);
+  };
+
+  // 渲染客户列表项
+  const renderCustomerItem = (customer: CustomerHealthScore, index: number) => {
+    const levelCfg = LEVEL_CONFIG[customer.level];
+    const LevelIcon = levelCfg.icon;
+    const isTopThree = index < 3;
+    
+    return (
+      <div
+        key={customer.customerId}
+        className="flex items-center justify-between p-3 rounded-lg hover:bg-muted/50 cursor-pointer transition-colors"
+        onClick={() => handleViewDetail(customer)}
+      >
+        <div className="flex items-center gap-4">
+          <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm ${
+            isTopThree 
+              ? 'bg-gradient-to-br from-yellow-400 to-amber-500 text-white' 
+              : 'bg-muted'
+          }`}>
+            {isTopThree ? (
+              <Trophy className="h-4 w-4" />
+            ) : (
+              index + 1
+            )}
+          </div>
+          <div>
+            <div className="font-medium">{customer.customerName}</div>
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <Badge 
+                className="text-xs font-normal"
+                style={{ 
+                  backgroundColor: `${levelCfg.color}15`, 
+                  color: levelCfg.color,
+                  borderColor: levelCfg.color 
+                }}
+              >
+                <LevelIcon className="h-3 w-3 mr-1" />
+                {levelCfg.label}
+              </Badge>
+              <span className="text-xs">{customer.company}</span>
+            </div>
+          </div>
+        </div>
+        <div className="flex items-center gap-4">
+          <div className="text-right">
+            <div className="text-lg font-bold">{customer.totalScore}</div>
+            <div className="text-xs text-muted-foreground">总分</div>
+          </div>
+          <ChevronRight className="h-5 w-5 text-muted-foreground" />
+        </div>
+      </div>
+    );
   };
 
   if (loading) {
@@ -178,82 +226,69 @@ export default function HealthDashboardPage() {
             客户健康度
           </h1>
           <p className="text-muted-foreground mt-1">
-            基于5维度自动计算客户健康度评分，助您识别高价值客户和风险客户
+            基于5维度自动计算客户健康度评分，帮助识别高价值客户和潜在流失风险
           </p>
         </div>
-        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-          <span className="flex items-center gap-1">
-            <Activity className="h-4 w-4" />
-            互动频率 25%
-          </span>
-          <span className="flex items-center gap-1">
-            <DollarSign className="h-4 w-4" />
-            销售金额 30%
-          </span>
-          <span className="flex items-center gap-1">
-            <ShoppingCart className="h-4 w-4" />
-            订单频次 20%
-          </span>
-          <span className="flex items-center gap-1">
-            <Briefcase className="h-4 w-4" />
-            商机关怀 15%
-          </span>
-          <span className="flex items-center gap-1">
-            <CreditCard className="h-4 w-4" />
-            回款及时 10%
-          </span>
-        </div>
+        <Button variant="outline" size="sm" onClick={fetchData} className="gap-2">
+          <RefreshCw className="h-4 w-4" />
+          刷新数据
+        </Button>
       </div>
 
       {/* 统计卡片 */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
-        <Card>
+        <Card className="hover:shadow-md transition-shadow">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">客户总数</CardTitle>
             <Users className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{stats?.total || scores.length}</div>
+            <div className="text-2xl font-bold">{stats?.totalCustomers || scores.length}</div>
+            <p className="text-xs text-muted-foreground">全部客户</p>
           </CardContent>
         </Card>
         
-        <Card className="border-green-200 dark:border-green-800">
+        <Card className="border-green-200 dark:border-green-800 hover:shadow-md transition-shadow">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">健康客户</CardTitle>
             <CheckCircle className="h-4 w-4 text-green-500" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-green-600">{stats?.distribution.healthy || 0}</div>
+            <p className="text-xs text-muted-foreground">80分以上</p>
           </CardContent>
         </Card>
         
-        <Card className="border-blue-200 dark:border-blue-800">
+        <Card className="border-blue-200 dark:border-blue-800 hover:shadow-md transition-shadow">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">良好客户</CardTitle>
             <TrendingUp className="h-4 w-4 text-blue-500" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-blue-600">{stats?.distribution.good || 0}</div>
+            <p className="text-xs text-muted-foreground">60-79分</p>
           </CardContent>
         </Card>
         
-        <Card className="border-yellow-200 dark:border-yellow-800">
+        <Card className="border-yellow-200 dark:border-yellow-800 hover:shadow-md transition-shadow">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">一般客户</CardTitle>
             <Activity className="h-4 w-4 text-yellow-500" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-yellow-600">{stats?.distribution.fair || 0}</div>
+            <p className="text-xs text-muted-foreground">40-59分</p>
           </CardContent>
         </Card>
         
-        <Card className="border-red-200 dark:border-red-800">
+        <Card className="border-red-200 dark:border-red-800 hover:shadow-md transition-shadow">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">风险客户</CardTitle>
             <AlertTriangle className="h-4 w-4 text-red-500" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-red-600">{stats?.distribution.risk || 0}</div>
+            <p className="text-xs text-muted-foreground">40分以下</p>
           </CardContent>
         </Card>
       </div>
@@ -269,15 +304,15 @@ export default function HealthDashboardPage() {
               <CardDescription>各等级客户占比</CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="h-[250px]">
+              <div className="h-[200px]">
                 <ResponsiveContainer width="100%" height="100%">
                   <PieChart>
                     <Pie
                       data={pieData}
                       cx="50%"
                       cy="50%"
-                      innerRadius={60}
-                      outerRadius={90}
+                      innerRadius={50}
+                      outerRadius={80}
                       paddingAngle={2}
                       dataKey="value"
                       label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
@@ -302,7 +337,7 @@ export default function HealthDashboardPage() {
           </Card>
 
           {/* 平均分 */}
-          <Card className="bg-gradient-to-br from-rose-500 to-pink-600 text-white">
+          <Card className="bg-gradient-to-br from-rose-500 to-pink-600 text-white border-0">
             <CardContent className="pt-6">
               <div className="text-center">
                 <div className="text-5xl font-bold">{stats?.averageScore || 0}</div>
@@ -320,6 +355,50 @@ export default function HealthDashboardPage() {
               </div>
             </CardContent>
           </Card>
+
+          {/* 评分维度说明 */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">评分维度说明</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <div className="flex items-center justify-between text-sm">
+                <div className="flex items-center gap-2">
+                  <Activity className="h-4 w-4 text-blue-500" />
+                  <span>互动频率</span>
+                </div>
+                <Badge variant="outline">25%</Badge>
+              </div>
+              <div className="flex items-center justify-between text-sm">
+                <div className="flex items-center gap-2">
+                  <DollarSign className="h-4 w-4 text-green-500" />
+                  <span>销售金额</span>
+                </div>
+                <Badge variant="outline">30%</Badge>
+              </div>
+              <div className="flex items-center justify-between text-sm">
+                <div className="flex items-center gap-2">
+                  <ShoppingCart className="h-4 w-4 text-amber-500" />
+                  <span>订单频次</span>
+                </div>
+                <Badge variant="outline">20%</Badge>
+              </div>
+              <div className="flex items-center justify-between text-sm">
+                <div className="flex items-center gap-2">
+                  <Briefcase className="h-4 w-4 text-purple-500" />
+                  <span>商机关怀</span>
+                </div>
+                <Badge variant="outline">15%</Badge>
+              </div>
+              <div className="flex items-center justify-between text-sm">
+                <div className="flex items-center gap-2">
+                  <CreditCard className="h-4 w-4 text-pink-500" />
+                  <span>回款及时</span>
+                </div>
+                <Badge variant="outline">10%</Badge>
+              </div>
+            </CardContent>
+          </Card>
         </div>
 
         {/* 右侧 - 客户列表 */}
@@ -328,7 +407,7 @@ export default function HealthDashboardPage() {
             <CardHeader>
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                 <div>
-                  <CardTitle>客户评分排行</CardTitle>
+                  <CardTitle>客户健康度排行</CardTitle>
                   <CardDescription>共 {filteredCustomers.length} 个客户</CardDescription>
                 </div>
                 <div className="flex gap-2">
@@ -364,67 +443,28 @@ export default function HealthDashboardPage() {
                 </TabsList>
                 
                 <TabsContent value="ranking" className="space-y-2">
-                  {filteredCustomers.map((customer) => {
-                    const levelCfg = LEVEL_CONFIG[customer.level];
-                    const LevelIcon = levelCfg.icon;
-                    const prevScore = customer.totalScore;
-                    
-                    return (
-                      <div
-                        key={customer.customerId}
-                        className="flex items-center justify-between p-3 rounded-lg hover:bg-muted/50 cursor-pointer transition-colors"
-                        onClick={() => handleViewDetail(customer)}
-                      >
-                        <div className="flex items-center gap-4">
-                          <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center font-bold text-sm">
-                            {customer.rank <= 3 ? (
-                              <Trophy className={`h-4 w-4 ${customer.rank === 1 ? 'text-yellow-500' : customer.rank === 2 ? 'text-gray-400' : 'text-amber-600'}`} />
-                            ) : (
-                              customer.rank
-                            )}
-                          </div>
-                          <div>
-                            <div className="font-medium">{customer.customerName}</div>
-                            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                              <Badge className={`${levelCfg.bgColor} ${levelCfg.color} text-xs`}>
-                                <LevelIcon className="h-3 w-3 mr-1" />
-                                {levelCfg.label}
-                              </Badge>
-                            </div>
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-4">
-                          <div className="text-right">
-                            <div className="text-lg font-bold">{customer.totalScore}</div>
-                            <div className="text-xs text-muted-foreground">总分</div>
-                          </div>
-                          <ChevronRight className="h-5 w-5 text-muted-foreground" />
-                        </div>
-                      </div>
-                    );
-                  })}
-                  {filteredCustomers.length === 0 && (
+                  {filteredCustomers.length === 0 ? (
                     <div className="text-center py-8 text-muted-foreground">
                       未找到匹配的客户
                     </div>
+                  ) : (
+                    filteredCustomers.map((customer, index) => renderCustomerItem(customer, index))
                   )}
                 </TabsContent>
                 
                 <TabsContent value="risk" className="space-y-2">
                   {scores.filter(c => c.level === 'risk' || c.totalScore < 40).length === 0 ? (
-                    <div className="text-center py-8 text-green-600">
-                      <CheckCircle className="h-12 w-12 mx-auto mb-2" />
-                      <p>太棒了！目前没有高风险客户</p>
+                    <div className="text-center py-8">
+                      <CheckCircle className="h-12 w-12 mx-auto mb-2 text-green-500" />
+                      <p className="text-green-600 font-medium">太棒了！目前没有高风险客户</p>
                     </div>
                   ) : (
-                    scores.filter(c => c.level === 'risk' || c.totalScore < 40).map((customer) => {
-                      const levelCfg = LEVEL_CONFIG[customer.level];
-                      const LevelIcon = levelCfg.icon;
-                      
-                      return (
+                    scores
+                      .filter(c => c.level === 'risk' || c.totalScore < 40)
+                      .map((customer, index) => (
                         <div
                           key={customer.customerId}
-                          className="flex items-center justify-between p-3 rounded-lg bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-800 cursor-pointer transition-colors"
+                          className="flex items-center justify-between p-3 rounded-lg bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-800 cursor-pointer transition-colors hover:bg-red-100 dark:hover:bg-red-900/30"
                           onClick={() => handleViewDetail(customer)}
                         >
                           <div className="flex items-center gap-4">
@@ -433,19 +473,18 @@ export default function HealthDashboardPage() {
                               <div className="font-medium">{customer.customerName}</div>
                               <div className="flex items-center gap-2 text-sm text-muted-foreground">
                                 <Badge variant="destructive" className="text-xs">
-                                  <LevelIcon className="h-3 w-3 mr-1" />
-                                  {levelCfg.label}
+                                  <AlertTriangle className="h-3 w-3 mr-1" />
+                                  风险
                                 </Badge>
                                 <span>得分: {customer.totalScore}</span>
                               </div>
                             </div>
                           </div>
-                          <Button size="sm" variant="outline" className="border-red-300 text-red-600 hover:bg-red-50">
+                          <Button size="sm" variant="outline" className="border-red-300 text-red-600 hover:bg-red-100">
                             查看详情
                           </Button>
                         </div>
-                      );
-                    })
+                      ))
                   )}
                 </TabsContent>
               </Tabs>

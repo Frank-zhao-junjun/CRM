@@ -1,333 +1,258 @@
 'use client';
 
 import React from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Progress } from '@/components/ui/progress';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { RadarChart, PolarGrid, PolarAngleAxis, Radar, ResponsiveContainer, PolarRadiusAxis } from 'recharts';
-import { 
-  Dialog, 
-  DialogContent, 
-  DialogHeader, 
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import { 
-  Heart, 
-  TrendingUp, 
-  TrendingDown, 
-  AlertTriangle,
-  CheckCircle,
-  Activity,
+import { Card, CardContent } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Progress } from '@/components/ui/progress';
+import {
+  RadarChart,
+  PolarGrid,
+  PolarAngleAxis,
+  PolarRadiusAxis,
+  Radar,
+  ResponsiveContainer,
+  Tooltip,
+} from 'recharts';
+import {
+  Heart,
+  TrendingUp,
+  Users,
   DollarSign,
   ShoppingCart,
   Briefcase,
   CreditCard,
+  Activity,
+  CheckCircle,
+  AlertTriangle,
   Lightbulb,
-  X
+  ArrowUp,
+  ArrowDown,
 } from 'lucide-react';
-
-// 健康度评分类型
-interface HealthScore {
-  customerId: string;
-  customerName: string;
-  totalScore: number;
-  level: 'healthy' | 'good' | 'fair' | 'risk';
-  levelLabel: string;
-  dimensions: {
-    interaction: { score: number; maxScore: number; value: number; label: string };
-    salesAmount: { score: number; maxScore: number; value: number; label: string };
-    orderFrequency: { score: number; maxScore: number; value: number; label: string };
-    opportunityActivity: { score: number; maxScore: number; value: number; label: string };
-    paymentTimeliness: { score: number; maxScore: number; value: number; label: string };
-  };
-  rank: number;
-}
-
-// 等级配置
-const LEVEL_CONFIG = {
-  healthy: {
-    label: '健康',
-    color: 'text-green-600',
-    bgColor: 'bg-green-100 dark:bg-green-900/30',
-    borderColor: 'border-green-500',
-    icon: CheckCircle,
-    description: '客户关系非常健康',
-  },
-  good: {
-    label: '良好',
-    color: 'text-blue-600',
-    bgColor: 'bg-blue-100 dark:bg-blue-900/30',
-    borderColor: 'border-blue-500',
-    icon: TrendingUp,
-    description: '客户关系状态良好',
-  },
-  fair: {
-    label: '一般',
-    color: 'text-yellow-600',
-    bgColor: 'bg-yellow-100 dark:bg-yellow-900/30',
-    borderColor: 'border-yellow-500',
-    icon: Activity,
-    description: '需要关注客户关系',
-  },
-  risk: {
-    label: '风险',
-    color: 'text-red-600',
-    bgColor: 'bg-red-100 dark:bg-red-900/30',
-    borderColor: 'border-red-500',
-    icon: AlertTriangle,
-    description: '客户关系需要立即改善',
-  },
-};
-
-// 维度配置
-const DIMENSION_CONFIG = {
-  interaction: {
-    label: '互动频率',
-    icon: Activity,
-    color: '#3b82f6',
-    description: '最近90天内的互动活动次数',
-    suggestions: [
-      '增加客户拜访频率',
-      '定期发送有价值的内容',
-      '邀请参加客户活动',
-    ],
-  },
-  salesAmount: {
-    label: '销售金额',
-    icon: DollarSign,
-    color: '#22c55e',
-    description: '客户累计成交金额',
-    suggestions: [
-      '推荐高价值产品',
-      '提供批量采购优惠',
-      '开发客户潜力',
-    ],
-  },
-  orderFrequency: {
-    label: '订单频次',
-    icon: ShoppingCart,
-    color: '#f59e0b',
-    description: '客户订单数量',
-    suggestions: [
-      '促进复购',
-      '推出订阅服务',
-      '建立客户忠诚计划',
-    ],
-  },
-  opportunityActivity: {
-    label: '商机关怀',
-    icon: Briefcase,
-    color: '#8b5cf6',
-    description: '当前活跃商机数量和金额',
-    suggestions: [
-      '加速商机推进',
-      '定期跟进商机进展',
-      '挖掘新商机机会',
-    ],
-  },
-  paymentTimeliness: {
-    label: '回款及时',
-    icon: CreditCard,
-    color: '#ec4899',
-    description: '回款按时完成比例',
-    suggestions: [
-      '加强应收账款管理',
-      '优化付款条款',
-      '建立付款提醒机制',
-    ],
-  },
-};
+import type { CustomerHealthScore, DimensionScore, HealthLevel } from '@/lib/health-score';
+import { HEALTH_LEVELS } from '@/lib/health-score';
 
 interface CustomerHealthDetailProps {
-  healthScore: HealthScore | null;
+  healthScore: CustomerHealthScore | null;
   open: boolean;
   onClose: () => void;
+}
+
+// 维度配置
+const DIMENSION_CONFIG = [
+  { key: 'interaction' as const, icon: Activity, color: '#3b82f6', label: '互动频率', weight: 25 },
+  { key: 'salesAmount' as const, icon: DollarSign, color: '#22c55e', label: '销售金额', weight: 30 },
+  { key: 'orderFrequency' as const, icon: ShoppingCart, color: '#f59e0b', label: '订单频次', weight: 20 },
+  { key: 'opportunityActivity' as const, icon: Briefcase, color: '#8b5cf6', label: '商机关怀', weight: 15 },
+  { key: 'paymentTimeliness' as const, icon: CreditCard, color: '#ec4899', label: '回款及时', weight: 10 },
+];
+
+// 等级图标组件
+function LevelBadge({ level, score }: { level: HealthLevel; score: number }) {
+  const config = HEALTH_LEVELS[level];
+  const Icon = level === 'healthy' ? CheckCircle : level === 'risk' ? AlertTriangle : TrendingUp;
+  
+  return (
+    <Badge 
+      className="px-3 py-1 text-sm font-medium"
+      style={{ 
+        backgroundColor: `${config.color}20`, 
+        color: config.color,
+        borderColor: config.color 
+      }}
+    >
+      <Icon className="h-4 w-4 mr-1" />
+      {config.label} ({score}分)
+    </Badge>
+  );
+}
+
+// 雷达图数据
+function getRadarData(dimensions: CustomerHealthScore['dimensions']) {
+  return DIMENSION_CONFIG.map(config => ({
+    dimension: config.label,
+    score: dimensions[config.key].score,
+    fullMark: 100,
+  }));
+}
+
+// 维度得分项
+function DimensionItem({ 
+  config, 
+  dimension 
+}: { 
+  config: typeof DIMENSION_CONFIG[0]; 
+  dimension: DimensionScore; 
+}) {
+  const Icon = config.icon;
+  const percentage = dimension.score;
+  const isGood = percentage >= 60;
+  const isMedium = percentage >= 40 && percentage < 60;
+  
+  return (
+    <Card className="p-4">
+      <div className="flex items-center justify-between mb-2">
+        <div className="flex items-center gap-2">
+          <div 
+            className="w-8 h-8 rounded-lg flex items-center justify-center"
+            style={{ backgroundColor: `${config.color}20` }}
+          >
+            <Icon className="h-4 w-4" style={{ color: config.color }} />
+          </div>
+          <div>
+            <div className="font-medium text-sm">{config.label}</div>
+            <div className="text-xs text-muted-foreground">权重 {config.weight}%</div>
+          </div>
+        </div>
+        <div className="text-right">
+          <div className="text-lg font-bold" style={{ color: config.color }}>
+            {dimension.score}
+          </div>
+          <div className="text-xs text-muted-foreground">
+            {dimension.displayValue}
+          </div>
+        </div>
+      </div>
+      <div className="relative">
+        <Progress 
+          value={percentage} 
+          className="h-2"
+          style={{
+            // @ts-ignore
+            '--progress-color': config.color,
+          }}
+        />
+        <div className="flex justify-between mt-1 text-xs text-muted-foreground">
+          <span>0</span>
+          <span>满分: {dimension.maxScore}</span>
+        </div>
+      </div>
+      <div className="mt-2 flex items-center gap-1 text-xs">
+        {percentage >= 60 ? (
+          <span className="text-green-600 flex items-center gap-1">
+            <ArrowUp className="h-3 w-3" /> 表现良好
+          </span>
+        ) : percentage >= 40 ? (
+          <span className="text-yellow-600 flex items-center gap-1">
+            <TrendingUp className="h-3 w-3" /> 有提升空间
+          </span>
+        ) : (
+          <span className="text-red-600 flex items-center gap-1">
+            <ArrowDown className="h-3 w-3" /> 需要改善
+          </span>
+        )}
+      </div>
+    </Card>
+  );
 }
 
 export function CustomerHealthDetail({ healthScore, open, onClose }: CustomerHealthDetailProps) {
   if (!healthScore) return null;
 
-  const levelConfig = LEVEL_CONFIG[healthScore.level];
-  const LevelIcon = levelConfig.icon;
-
-  // 准备雷达图数据
-  const radarData = [
-    { dimension: '互动频率', score: healthScore.dimensions.interaction.score, maxScore: healthScore.dimensions.interaction.maxScore, fullMark: 25 },
-    { dimension: '销售金额', score: healthScore.dimensions.salesAmount.score, maxScore: healthScore.dimensions.salesAmount.maxScore, fullMark: 30 },
-    { dimension: '订单频次', score: healthScore.dimensions.orderFrequency.score, maxScore: healthScore.dimensions.orderFrequency.maxScore, fullMark: 20 },
-    { dimension: '商机关怀', score: healthScore.dimensions.opportunityActivity.score, maxScore: healthScore.dimensions.opportunityActivity.maxScore, fullMark: 15 },
-    { dimension: '回款及时', score: healthScore.dimensions.paymentTimeliness.score, maxScore: healthScore.dimensions.paymentTimeliness.maxScore, fullMark: 10 },
-  ];
+  const radarData = getRadarData(healthScore.dimensions);
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader className="pb-4 border-b">
+        <DialogHeader>
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className={`w-12 h-12 rounded-full ${levelConfig.bgColor} flex items-center justify-center`}>
-                <LevelIcon className={`h-6 w-6 ${levelConfig.color}`} />
+              <div className="w-12 h-12 rounded-full bg-gradient-to-br from-rose-500 to-pink-500 flex items-center justify-center">
+                <Heart className="h-6 w-6 text-white" />
               </div>
               <div>
                 <DialogTitle className="text-xl">{healthScore.customerName}</DialogTitle>
-                <p className="text-sm text-muted-foreground">健康度评分详情</p>
+                <p className="text-sm text-muted-foreground">{healthScore.company}</p>
               </div>
             </div>
-            <Button variant="ghost" size="icon" onClick={onClose}>
-              <X className="h-4 w-4" />
-            </Button>
+            <LevelBadge level={healthScore.level} score={healthScore.totalScore} />
           </div>
         </DialogHeader>
 
-        <div className="space-y-6 py-4">
-          {/* 总分和等级 */}
-          <div className="flex items-center justify-between p-4 rounded-lg bg-gradient-to-r from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800">
-            <div className="flex items-center gap-4">
-              <div className="text-center">
-                <div className="text-4xl font-bold">{healthScore.totalScore}</div>
-                <div className="text-sm text-muted-foreground">健康度总分</div>
-              </div>
-              <div className="h-12 w-px bg-border" />
-              <div>
-                <Badge className={`${levelConfig.bgColor} ${levelConfig.color} text-base px-3 py-1`}>
-                  {levelConfig.label}
-                </Badge>
-                <p className="text-sm text-muted-foreground mt-1">{levelConfig.description}</p>
-              </div>
+        <div className="grid gap-6 mt-4">
+          {/* 雷达图 */}
+          <Card className="p-4">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="font-semibold">健康度雷达图</h3>
+              <div className="text-sm text-muted-foreground">5维度综合评分</div>
             </div>
-            <div className="text-right">
-              <div className="text-2xl font-semibold">#{healthScore.rank}</div>
-              <div className="text-sm text-muted-foreground">排名</div>
+            <div className="h-[300px]">
+              <ResponsiveContainer width="100%" height="100%">
+                <RadarChart data={radarData}>
+                  <PolarGrid stroke="#e5e7eb" />
+                  <PolarAngleAxis 
+                    dataKey="dimension" 
+                    tick={{ fontSize: 12 }}
+                  />
+                  <PolarRadiusAxis 
+                    angle={90} 
+                    domain={[0, 100]} 
+                    tick={{ fontSize: 10 }}
+                  />
+                  <Radar
+                    name="健康度"
+                    dataKey="score"
+                    stroke="#f43f5e"
+                    fill="#f43f5e"
+                    fillOpacity={0.4}
+                    strokeWidth={2}
+                  />
+                  <Tooltip 
+                    formatter={(value: number) => [`${value}分`, '得分']}
+                    contentStyle={{ borderRadius: '8px', border: '1px solid #e5e7eb' }}
+                  />
+                </RadarChart>
+              </ResponsiveContainer>
             </div>
-          </div>
+          </Card>
 
-          {/* 雷达图和维度得分 */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* 雷达图 */}
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-base">健康度雷达图</CardTitle>
-                <CardDescription>五维度得分分布</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="h-[280px]">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <RadarChart data={radarData} cx="50%" cy="50%" outerRadius="70%">
-                      <PolarGrid stroke="hsl(var(--border))" />
-                      <PolarAngleAxis 
-                        dataKey="dimension" 
-                        tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 12 }}
-                      />
-                      <PolarRadiusAxis 
-                        angle={90} 
-                        domain={[0, 30]} 
-                        tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 10 }}
-                      />
-                      <Radar
-                        name="健康度"
-                        dataKey="score"
-                        stroke={levelConfig.color.replace('text-', 'var(--')}
-                        fill={levelConfig.color.replace('text-', 'var(--')}
-                        fillOpacity={0.4}
-                        strokeWidth={2}
-                      />
-                    </RadarChart>
-                  </ResponsiveContainer>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* 维度详情 */}
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-base">各维度得分</CardTitle>
-                <CardDescription>详情及改善建议</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {Object.entries(healthScore.dimensions).map(([key, dim]) => {
-                  const config = DIMENSION_CONFIG[key as keyof typeof DIMENSION_CONFIG];
-                  const Icon = config?.icon || Activity;
-                  const percentage = (dim.score / dim.maxScore) * 100;
-                  
-                  return (
-                    <div key={key} className="space-y-2">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          <Icon className="h-4 w-4" style={{ color: config?.color }} />
-                          <span className="text-sm font-medium">{dim.label}</span>
-                        </div>
-                        <span className="text-sm font-semibold">
-                          {dim.score} / {dim.maxScore}
-                        </span>
-                      </div>
-                      <Progress value={percentage} className="h-2" />
-                      <p className="text-xs text-muted-foreground">
-                        {key === 'interaction' && `活动次数: ${dim.value} 次`}
-                        {key === 'salesAmount' && `成交金额: ¥${dim.value.toLocaleString()}`}
-                        {key === 'orderFrequency' && `订单数: ${dim.value} 单`}
-                        {key === 'opportunityActivity' && `活跃商机: ${dim.value} 个`}
-                        {key === 'paymentTimeliness' && `按时回款: ${dim.value} 笔`}
-                      </p>
-                    </div>
-                  );
-                })}
-              </CardContent>
-            </Card>
+          {/* 维度得分详情 */}
+          <div>
+            <h3 className="font-semibold mb-3">各维度详细得分</h3>
+            <div className="grid gap-3 md:grid-cols-2">
+              {DIMENSION_CONFIG.map(config => (
+                <DimensionItem 
+                  key={config.key}
+                  config={config}
+                  dimension={healthScore.dimensions[config.key]}
+                />
+              ))}
+            </div>
           </div>
 
           {/* 改善建议 */}
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-base flex items-center gap-2">
-                <Lightbulb className="h-5 w-5 text-amber-500" />
-                改善建议
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {Object.entries(healthScore.dimensions).map(([key, dim]) => {
-                  // 如果得分低于60%，给出建议
-                  const percentage = (dim.score / dim.maxScore) * 100;
-                  if (percentage >= 80) return null;
-                  
-                  const config = DIMENSION_CONFIG[key as keyof typeof DIMENSION_CONFIG];
-                  const suggestions = config?.suggestions || [];
-                  
-                  return (
-                    <div key={key} className="p-3 rounded-lg bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800">
-                      <div className="flex items-center gap-2 mb-2">
-                        <Icon 
-                          className="h-4 w-4" 
-                          style={{ color: config?.color }}
-                        />
-                        <span className="font-medium text-sm">{dim.label}</span>
-                        <Badge variant="outline" className="ml-auto text-xs">
-                          {percentage.toFixed(0)}%
-                        </Badge>
-                      </div>
-                      <ul className="space-y-1">
-                        {suggestions.slice(0, 2).map((suggestion, idx) => (
-                          <li key={idx} className="text-xs text-muted-foreground flex items-start gap-1">
-                            <span className="text-amber-500">•</span>
-                            {suggestion}
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  );
-                })}
+          <Card className="p-4 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950/20 dark:to-indigo-950/20 border-blue-200 dark:border-blue-800">
+            <div className="flex items-start gap-3">
+              <div className="w-10 h-10 rounded-lg bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center flex-shrink-0">
+                <Lightbulb className="h-5 w-5 text-blue-600 dark:text-blue-400" />
               </div>
-            </CardContent>
+              <div className="flex-1">
+                <h3 className="font-semibold text-blue-900 dark:text-blue-100 mb-2">
+                  改善建议
+                </h3>
+                <ul className="space-y-1.5">
+                  {healthScore.suggestions.map((suggestion, index) => (
+                    <li 
+                      key={index}
+                      className="text-sm text-blue-800 dark:text-blue-200 flex items-start gap-2"
+                    >
+                      <span className="w-5 h-5 rounded-full bg-blue-200 dark:bg-blue-800 text-blue-600 dark:text-blue-300 flex items-center justify-center text-xs flex-shrink-0 mt-0.5">
+                        {index + 1}
+                      </span>
+                      {suggestion}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </div>
           </Card>
         </div>
       </DialogContent>
     </Dialog>
   );
-}
-
-// Icon 组件
-function Icon({ className, style }: { className?: string; style?: React.CSSProperties }) {
-  return <Activity className={className} style={style} />;
 }

@@ -1,5 +1,5 @@
 import { sql } from "drizzle-orm";
-import { pgTable, text, timestamp, varchar, integer, numeric, boolean, index } from "drizzle-orm/pg-core";
+import { pgTable, text, timestamp, varchar, integer, numeric, boolean, index, unique } from "drizzle-orm/pg-core";
 
 // 客户表
 export const customers = pgTable(

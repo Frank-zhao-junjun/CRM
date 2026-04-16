@@ -6,7 +6,7 @@ import nodemailer from 'nodemailer';
 // ============ 邮件配置操作 ============
 
 export async function getAllEmailConfigs(): Promise<EmailConfig[]> {
-  const client = getSupabaseClient();
+  const client = await getSupabaseClient();
   const { data, error } = await client
     .from('email_configs')
     .select('*')
@@ -17,7 +17,7 @@ export async function getAllEmailConfigs(): Promise<EmailConfig[]> {
 }
 
 export async function getEmailConfigById(id: string): Promise<EmailConfig | null> {
-  const client = getSupabaseClient();
+  const client = await getSupabaseClient();
   const { data, error } = await client
     .from('email_configs')
     .select('*')
@@ -28,7 +28,7 @@ export async function getEmailConfigById(id: string): Promise<EmailConfig | null
 }
 
 export async function getDefaultEmailConfig(): Promise<EmailConfig | null> {
-  const client = getSupabaseClient();
+  const client = await getSupabaseClient();
   const { data, error } = await client
     .from('email_configs')
     .select('*')
@@ -39,7 +39,7 @@ export async function getDefaultEmailConfig(): Promise<EmailConfig | null> {
 }
 
 export async function createEmailConfig(config: InsertEmailConfig): Promise<EmailConfig> {
-  const client = getSupabaseClient();
+  const client = await getSupabaseClient();
   
   // 如果设置为默认，先取消其他默认
   if (config.is_default) {
@@ -56,7 +56,7 @@ export async function createEmailConfig(config: InsertEmailConfig): Promise<Emai
 }
 
 export async function updateEmailConfig(id: string, updates: Partial<InsertEmailConfig>): Promise<EmailConfig> {
-  const client = getSupabaseClient();
+  const client = await getSupabaseClient();
   
   // 如果设置为默认，先取消其他默认
   if (updates.is_default) {
@@ -74,7 +74,7 @@ export async function updateEmailConfig(id: string, updates: Partial<InsertEmail
 }
 
 export async function deleteEmailConfig(id: string): Promise<void> {
-  const client = getSupabaseClient();
+  const client = await getSupabaseClient();
   const { error } = await client
     .from('email_configs')
     .delete()
@@ -116,7 +116,7 @@ export async function testEmailConfig(id: string, testEmail: string): Promise<{ 
 // ============ 邮件模板操作 ============
 
 export async function getAllEmailTemplates(): Promise<EmailTemplate[]> {
-  const client = getSupabaseClient();
+  const client = await getSupabaseClient();
   const { data, error } = await client
     .from('email_templates')
     .select('*')
@@ -127,7 +127,7 @@ export async function getAllEmailTemplates(): Promise<EmailTemplate[]> {
 }
 
 export async function getActiveEmailTemplates(): Promise<EmailTemplate[]> {
-  const client = getSupabaseClient();
+  const client = await getSupabaseClient();
   const { data, error } = await client
     .from('email_templates')
     .select('*')
@@ -139,7 +139,7 @@ export async function getActiveEmailTemplates(): Promise<EmailTemplate[]> {
 }
 
 export async function getEmailTemplateById(id: string): Promise<EmailTemplate | null> {
-  const client = getSupabaseClient();
+  const client = await getSupabaseClient();
   const { data, error } = await client
     .from('email_templates')
     .select('*')
@@ -150,7 +150,7 @@ export async function getEmailTemplateById(id: string): Promise<EmailTemplate | 
 }
 
 export async function getEmailTemplatesByCategory(category: string): Promise<EmailTemplate[]> {
-  const client = getSupabaseClient();
+  const client = await getSupabaseClient();
   const { data, error } = await client
     .from('email_templates')
     .select('*')
@@ -162,7 +162,7 @@ export async function getEmailTemplatesByCategory(category: string): Promise<Ema
 }
 
 export async function createEmailTemplate(template: InsertEmailTemplate): Promise<EmailTemplate> {
-  const client = getSupabaseClient();
+  const client = await getSupabaseClient();
   const { data, error } = await client
     .from('email_templates')
     .insert(template)
@@ -173,7 +173,7 @@ export async function createEmailTemplate(template: InsertEmailTemplate): Promis
 }
 
 export async function updateEmailTemplate(id: string, updates: Partial<InsertEmailTemplate>): Promise<EmailTemplate> {
-  const client = getSupabaseClient();
+  const client = await getSupabaseClient();
   const { data, error } = await client
     .from('email_templates')
     .update({ ...updates, updated_at: new Date().toISOString() })
@@ -185,7 +185,7 @@ export async function updateEmailTemplate(id: string, updates: Partial<InsertEma
 }
 
 export async function deleteEmailTemplate(id: string): Promise<void> {
-  const client = getSupabaseClient();
+  const client = await getSupabaseClient();
   const { error } = await client
     .from('email_templates')
     .delete()
@@ -219,7 +219,7 @@ export interface SendEmailParams {
 }
 
 export async function sendEmail(params: SendEmailParams): Promise<EmailLog> {
-  const client = getSupabaseClient();
+  const client = await getSupabaseClient();
   
   // 获取邮件配置
   let config: EmailConfig | null = null;
@@ -323,7 +323,7 @@ export async function getAllEmailLogs(options?: {
   limit?: number;
   offset?: number;
 }): Promise<{ logs: EmailLog[]; total: number }> {
-  const client = getSupabaseClient();
+  const client = await getSupabaseClient();
   
   let query = client
     .from('email_logs')
@@ -356,7 +356,7 @@ export async function getAllEmailLogs(options?: {
 }
 
 export async function getEmailLogById(id: string): Promise<EmailLog | null> {
-  const client = getSupabaseClient();
+  const client = await getSupabaseClient();
   const { data, error } = await client
     .from('email_logs')
     .select('*')
@@ -389,7 +389,7 @@ export async function getEmailStats(): Promise<{
   failed: number;
   pending: number;
 }> {
-  const client = getSupabaseClient();
+  const client = await getSupabaseClient();
   
   const { count: total, error: totalError } = await client
     .from('email_logs')

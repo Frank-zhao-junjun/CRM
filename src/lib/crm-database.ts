@@ -7,7 +7,7 @@ import type { Customer, InsertCustomer, Contact, InsertContact, Opportunity, Ins
 // ============ Customer 操作 ============
 
 export async function getAllCustomers(): Promise<Customer[]> {
-  const client = getSupabaseClient();
+  const client = await getSupabaseClient();
   const { data, error } = await client
     .from('customers')
     .select('*')
@@ -17,7 +17,7 @@ export async function getAllCustomers(): Promise<Customer[]> {
 }
 
 export async function getCustomerById(id: string): Promise<Customer | null> {
-  const client = getSupabaseClient();
+  const client = await getSupabaseClient();
   const { data, error } = await client
     .from('customers')
     .select('*')
@@ -28,7 +28,7 @@ export async function getCustomerById(id: string): Promise<Customer | null> {
 }
 
 export async function createCustomer(customer: InsertCustomer): Promise<Customer> {
-  const client = getSupabaseClient();
+  const client = await getSupabaseClient();
   const { data, error } = await client
     .from('customers')
     .insert(customer)
@@ -39,7 +39,7 @@ export async function createCustomer(customer: InsertCustomer): Promise<Customer
 }
 
 export async function updateCustomer(id: string, updates: Partial<InsertCustomer>): Promise<Customer> {
-  const client = getSupabaseClient();
+  const client = await getSupabaseClient();
   const { data, error } = await client
     .from('customers')
     .update({ ...updates, updated_at: new Date().toISOString() })
@@ -51,7 +51,7 @@ export async function updateCustomer(id: string, updates: Partial<InsertCustomer
 }
 
 export async function deleteCustomer(id: string): Promise<void> {
-  const client = getSupabaseClient();
+  const client = await getSupabaseClient();
   const { error } = await client
     .from('customers')
     .delete()
@@ -62,7 +62,7 @@ export async function deleteCustomer(id: string): Promise<void> {
 // ============ Contact 操作 ============
 
 export async function getAllContacts(): Promise<Contact[]> {
-  const client = getSupabaseClient();
+  const client = await getSupabaseClient();
   const { data, error } = await client
     .from('contacts')
     .select('*')
@@ -72,7 +72,7 @@ export async function getAllContacts(): Promise<Contact[]> {
 }
 
 export async function getContactsByCustomerId(customerId: string): Promise<Contact[]> {
-  const client = getSupabaseClient();
+  const client = await getSupabaseClient();
   const { data, error } = await client
     .from('contacts')
     .select('*')
@@ -83,7 +83,7 @@ export async function getContactsByCustomerId(customerId: string): Promise<Conta
 }
 
 export async function getContactById(id: string): Promise<Contact | null> {
-  const client = getSupabaseClient();
+  const client = await getSupabaseClient();
   const { data, error } = await client
     .from('contacts')
     .select('*')
@@ -94,7 +94,7 @@ export async function getContactById(id: string): Promise<Contact | null> {
 }
 
 export async function createContact(contact: InsertContact): Promise<Contact> {
-  const client = getSupabaseClient();
+  const client = await getSupabaseClient();
   const { data, error } = await client
     .from('contacts')
     .insert(contact)
@@ -105,7 +105,7 @@ export async function createContact(contact: InsertContact): Promise<Contact> {
 }
 
 export async function updateContact(id: string, updates: Partial<InsertContact>): Promise<Contact> {
-  const client = getSupabaseClient();
+  const client = await getSupabaseClient();
   const { data, error } = await client
     .from('contacts')
     .update({ ...updates, updated_at: new Date().toISOString() })
@@ -117,7 +117,7 @@ export async function updateContact(id: string, updates: Partial<InsertContact>)
 }
 
 export async function deleteContact(id: string): Promise<void> {
-  const client = getSupabaseClient();
+  const client = await getSupabaseClient();
   const { error } = await client
     .from('contacts')
     .delete()
@@ -158,7 +158,7 @@ export interface InsertSalesLead {
 }
 
 export async function getAllLeads(): Promise<SalesLead[]> {
-  const client = getSupabaseClient();
+  const client = await getSupabaseClient();
   const { data, error } = await client
     .from('leads')
     .select('*')
@@ -168,7 +168,7 @@ export async function getAllLeads(): Promise<SalesLead[]> {
 }
 
 export async function getLeadById(id: string): Promise<SalesLead | null> {
-  const client = getSupabaseClient();
+  const client = await getSupabaseClient();
   const { data, error } = await client
     .from('leads')
     .select('*')
@@ -179,7 +179,7 @@ export async function getLeadById(id: string): Promise<SalesLead | null> {
 }
 
 export async function getLeadsByCustomerId(customerId: string): Promise<SalesLead[]> {
-  const client = getSupabaseClient();
+  const client = await getSupabaseClient();
   const { data, error } = await client
     .from('leads')
     .select('*')
@@ -190,7 +190,7 @@ export async function getLeadsByCustomerId(customerId: string): Promise<SalesLea
 }
 
 export async function createLead(lead: InsertSalesLead): Promise<SalesLead> {
-  const client = getSupabaseClient();
+  const client = await getSupabaseClient();
   const { data, error } = await client
     .from('leads')
     .insert({
@@ -213,7 +213,7 @@ export async function createLead(lead: InsertSalesLead): Promise<SalesLead> {
 }
 
 export async function updateLead(id: string, updates: Partial<InsertSalesLead>): Promise<SalesLead> {
-  const client = getSupabaseClient();
+  const client = await getSupabaseClient();
   const { data, error } = await client
     .from('leads')
     .update({ 
@@ -230,7 +230,7 @@ export async function updateLead(id: string, updates: Partial<InsertSalesLead>):
 }
 
 export async function deleteLead(id: string): Promise<void> {
-  const client = getSupabaseClient();
+  const client = await getSupabaseClient();
   const { error } = await client
     .from('leads')
     .delete()
@@ -241,7 +241,7 @@ export async function deleteLead(id: string): Promise<void> {
 // ============ Opportunity 操作 (商机) ============
 
 export async function getAllOpportunities(excludeLead: boolean = false): Promise<Opportunity[]> {
-  const client = getSupabaseClient();
+  const client = await getSupabaseClient();
   let query = client
     .from('opportunities')
     .select('*')
@@ -257,7 +257,7 @@ export async function getAllOpportunities(excludeLead: boolean = false): Promise
 }
 
 export async function getOpportunitiesByCustomerId(customerId: string): Promise<Opportunity[]> {
-  const client = getSupabaseClient();
+  const client = await getSupabaseClient();
   const { data, error } = await client
     .from('opportunities')
     .select('*')
@@ -268,7 +268,7 @@ export async function getOpportunitiesByCustomerId(customerId: string): Promise<
 }
 
 export async function getOpportunityById(id: string): Promise<Opportunity | null> {
-  const client = getSupabaseClient();
+  const client = await getSupabaseClient();
   const { data, error } = await client
     .from('opportunities')
     .select('*')
@@ -279,7 +279,7 @@ export async function getOpportunityById(id: string): Promise<Opportunity | null
 }
 
 export async function createOpportunity(opportunity: InsertOpportunity): Promise<Opportunity> {
-  const client = getSupabaseClient();
+  const client = await getSupabaseClient();
   const { data, error } = await client
     .from('opportunities')
     .insert(opportunity)
@@ -290,7 +290,7 @@ export async function createOpportunity(opportunity: InsertOpportunity): Promise
 }
 
 export async function updateOpportunity(id: string, updates: Partial<InsertOpportunity>): Promise<Opportunity> {
-  const client = getSupabaseClient();
+  const client = await getSupabaseClient();
   const { data, error } = await client
     .from('opportunities')
     .update({ ...updates, updated_at: new Date().toISOString() })
@@ -302,7 +302,7 @@ export async function updateOpportunity(id: string, updates: Partial<InsertOppor
 }
 
 export async function deleteOpportunity(id: string): Promise<void> {
-  const client = getSupabaseClient();
+  const client = await getSupabaseClient();
   const { error } = await client
     .from('opportunities')
     .delete()
@@ -333,7 +333,7 @@ export interface ActivityListResult {
 }
 
 export async function getRecentActivities(limit: number = 50): Promise<Activity[]> {
-  const client = getSupabaseClient();
+  const client = await getSupabaseClient();
   const { data, error } = await client
     .from('activities')
     .select('*')
@@ -344,7 +344,7 @@ export async function getRecentActivities(limit: number = 50): Promise<Activity[
 }
 
 export async function getActivities(filters: ActivityFilters = {}): Promise<ActivityListResult> {
-  const client = getSupabaseClient();
+  const client = await getSupabaseClient();
   
   const {
     entity_type,
@@ -398,7 +398,7 @@ export async function getActivities(filters: ActivityFilters = {}): Promise<Acti
 }
 
 export async function getActivitiesByEntityId(entityId: string): Promise<Activity[]> {
-  const client = getSupabaseClient();
+  const client = await getSupabaseClient();
   const { data, error } = await client
     .from('activities')
     .select('*')
@@ -409,7 +409,7 @@ export async function getActivitiesByEntityId(entityId: string): Promise<Activit
 }
 
 export async function createActivity(activity: InsertActivity): Promise<Activity> {
-  const client = getSupabaseClient();
+  const client = await getSupabaseClient();
   const { data, error } = await client
     .from('activities')
     .insert(activity)
@@ -430,7 +430,7 @@ export async function getDashboardStats(): Promise<{
   wonOpportunities: number;
   activeCustomers: number;
 }> {
-  const client = getSupabaseClient();
+  const client = await getSupabaseClient();
   
   const [
     customersResult,
@@ -470,7 +470,7 @@ export async function getDashboardStats(): Promise<{
 // ============ FollowUp 操作 (V3.0) ============
 
 export async function getAllFollowUps(): Promise<FollowUp[]> {
-  const client = getSupabaseClient();
+  const client = await getSupabaseClient();
   const { data, error } = await client
     .from('follow_ups')
     .select('*')
@@ -480,7 +480,7 @@ export async function getAllFollowUps(): Promise<FollowUp[]> {
 }
 
 export async function getFollowUpsByEntity(entityType: string, entityId: string): Promise<FollowUp[]> {
-  const client = getSupabaseClient();
+  const client = await getSupabaseClient();
   const { data, error } = await client
     .from('follow_ups')
     .select('*')
@@ -492,7 +492,7 @@ export async function getFollowUpsByEntity(entityType: string, entityId: string)
 }
 
 export async function getOverdueFollowUps(): Promise<FollowUp[]> {
-  const client = getSupabaseClient();
+  const client = await getSupabaseClient();
   const { data, error } = await client
     .from('follow_ups')
     .select('*')
@@ -504,7 +504,7 @@ export async function getOverdueFollowUps(): Promise<FollowUp[]> {
 }
 
 export async function getUpcomingFollowUps(hours: number = 24): Promise<FollowUp[]> {
-  const client = getSupabaseClient();
+  const client = await getSupabaseClient();
   const now = new Date();
   const future = new Date(now.getTime() + hours * 60 * 60 * 1000);
   const { data, error } = await client
@@ -519,7 +519,7 @@ export async function getUpcomingFollowUps(hours: number = 24): Promise<FollowUp
 }
 
 export async function createFollowUp(followUp: InsertFollowUp): Promise<FollowUp> {
-  const client = getSupabaseClient();
+  const client = await getSupabaseClient();
   const { data, error } = await client
     .from('follow_ups')
     .insert(followUp)
@@ -530,7 +530,7 @@ export async function createFollowUp(followUp: InsertFollowUp): Promise<FollowUp
 }
 
 export async function completeFollowUp(id: string): Promise<FollowUp> {
-  const client = getSupabaseClient();
+  const client = await getSupabaseClient();
   const { data, error } = await client
     .from('follow_ups')
     .update({ completed_at: new Date().toISOString(), updated_at: new Date().toISOString() })
@@ -544,7 +544,7 @@ export async function completeFollowUp(id: string): Promise<FollowUp> {
 // ============ Notification 操作 (V3.0) ============
 
 export async function getAllNotifications(): Promise<Notification[]> {
-  const client = getSupabaseClient();
+  const client = await getSupabaseClient();
   const { data, error } = await client
     .from('notifications')
     .select('*')
@@ -555,7 +555,7 @@ export async function getAllNotifications(): Promise<Notification[]> {
 }
 
 export async function getUnreadNotifications(): Promise<Notification[]> {
-  const client = getSupabaseClient();
+  const client = await getSupabaseClient();
   const { data, error } = await client
     .from('notifications')
     .select('*')
@@ -566,7 +566,7 @@ export async function getUnreadNotifications(): Promise<Notification[]> {
 }
 
 export async function createNotification(notification: InsertNotification): Promise<Notification> {
-  const client = getSupabaseClient();
+  const client = await getSupabaseClient();
   const { data, error } = await client
     .from('notifications')
     .insert(notification)
@@ -577,7 +577,7 @@ export async function createNotification(notification: InsertNotification): Prom
 }
 
 export async function markNotificationRead(id: string): Promise<void> {
-  const client = getSupabaseClient();
+  const client = await getSupabaseClient();
   const { error } = await client
     .from('notifications')
     .update({ is_read: true })
@@ -586,7 +586,7 @@ export async function markNotificationRead(id: string): Promise<void> {
 }
 
 export async function markAllNotificationsRead(): Promise<void> {
-  const client = getSupabaseClient();
+  const client = await getSupabaseClient();
   const { error } = await client
     .from('notifications')
     .update({ is_read: true })
@@ -601,7 +601,7 @@ export async function generateOverdueNotifications(): Promise<number> {
   let created = 0;
   for (const fu of overdue) {
     // 检查是否已存在同类通知
-    const client = getSupabaseClient();
+    const client = await getSupabaseClient();
     const { data: existing } = await client
       .from('notifications')
       .select('id')
@@ -629,7 +629,7 @@ export async function generateOverdueNotifications(): Promise<number> {
 // ============ Quote 操作 ============
 
 export async function getAllQuotes(): Promise<Quote[]> {
-  const client = getSupabaseClient();
+  const client = await getSupabaseClient();
   const { data, error } = await client
     .from('quotes')
     .select('*')
@@ -639,7 +639,7 @@ export async function getAllQuotes(): Promise<Quote[]> {
 }
 
 export async function getQuoteById(id: string): Promise<Quote | null> {
-  const client = getSupabaseClient();
+  const client = await getSupabaseClient();
   const { data, error } = await client
     .from('quotes')
     .select('*')
@@ -659,7 +659,7 @@ export async function getQuoteById(id: string): Promise<Quote | null> {
 }
 
 export async function getQuotesByOpportunity(opportunityId: string): Promise<Quote[]> {
-  const client = getSupabaseClient();
+  const client = await getSupabaseClient();
   const { data, error } = await client
     .from('quotes')
     .select('*')
@@ -670,7 +670,7 @@ export async function getQuotesByOpportunity(opportunityId: string): Promise<Quo
 }
 
 export async function createQuote(quote: InsertQuote, items?: Omit<InsertQuoteItem, 'quote_id'>[]): Promise<Quote> {
-  const client = getSupabaseClient();
+  const client = await getSupabaseClient();
   const { data, error } = await client
     .from('quotes')
     .insert(quote)
@@ -697,7 +697,7 @@ export async function createQuote(quote: InsertQuote, items?: Omit<InsertQuoteIt
 }
 
 export async function updateQuote(id: string, updates: Partial<InsertQuote>): Promise<Quote> {
-  const client = getSupabaseClient();
+  const client = await getSupabaseClient();
   const { data, error } = await client
     .from('quotes')
     .update({ ...updates, updated_at: new Date().toISOString() })
@@ -709,7 +709,7 @@ export async function updateQuote(id: string, updates: Partial<InsertQuote>): Pr
 }
 
 export async function deleteQuote(id: string): Promise<void> {
-  const client = getSupabaseClient();
+  const client = await getSupabaseClient();
   const { error } = await client
     .from('quotes')
     .delete()
@@ -718,7 +718,7 @@ export async function deleteQuote(id: string): Promise<void> {
 }
 
 export async function updateQuoteItems(quoteId: string, items: Omit<InsertQuoteItem, 'quote_id'>[]): Promise<QuoteItem[]> {
-  const client = getSupabaseClient();
+  const client = await getSupabaseClient();
   // Delete existing items
   await client.from('quote_items').delete().eq('quote_id', quoteId);
   // Insert new items
@@ -745,7 +745,7 @@ function generateOrderNumber(): string {
 }
 
 export async function getAllOrders(): Promise<Order[]> {
-  const client = getSupabaseClient();
+  const client = await getSupabaseClient();
   const { data, error } = await client
     .from('orders')
     .select('*')
@@ -755,7 +755,7 @@ export async function getAllOrders(): Promise<Order[]> {
 }
 
 export async function getOrderById(id: string): Promise<Order | null> {
-  const client = getSupabaseClient();
+  const client = await getSupabaseClient();
   const { data, error } = await client
     .from('orders')
     .select('*')
@@ -775,7 +775,7 @@ export async function getOrderById(id: string): Promise<Order | null> {
 }
 
 export async function createOrder(order: Omit<InsertOrder, 'order_number'>, items?: Omit<InsertOrderItem, 'order_id'>[]): Promise<Order> {
-  const client = getSupabaseClient();
+  const client = await getSupabaseClient();
   const orderNumber = generateOrderNumber();
   const { data, error } = await client
     .from('orders')
@@ -803,7 +803,7 @@ export async function createOrder(order: Omit<InsertOrder, 'order_number'>, item
 }
 
 export async function updateOrder(id: string, updates: Partial<InsertOrder>): Promise<Order> {
-  const client = getSupabaseClient();
+  const client = await getSupabaseClient();
   const { data, error } = await client
     .from('orders')
     .update({ ...updates, updated_at: new Date().toISOString() })
@@ -815,7 +815,7 @@ export async function updateOrder(id: string, updates: Partial<InsertOrder>): Pr
 }
 
 export async function deleteOrder(id: string): Promise<void> {
-  const client = getSupabaseClient();
+  const client = await getSupabaseClient();
   const { error } = await client
     .from('orders')
     .delete()
@@ -824,7 +824,7 @@ export async function deleteOrder(id: string): Promise<void> {
 }
 
 export async function convertQuoteToOrder(quoteId: string): Promise<Order> {
-  const client = getSupabaseClient();
+  const client = await getSupabaseClient();
   
   // Fetch quote
   const { data: quoteData, error: quoteError } = await client
@@ -889,7 +889,7 @@ export async function getTodayTodos(overdueDays: number = 7): Promise<{
   todayFollowUps: FollowUp[];
   overdueFollowUps: FollowUp[];
 }> {
-  const client = getSupabaseClient();
+  const client = await getSupabaseClient();
   const today = new Date().toISOString().split('T')[0];
 
   // 今日应成交: expected_close_date = today and not closed
@@ -929,7 +929,7 @@ export async function getTodayTodos(overdueDays: number = 7): Promise<{
 // ============ Contract 操作 (合同管理) ============
 
 export async function getAllContracts(): Promise<Contract[]> {
-  const client = getSupabaseClient();
+  const client = await getSupabaseClient();
   const { data, error } = await client
     .from('contracts')
     .select('*')
@@ -939,7 +939,7 @@ export async function getAllContracts(): Promise<Contract[]> {
 }
 
 export async function getContractById(id: string): Promise<Contract | null> {
-  const client = getSupabaseClient();
+  const client = await getSupabaseClient();
   const { data, error } = await client
     .from('contracts')
     .select('*')
@@ -950,7 +950,7 @@ export async function getContractById(id: string): Promise<Contract | null> {
 }
 
 export async function getContractByNumber(contractNumber: string): Promise<Contract | null> {
-  const client = getSupabaseClient();
+  const client = await getSupabaseClient();
   const { data, error } = await client
     .from('contracts')
     .select('*')
@@ -961,7 +961,7 @@ export async function getContractByNumber(contractNumber: string): Promise<Contr
 }
 
 export async function getContractsByCustomer(customerId: string): Promise<Contract[]> {
-  const client = getSupabaseClient();
+  const client = await getSupabaseClient();
   const { data, error } = await client
     .from('contracts')
     .select('*')
@@ -972,7 +972,7 @@ export async function getContractsByCustomer(customerId: string): Promise<Contra
 }
 
 export async function getContractsByOpportunity(opportunityId: string): Promise<Contract[]> {
-  const client = getSupabaseClient();
+  const client = await getSupabaseClient();
   const { data, error } = await client
     .from('contracts')
     .select('*')
@@ -983,7 +983,7 @@ export async function getContractsByOpportunity(opportunityId: string): Promise<
 }
 
 export async function getContractsByQuote(quoteId: string): Promise<Contract[]> {
-  const client = getSupabaseClient();
+  const client = await getSupabaseClient();
   const { data, error } = await client
     .from('contracts')
     .select('*')
@@ -994,7 +994,7 @@ export async function getContractsByQuote(quoteId: string): Promise<Contract[]> 
 }
 
 export async function createContract(contract: InsertContract, milestones?: InsertContractMilestone[]): Promise<Contract> {
-  const client = getSupabaseClient();
+  const client = await getSupabaseClient();
   const { data, error } = await client
     .from('contracts')
     .insert(contract)
@@ -1018,7 +1018,7 @@ export async function createContract(contract: InsertContract, milestones?: Inse
 }
 
 export async function updateContract(id: string, updates: Partial<InsertContract>): Promise<Contract> {
-  const client = getSupabaseClient();
+  const client = await getSupabaseClient();
   const { data, error } = await client
     .from('contracts')
     .update({ ...updates, updated_at: new Date().toISOString() })
@@ -1030,7 +1030,7 @@ export async function updateContract(id: string, updates: Partial<InsertContract
 }
 
 export async function deleteContract(id: string): Promise<void> {
-  const client = getSupabaseClient();
+  const client = await getSupabaseClient();
   const { error } = await client
     .from('contracts')
     .delete()
@@ -1041,7 +1041,7 @@ export async function deleteContract(id: string): Promise<void> {
 // ============ Contract Milestone 操作 (合同履约节点) ============
 
 export async function getMilestonesByContract(contractId: string): Promise<ContractMilestone[]> {
-  const client = getSupabaseClient();
+  const client = await getSupabaseClient();
   const { data, error } = await client
     .from('contract_milestones')
     .select('*')
@@ -1052,7 +1052,7 @@ export async function getMilestonesByContract(contractId: string): Promise<Contr
 }
 
 export async function createMilestone(milestone: InsertContractMilestone): Promise<ContractMilestone> {
-  const client = getSupabaseClient();
+  const client = await getSupabaseClient();
   const { data, error } = await client
     .from('contract_milestones')
     .insert(milestone)
@@ -1063,7 +1063,7 @@ export async function createMilestone(milestone: InsertContractMilestone): Promi
 }
 
 export async function updateMilestone(id: string, updates: Partial<InsertContractMilestone>): Promise<ContractMilestone> {
-  const client = getSupabaseClient();
+  const client = await getSupabaseClient();
   const { data, error } = await client
     .from('contract_milestones')
     .update(updates)
@@ -1075,7 +1075,7 @@ export async function updateMilestone(id: string, updates: Partial<InsertContrac
 }
 
 export async function completeMilestone(id: string): Promise<ContractMilestone> {
-  const client = getSupabaseClient();
+  const client = await getSupabaseClient();
   const { data, error } = await client
     .from('contract_milestones')
     .update({ 
@@ -1090,7 +1090,7 @@ export async function completeMilestone(id: string): Promise<ContractMilestone> 
 }
 
 export async function deleteMilestone(id: string): Promise<void> {
-  const client = getSupabaseClient();
+  const client = await getSupabaseClient();
   const { error } = await client
     .from('contract_milestones')
     .delete()
@@ -1205,7 +1205,7 @@ function transformPaymentPlan(row: any): PaymentPlan {
 }
 
 export async function getAllPaymentPlans(): Promise<PaymentPlan[]> {
-  const client = getSupabaseClient();
+  const client = await getSupabaseClient();
   const { data, error } = await client
     .from('payment_plans')
     .select('*')
@@ -1215,7 +1215,7 @@ export async function getAllPaymentPlans(): Promise<PaymentPlan[]> {
 }
 
 export async function getPaymentPlanById(id: string): Promise<PaymentPlan | null> {
-  const client = getSupabaseClient();
+  const client = await getSupabaseClient();
   const { data, error } = await client
     .from('payment_plans')
     .select('*')
@@ -1226,7 +1226,7 @@ export async function getPaymentPlanById(id: string): Promise<PaymentPlan | null
 }
 
 export async function getPaymentPlansByCustomer(customerId: string): Promise<PaymentPlan[]> {
-  const client = getSupabaseClient();
+  const client = await getSupabaseClient();
   const { data, error } = await client
     .from('payment_plans')
     .select('*')
@@ -1237,7 +1237,7 @@ export async function getPaymentPlansByCustomer(customerId: string): Promise<Pay
 }
 
 export async function getPaymentPlansByContract(contractId: string): Promise<PaymentPlan[]> {
-  const client = getSupabaseClient();
+  const client = await getSupabaseClient();
   const { data, error } = await client
     .from('payment_plans')
     .select('*')
@@ -1248,7 +1248,7 @@ export async function getPaymentPlansByContract(contractId: string): Promise<Pay
 }
 
 export async function createPaymentPlan(plan: InsertPaymentPlan): Promise<PaymentPlan> {
-  const client = getSupabaseClient();
+  const client = await getSupabaseClient();
   const { data, error } = await client
     .from('payment_plans')
     .insert(plan)
@@ -1259,7 +1259,7 @@ export async function createPaymentPlan(plan: InsertPaymentPlan): Promise<Paymen
 }
 
 export async function updatePaymentPlan(id: string, updates: Partial<InsertPaymentPlan>): Promise<PaymentPlan> {
-  const client = getSupabaseClient();
+  const client = await getSupabaseClient();
   const { data, error } = await client
     .from('payment_plans')
     .update(updates)
@@ -1271,7 +1271,7 @@ export async function updatePaymentPlan(id: string, updates: Partial<InsertPayme
 }
 
 export async function deletePaymentPlan(id: string): Promise<void> {
-  const client = getSupabaseClient();
+  const client = await getSupabaseClient();
   const { error } = await client
     .from('payment_plans')
     .delete()
@@ -1281,7 +1281,7 @@ export async function deletePaymentPlan(id: string): Promise<void> {
 
 export async function getOverduePaymentPlans(): Promise<PaymentPlan[]> {
   const today = new Date().toISOString().split('T')[0];
-  const client = getSupabaseClient();
+  const client = await getSupabaseClient();
   const { data, error } = await client
     .from('payment_plans')
     .select('*')
@@ -1295,7 +1295,7 @@ export async function getOverduePaymentPlans(): Promise<PaymentPlan[]> {
 
 export async function getTodayDuePaymentPlans(): Promise<PaymentPlan[]> {
   const today = new Date().toISOString().split('T')[0];
-  const client = getSupabaseClient();
+  const client = await getSupabaseClient();
   const { data, error } = await client
     .from('payment_plans')
     .select('*')
@@ -1311,7 +1311,7 @@ export async function getTodayDuePaymentPlans(): Promise<PaymentPlan[]> {
  * 获取阶段转化数据
  */
 export async function getConversionData(timeRange: 'month' | 'quarter' | 'year' | 'all' = 'all') {
-  const client = getSupabaseClient();
+  const client = await getSupabaseClient();
   
   // 计算时间范围
   const now = new Date();
@@ -1413,6 +1413,7 @@ export interface TaskRow {
 }
 
 export async function getAllTasks(): Promise<any[]> {
+  const client = await getSupabaseClient();
   const { data, error } = await client
     .from('tasks')
     .select('*')
@@ -1427,6 +1428,7 @@ export async function getAllTasks(): Promise<any[]> {
 }
 
 export async function getTaskById(id: string): Promise<any | null> {
+  const client = await getSupabaseClient();
   const { data, error } = await client
     .from('tasks')
     .select('*')
@@ -1442,6 +1444,7 @@ export async function getTaskById(id: string): Promise<any | null> {
 }
 
 export async function createTask(task: InsertTask): Promise<any> {
+  const client = await getSupabaseClient();
   const now = new Date().toISOString();
   const { data, error } = await client
     .from('tasks')
@@ -1471,7 +1474,86 @@ export async function createTask(task: InsertTask): Promise<any> {
   return rowToTask(data as TaskRow);
 }
 
+// ============ Workflow Functions (工作流功能 - 需要数据库表支持) ============
+
+export async function getAllWorkflows(): Promise<any[]> {
+  // 工作流功能需要数据库表支持，目前返回空数组
+  console.log('[Workflow] getAllWorkflows - needs database table');
+  return [];
+}
+
+export async function getWorkflowById(id: string): Promise<any | null> {
+  console.log('[Workflow] getWorkflowById - needs database table');
+  return null;
+}
+
+export async function getWorkflowLogs(workflowId: string): Promise<any[]> {
+  console.log('[Workflow] getWorkflowLogs - needs database table');
+  return [];
+}
+
+export async function createWorkflow(workflow: any): Promise<any> {
+  console.log('[Workflow] createWorkflow - needs database table');
+  return workflow;
+}
+
+export async function updateWorkflow(id: string, updates: any): Promise<any> {
+  console.log('[Workflow] updateWorkflow - needs database table');
+  return updates;
+}
+
+export async function deleteWorkflow(id: string): Promise<void> {
+  console.log('[Workflow] deleteWorkflow - needs database table');
+}
+
+export async function seedWorkflowTemplates(): Promise<void> {
+  console.log('[Workflow] seedWorkflowTemplates - needs database table');
+}
+
+export async function executeWorkflowEngine(params: {
+  triggerType: string;
+  entityType: string;
+  entityId: string;
+  entityName: string;
+}): Promise<void> {
+  // 工作流执行引擎 (stub)
+  console.log('[Workflow Engine] Trigger:', params.triggerType, 'Entity:', params.entityType, params.entityId);
+}
+
+// ============ Report Functions (报表功能) ============
+
+export async function getReportStats(timeRange: string): Promise<any> {
+  console.log('[Report] getReportStats - needs database table');
+  return {
+    totalRevenue: 0,
+    totalOpportunities: 0,
+    wonOpportunities: 0,
+    conversionRate: 0,
+  };
+}
+
+export async function getTeamRankingData(timeRange: string): Promise<any[]> {
+  console.log('[Report] getTeamRankingData - needs database table');
+  return [];
+}
+
+export async function getFunnelData(timeRange: string): Promise<any[]> {
+  console.log('[Report] getFunnelData - needs database table');
+  return [];
+}
+
+// ============ Additional Functions ============
+
+export async function getActiveWorkflowsByTrigger(triggerType: string): Promise<any[]> {
+  console.log('[Workflow] getActiveWorkflowsByTrigger - needs database table');
+  return [];
+}
+
+export async function createActivityLog(log: any): Promise<void> {
+  console.log('[Workflow] createActivityLog - needs database table');
+}
 export async function updateTask(id: string, updates: Partial<InsertTask>): Promise<any> {
+  const client = await getSupabaseClient();
   const now = new Date().toISOString();
   const updateData: Record<string, any> = { updated_at: now };
 
@@ -1503,6 +1585,7 @@ export async function updateTask(id: string, updates: Partial<InsertTask>): Prom
 }
 
 export async function deleteTask(id: string): Promise<void> {
+  const client = await getSupabaseClient();
   const { error } = await client
     .from('tasks')
     .delete()
@@ -1532,4 +1615,106 @@ function rowToTask(row: TaskRow): any {
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
+}
+
+// 根据关联对象获取任务
+export async function getTasksByEntity(entityType: string, entityId: string): Promise<any[]> {
+  const client = await getSupabaseClient();
+  const { data, error } = await client
+    .from('tasks')
+    .select('*')
+    .eq('related_type', entityType)
+    .eq('related_id', entityId)
+    .order('due_date', { ascending: true });
+
+  if (error) {
+    console.error('获取关联任务失败:', error);
+    return [];
+  }
+
+  return (data as TaskRow[])?.map(rowToTask) || [];
+}
+
+// 获取待处理任务
+export async function getPendingTasks(): Promise<any[]> {
+  const client = await getSupabaseClient();
+  const { data, error } = await client
+    .from('tasks')
+    .select('*')
+    .neq('status', 'completed')
+    .order('due_date', { ascending: true });
+
+  if (error) {
+    console.error('获取待处理任务失败:', error);
+    return [];
+  }
+
+  return (data as TaskRow[])?.map(rowToTask) || [];
+}
+
+// 获取今日到期任务
+export async function getTodayTasks(): Promise<any[]> {
+  const client = await getSupabaseClient();
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const tomorrow = new Date(today);
+  tomorrow.setDate(tomorrow.getDate() + 1);
+
+  const { data, error } = await client
+    .from('tasks')
+    .select('*')
+    .gte('due_date', today.toISOString())
+    .lt('due_date', tomorrow.toISOString())
+    .order('due_date', { ascending: true });
+
+  if (error) {
+    console.error('获取今日任务失败:', error);
+    return [];
+  }
+
+  return (data as TaskRow[])?.map(rowToTask) || [];
+}
+
+// 获取逾期任务
+export async function getOverdueTasks(): Promise<any[]> {
+  const client = await getSupabaseClient();
+  const now = new Date();
+  now.setHours(0, 0, 0, 0);
+
+  const { data, error } = await client
+    .from('tasks')
+    .select('*')
+    .lt('due_date', now.toISOString())
+    .neq('status', 'completed')
+    .order('due_date', { ascending: true });
+
+  if (error) {
+    console.error('获取逾期任务失败:', error);
+    return [];
+  }
+
+  return (data as TaskRow[])?.map(rowToTask) || [];
+}
+
+// 完成任务
+export async function completeTask(id: string): Promise<any> {
+  const client = await getSupabaseClient();
+  const now = new Date().toISOString();
+  const { data, error } = await client
+    .from('tasks')
+    .update({
+      status: 'completed',
+      completed_at: now,
+      updated_at: now,
+    })
+    .eq('id', id)
+    .select()
+    .single();
+
+  if (error) {
+    console.error('完成任务失败:', error);
+    throw error;
+  }
+
+  return rowToTask(data as TaskRow);
 }

@@ -32,7 +32,7 @@ export async function GET(request: NextRequest) {
     const reportType = searchParams.get('type') || 'stats';
     const timeRange = (searchParams.get('timeRange') || 'all') as 'month' | 'quarter' | 'year' | 'all';
     
-    const client = getSupabaseClient();
+    const client = await getSupabaseClient();
     
     switch (reportType) {
       case 'stats': {
@@ -59,16 +59,16 @@ export async function GET(request: NextRequest) {
         const wonAmount = wonOpps?.reduce((sum, opp) => sum + Number(opp.value), 0) || 0;
         
         // 获取线索数
-        const { data: leads } = await client
+        const { count: leadCount } = await client
           .from('leads')
-          .select('count', { count: 'exact' });
+          .select('*', { count: 'exact', head: true });
         
         return NextResponse.json({
           success: true,
           data: {
             stages: funnelData,
             won: { count: wonCount, amount: wonAmount },
-            leads: leads?.count || 0,
+            leads: leadCount || 0,
           },
           timestamp: new Date().toISOString(),
         });

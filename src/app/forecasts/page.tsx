@@ -24,6 +24,7 @@ interface AccuracyData {
   forecastValue: number;
   actualValue: number;
   accuracy: number;
+  variance: number;
 }
 
 interface ForecastData {

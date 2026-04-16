@@ -80,7 +80,7 @@ export function SendEmailDialog({
         // 筛选相关分类的模板
         const filteredTemplates = data.filter(
           (t: EmailTemplate) =>
-            t.category === entityType || t.category === 'general' || t.is_active
+            t.category === entityType || t.category === 'general'
         );
         setTemplates(filteredTemplates);
       }

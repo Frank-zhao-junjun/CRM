@@ -18,7 +18,7 @@ export async function GET(request: NextRequest) {
     const months = parseInt(searchParams.get('months') || '6', 10);
     const includeActual = searchParams.get('includeActual') === 'true';
 
-    const client = getSupabaseClient();
+    const client = await getSupabaseClient();
 
     // 计算日期范围
     const endDate = new Date();

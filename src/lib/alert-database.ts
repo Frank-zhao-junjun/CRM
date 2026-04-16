@@ -18,7 +18,7 @@ import type {
  * 获取所有预警规则
  */
 export async function getAllAlertRules(): Promise<AlertRule[]> {
-  const client = getSupabaseClient();
+  const client = await getSupabaseClient();
   const { data, error } = await client
     .from('alert_rules')
     .select('*')
@@ -31,7 +31,7 @@ export async function getAllAlertRules(): Promise<AlertRule[]> {
  * 获取激活的预警规则
  */
 export async function getActiveAlertRules(): Promise<AlertRule[]> {
-  const client = getSupabaseClient();
+  const client = await getSupabaseClient();
   const { data, error } = await client
     .from('alert_rules')
     .select('*')
@@ -45,7 +45,7 @@ export async function getActiveAlertRules(): Promise<AlertRule[]> {
  * 根据ID获取预警规则
  */
 export async function getAlertRuleById(id: string): Promise<AlertRule | undefined> {
-  const client = getSupabaseClient();
+  const client = await getSupabaseClient();
   const { data, error } = await client
     .from('alert_rules')
     .select('*')
@@ -61,7 +61,7 @@ export async function getAlertRuleById(id: string): Promise<AlertRule | undefine
 export async function createAlertRule(
   req: CreateAlertRuleRequest
 ): Promise<AlertRule> {
-  const client = getSupabaseClient();
+  const client = await getSupabaseClient();
   const now = new Date().toISOString();
   const ruleData = {
     name: req.name,
@@ -94,7 +94,7 @@ export async function updateAlertRule(
   id: string,
   req: UpdateAlertRuleRequest
 ): Promise<AlertRule | null> {
-  const client = getSupabaseClient();
+  const client = await getSupabaseClient();
   const updates: Record<string, unknown> = {
     updated_at: new Date().toISOString(),
   };
@@ -122,7 +122,7 @@ export async function updateAlertRule(
  * 删除预警规则
  */
 export async function deleteAlertRule(id: string): Promise<boolean> {
-  const client = getSupabaseClient();
+  const client = await getSupabaseClient();
   const { error } = await client
     .from('alert_rules')
     .delete()
@@ -135,7 +135,7 @@ export async function deleteAlertRule(id: string): Promise<boolean> {
  * 切换预警规则状态
  */
 export async function toggleAlertRule(id: string): Promise<AlertRule | null> {
-  const client = getSupabaseClient();
+  const client = await getSupabaseClient();
   const { data: existing, error: fetchError } = await client
     .from('alert_rules')
     .select('is_active')
@@ -166,7 +166,7 @@ export async function getAlertRecords(
   page: number = 1,
   pageSize: number = 20
 ): Promise<{ data: AlertRecord[]; total: number }> {
-  const client = getSupabaseClient();
+  const client = await getSupabaseClient();
   const offset = (page - 1) * pageSize;
 
   const { data, error, count } = await client
@@ -186,7 +186,7 @@ export async function getAlertRecords(
  * 获取所有预警记录
  */
 export async function getAllAlertRecords(): Promise<AlertRecord[]> {
-  const client = getSupabaseClient();
+  const client = await getSupabaseClient();
   const { data, error } = await client
     .from('alert_records')
     .select('*')
@@ -199,7 +199,7 @@ export async function getAllAlertRecords(): Promise<AlertRecord[]> {
  * 根据规则ID获取预警记录
  */
 export async function getAlertRecordsByRuleId(ruleId: string): Promise<AlertRecord[]> {
-  const client = getSupabaseClient();
+  const client = await getSupabaseClient();
   const { data, error } = await client
     .from('alert_records')
     .select('*')
@@ -213,7 +213,7 @@ export async function getAlertRecordsByRuleId(ruleId: string): Promise<AlertReco
  * 获取未读的预警记录
  */
 export async function getUnreadAlertRecords(): Promise<AlertRecord[]> {
-  const client = getSupabaseClient();
+  const client = await getSupabaseClient();
   const { data, error } = await client
     .from('alert_records')
     .select('*')
@@ -229,7 +229,7 @@ export async function getUnreadAlertRecords(): Promise<AlertRecord[]> {
 export async function createAlertRecord(
   record: Omit<AlertRecord, 'id' | 'isRead' | 'isResolved' | 'createdAt'>
 ): Promise<AlertRecord> {
-  const client = getSupabaseClient();
+  const client = await getSupabaseClient();
   const recordData = {
     rule_id: record.ruleId,
     rule_name: record.ruleName,
@@ -260,7 +260,7 @@ export async function createAlertRecord(
  * 标记预警记录为已读
  */
 export async function markAlertAsRead(id: string): Promise<boolean> {
-  const client = getSupabaseClient();
+  const client = await getSupabaseClient();
   const { error } = await client
     .from('alert_records')
     .update({ is_read: true })
@@ -273,7 +273,7 @@ export async function markAlertAsRead(id: string): Promise<boolean> {
  * 标记所有预警记录为已读
  */
 export async function markAllAlertsAsRead(): Promise<void> {
-  const client = getSupabaseClient();
+  const client = await getSupabaseClient();
   const { error } = await client
     .from('alert_records')
     .update({ is_read: true })
@@ -288,7 +288,7 @@ export async function resolveAlert(
   id: string,
   resolvedBy: string
 ): Promise<boolean> {
-  const client = getSupabaseClient();
+  const client = await getSupabaseClient();
   const { error } = await client
     .from('alert_records')
     .update({
@@ -305,7 +305,7 @@ export async function resolveAlert(
  * 删除预警记录
  */
 export async function deleteAlertRecord(id: string): Promise<boolean> {
-  const client = getSupabaseClient();
+  const client = await getSupabaseClient();
   const { error } = await client
     .from('alert_records')
     .delete()
@@ -320,10 +320,10 @@ export async function deleteAlertRecord(id: string): Promise<boolean> {
  * 获取预警统计信息
  */
 export async function getAlertStats(): Promise<AlertStats> {
-  const client = getSupabaseClient();
+  const client = await getSupabaseClient();
   const now = new Date();
-  const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString();
-  const weekStart = new Date(todayStart.getTime() - 7 * 24 * 60 * 60 * 1000).toISOString();
+  const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const weekStart = new Date(todayStart.getTime() - 7 * 24 * 60 * 60 * 1000);
 
   const { data, error } = await client
     .from('alert_records')

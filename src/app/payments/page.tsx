@@ -1,528 +1,296 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useCRM } from '@/lib/crm-context';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { 
-  Select, 
-  SelectContent, 
-  SelectItem, 
-  SelectTrigger, 
-  SelectValue 
-} from '@/components/ui/select';
-import { 
-  Dialog, 
-  DialogContent, 
-  DialogHeader, 
-  DialogTitle,
-  DialogFooter 
-} from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { 
-  Calendar, 
-  Search, 
-  Plus, 
-  DollarSign, 
-  AlertTriangle, 
-  CheckCircle, 
-  Clock, 
-  TrendingUp, 
-  ArrowRight, 
-  Receipt 
-} from 'lucide-react';
-import { PaymentPlan, PaymentStats, PAYMENT_STATUS_CONFIG, PAYMENT_METHOD_CONFIG } from '@/lib/crm-types';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { CreditCard, DollarSign, AlertTriangle, CheckCircle, Clock, Search, TrendingUp, Building2, Calendar } from 'lucide-react';
 
-// 统计卡片组件
-function StatCard({ title, value, subtitle, icon: Icon, colorClass }: {
-  title: string;
-  value: string;
-  subtitle?: string;
-  icon: React.ElementType;
-  colorClass: string;
-}) {
-  return (
-    <Card>
-      <CardContent className="p-4">
-        <div className="flex items-center justify-between">
-          <div>
-            <p className="text-sm text-muted-foreground">{title}</p>
-            <p className="text-2xl font-bold">{value}</p>
-            {subtitle && <p className="text-xs text-muted-foreground mt-1">{subtitle}</p>}
-          </div>
-          <div className={`p-3 rounded-full ${colorClass}`}>
-            <Icon className="h-5 w-5" />
-          </div>
-        </div>
-      </CardContent>
-    </Card>
-  );
-}
-
-// 回款项组件
-function PaymentRow({ payment, onRecord }: { 
-  payment: PaymentPlan; 
-  onRecord: () => void;
-}) {
-  const statusConfig = PAYMENT_STATUS_CONFIG[payment.status];
-  const isOverdue = payment.isOverdue && payment.status !== 'paid' && payment.status !== 'cancelled';
-  
-  return (
-    <div className="flex items-center justify-between p-4 border-b hover:bg-muted/50">
-      <div className="flex-1">
-        <div className="flex items-center gap-2">
-          <span className="font-medium">{payment.title}</span>
-          {isOverdue && (
-            <Badge variant="destructive" className="text-xs">
-              <AlertTriangle className="h-3 w-3 mr-1" />
-              逾期{payment.overdueDays}天
-            </Badge>
-          )}
-        </div>
-        <div className="flex items-center gap-4 mt-1 text-sm text-muted-foreground">
-          <span>{payment.customerName || '-'}</span>
-          <span>计划编号: {payment.planNumber}</span>
-          {payment.dueDate && <span>到期日: {payment.dueDate}</span>}
-        </div>
-      </div>
-      
-      <div className="flex items-center gap-6">
-        <div className="text-right">
-          <div className="flex items-center gap-2">
-            <span className="font-semibold">¥{payment.pendingAmount.toLocaleString()}</span>
-            <span className="text-sm text-muted-foreground">/ ¥{payment.totalAmount.toLocaleString()}</span>
-          </div>
-          <div className="w-24 h-1.5 bg-gray-200 rounded-full mt-1 overflow-hidden">
-            <div 
-              className={`h-full ${statusConfig.bgColor}`}
-              style={{ width: `${(payment.paidAmount / payment.totalAmount) * 100}%` }}
-            />
-          </div>
-        </div>
-        
-        <Badge className={statusConfig.className}>
-          {statusConfig.label}
-        </Badge>
-        
-        <div className="flex gap-2">
-          {payment.status !== 'paid' && payment.status !== 'cancelled' && (
-            <Button size="sm" onClick={onRecord}>登记回款</Button>
-          )}
-        </div>
-      </div>
-    </div>
-  );
+interface PaymentDisplay {
+  id: string;
+  customerId: string;
+  customerName: string;
+  opportunityId: string;
+  opportunityName: string;
+  amount: number;
+  paidAmount: number;
+  status: 'pending' | 'partial' | 'completed' | 'overdue';
+  dueDate: string;
 }
 
 export default function PaymentsPage() {
-  const { state, addPaymentPlan, updatePaymentPlan } = useCRM();
+  const { opportunities } = useCRM();
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
-  const [activeTab, setActiveTab] = useState('all');
-  const [showAddDialog, setShowAddDialog] = useState(false);
   const [showRecordDialog, setShowRecordDialog] = useState(false);
-  const [selectedPayment, setSelectedPayment] = useState<PaymentPlan | null>(null);
+  const [selectedPayment, setSelectedPayment] = useState<PaymentDisplay | null>(null);
   const [recordAmount, setRecordAmount] = useState('');
-  const [recordMethod, setRecordMethod] = useState<string>('');
-  const [recordNotes, setRecordNotes] = useState('');
-  
-  // 新建回款计划表单
-  const [newPlan, setNewPlan] = useState({
-    title: '',
-    customerId: '',
-    customerName: '',
-    opportunityId: '',
-    opportunityName: '',
-    totalAmount: '',
-    dueDate: '',
-  });
+
+  // 从商机中提取回款数据
+  const payments = useMemo<PaymentDisplay[]>(() => {
+    return opportunities
+      .filter(opp => ['negotiation', 'closed_won'].includes(opp.stage))
+      .map(opp => {
+        const isOverdue = opp.expectedCloseDate && new Date(opp.expectedCloseDate) < new Date() && opp.stage !== 'closed_won';
+        return {
+          id: opp.id,
+          customerId: opp.customerId,
+          customerName: opp.customerName,
+          opportunityId: opp.id,
+          opportunityName: opp.title,
+          amount: opp.value,
+          paidAmount: opp.stage === 'closed_won' ? opp.value : 0,
+          status: opp.stage === 'closed_won' ? 'completed' : isOverdue ? 'overdue' : 'pending',
+          dueDate: opp.expectedCloseDate || new Date().toISOString().split('T')[0],
+        };
+      });
+  }, [opportunities]);
 
   // 计算统计数据
-  const stats: PaymentStats = useMemo(() => {
-    const plans = state.paymentPlans || [];
-    const totalReceivable = plans.reduce((sum, p) => sum + p.totalAmount, 0);
-    const totalReceived = plans.reduce((sum, p) => sum + p.paidAmount, 0);
-    const overduePlans = plans.filter(p => p.isOverdue && p.status !== 'paid' && p.status !== 'cancelled');
-    const totalOverdue = overduePlans.reduce((sum, p) => sum + p.pendingAmount, 0);
+  const stats = useMemo(() => {
+    const totalReceivable = payments.reduce((sum, p) => sum + p.amount, 0);
+    const totalReceived = payments.reduce((sum, p) => sum + p.paidAmount, 0);
+    const overduePayments = payments.filter(p => p.status === 'overdue');
+    const totalOverdue = overduePayments.reduce((sum, p) => sum + (p.amount - p.paidAmount), 0);
     
     return {
       totalReceivable,
       totalReceived,
       totalOverdue,
-      overdueCount: overduePlans.length,
-      pendingCount: plans.filter(p => p.status === 'pending' || p.status === 'partial').length,
-      paidCount: plans.filter(p => p.status === 'paid').length,
+      overdueCount: overduePayments.length,
+      pendingCount: payments.filter(p => p.status === 'pending').length,
+      completedCount: payments.filter(p => p.status === 'completed').length,
       collectionRate: totalReceivable > 0 ? (totalReceived / totalReceivable) * 100 : 0,
       overdueRate: totalReceivable > 0 ? (totalOverdue / totalReceivable) * 100 : 0,
     };
-  }, [state.paymentPlans]);
+  }, [payments]);
 
   // 筛选回款计划
   const filteredPayments = useMemo(() => {
-    let plans = state.paymentPlans || [];
+    let filtered = [...payments];
     
-    // 按标签筛选
-    if (activeTab === 'overdue') {
-      plans = plans.filter(p => p.isOverdue && p.status !== 'paid' && p.status !== 'cancelled');
-    } else if (activeTab === 'pending') {
-      plans = plans.filter(p => p.status === 'pending' || p.status === 'partial');
-    } else if (activeTab === 'paid') {
-      plans = plans.filter(p => p.status === 'paid');
-    }
-    
-    // 按状态筛选
-    if (statusFilter !== 'all') {
-      plans = plans.filter(p => p.status === statusFilter);
-    }
-    
-    // 按搜索词筛选
     if (searchTerm) {
-      const term = searchTerm.toLowerCase();
-      plans = plans.filter(p => 
-        p.title.toLowerCase().includes(term) ||
-        p.customerName?.toLowerCase().includes(term) ||
-        p.planNumber.toLowerCase().includes(term)
+      filtered = filtered.filter(p => 
+        p.customerName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        p.opportunityName.toLowerCase().includes(searchTerm.toLowerCase())
       );
     }
     
-    return plans.sort((a, b) => {
-      if (a.isOverdue && !b.isOverdue) return -1;
-      if (!a.isOverdue && b.isOverdue) return 1;
-      return new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime();
-    });
-  }, [state.paymentPlans, activeTab, statusFilter, searchTerm]);
-
-  // 创建新回款计划
-  const handleCreatePlan = () => {
-    if (!newPlan.title || !newPlan.totalAmount || !newPlan.dueDate) {
-      return;
+    if (statusFilter !== 'all') {
+      filtered = filtered.filter(p => p.status === statusFilter);
     }
     
-    const today = new Date().toISOString().split('T')[0];
-    const dueDate = newPlan.dueDate;
-    
-    const plan: Omit<PaymentPlan, 'id' | 'createdAt' | 'updatedAt'> = {
-      planNumber: `PP-${new Date().getFullYear()}${String(new Date().getMonth() + 1).padStart(2, '0')}${String((state.paymentPlans?.length || 0) + 1).padStart(4, '0')}`,
-      title: newPlan.title,
-      customerId: newPlan.customerId || undefined,
-      customerName: newPlan.customerName || state.customers.find(c => c.id === newPlan.customerId)?.name,
-      opportunityId: newPlan.opportunityId || undefined,
-      opportunityName: newPlan.opportunityName || state.opportunities.find(o => o.id === newPlan.opportunityId)?.title,
-      totalAmount: parseFloat(newPlan.totalAmount),
-      paidAmount: 0,
-      pendingAmount: parseFloat(newPlan.totalAmount),
-      dueDate: newPlan.dueDate,
-      status: 'pending',
-      installments: [{
-        id: `inst-${Date.now()}`,
-        planId: `payment-${Date.now()}`,
-        installmentNumber: 1,
-        amount: parseFloat(newPlan.totalAmount),
-        dueDate: newPlan.dueDate,
-        paidAmount: 0,
-        status: 'pending',
-      }],
-      overdueDays: dueDate < today ? Math.ceil((new Date(today).getTime() - new Date(dueDate).getTime()) / (1000 * 60 * 60 * 24)) : 0,
-      isOverdue: dueDate < today,
-    };
-    
-    addPaymentPlan(plan);
-    setShowAddDialog(false);
-    setNewPlan({
-      title: '',
-      customerId: '',
-      customerName: '',
-      opportunityId: '',
-      opportunityName: '',
-      totalAmount: '',
-      dueDate: '',
-    });
-  };
+    return filtered;
+  }, [payments, searchTerm, statusFilter]);
 
-  // 登记回款
-  const handleRecordPayment = () => {
-    if (!selectedPayment || !recordAmount) return;
-    
-    const amount = parseFloat(recordAmount);
-    const newPaidAmount = selectedPayment.paidAmount + amount;
-    const newPendingAmount = selectedPayment.totalAmount - newPaidAmount;
-    
-    updatePaymentPlan(selectedPayment.id, {
-      paidAmount: newPaidAmount,
-      pendingAmount: Math.max(0, newPendingAmount),
-      status: newPaidAmount >= selectedPayment.totalAmount ? 'paid' : 'partial',
-      paymentMethod: recordMethod,
-    });
-    
-    setShowRecordDialog(false);
-    setSelectedPayment(null);
+  const handleRecordPayment = (payment: PaymentDisplay) => {
+    setSelectedPayment(payment);
     setRecordAmount('');
-    setRecordMethod('');
-    setRecordNotes('');
+    setShowRecordDialog(true);
   };
 
   return (
     <div className="container mx-auto py-6 space-y-6">
-      {/* 页面标题 */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold flex items-center gap-2">
-            <Receipt className="h-8 w-8" />
-            回款管理
-          </h1>
-          <p className="text-muted-foreground mt-1">管理应收款项，跟踪回款进度</p>
+          <h1 className="text-3xl font-bold">回款管理</h1>
+          <p className="text-muted-foreground">管理和追踪客户回款情况</p>
         </div>
-        <Button onClick={() => setShowAddDialog(true)}>
-          <Plus className="h-4 w-4 mr-2" />
-          新建回款计划
-        </Button>
       </div>
 
       {/* 统计卡片 */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard
-          title="应收总额"
-          value={`¥${stats.totalReceivable.toLocaleString()}`}
-          icon={DollarSign}
-          colorClass="bg-blue-100 text-blue-600"
-        />
-        <StatCard
-          title="已收金额"
-          value={`¥${stats.totalReceived.toLocaleString()}`}
-          subtitle={`回款率 ${stats.collectionRate.toFixed(1)}%`}
-          icon={CheckCircle}
-          colorClass="bg-green-100 text-green-600"
-        />
-        <StatCard
-          title="逾期金额"
-          value={`¥${stats.totalOverdue.toLocaleString()}`}
-          subtitle={`${stats.overdueCount} 笔逾期`}
-          icon={AlertTriangle}
-          colorClass="bg-red-100 text-red-600"
-        />
-        <StatCard
-          title="待收款"
-          value={`¥${(stats.totalReceivable - stats.totalReceived).toLocaleString()}`}
-          subtitle={`${stats.pendingCount} 笔待收`}
-          icon={Clock}
-          colorClass="bg-orange-100 text-orange-600"
-        />
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">应收总额</CardTitle>
+            <DollarSign className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">¥{stats.totalReceivable.toLocaleString()}</div>
+          </CardContent>
+        </Card>
+        
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">已回款</CardTitle>
+            <CheckCircle className="h-4 w-4 text-green-500" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-green-600">¥{stats.totalReceived.toLocaleString()}</div>
+            <p className="text-xs text-muted-foreground">{stats.collectionRate.toFixed(1)}% 回款率</p>
+          </CardContent>
+        </Card>
+        
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">逾期金额</CardTitle>
+            <AlertTriangle className="h-4 w-4 text-red-500" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-red-600">¥{stats.totalOverdue.toLocaleString()}</div>
+            <p className="text-xs text-muted-foreground">{stats.overdueCount} 笔逾期</p>
+          </CardContent>
+        </Card>
+        
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">待回款</CardTitle>
+            <Clock className="h-4 w-4 text-yellow-500" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-yellow-600">{stats.pendingCount}</div>
+            <p className="text-xs text-muted-foreground">笔待回款</p>
+          </CardContent>
+        </Card>
       </div>
 
-      {/* 筛选和标签 */}
-      <div className="flex items-center gap-4">
-        <div className="relative flex-1 max-w-sm">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+      {/* 筛选和搜索 */}
+      <div className="flex flex-col sm:flex-row gap-4">
+        <div className="relative flex-1">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
-            placeholder="搜索回款计划..."
+            placeholder="搜索客户或项目..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-9"
+            className="pl-10"
           />
         </div>
-        
         <Select value={statusFilter} onValueChange={setStatusFilter}>
-          <SelectTrigger className="w-[160px]">
-            <SelectValue placeholder="状态筛选" />
+          <SelectTrigger className="w-[180px]">
+            <SelectValue placeholder="筛选状态" />
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">全部状态</SelectItem>
-            <SelectItem value="pending">待收款</SelectItem>
+            <SelectItem value="pending">待回款</SelectItem>
             <SelectItem value="partial">部分回款</SelectItem>
-            <SelectItem value="overdue">已逾期</SelectItem>
-            <SelectItem value="paid">已结清</SelectItem>
+            <SelectItem value="completed">已完成</SelectItem>
+            <SelectItem value="overdue">逾期</SelectItem>
           </SelectContent>
         </Select>
       </div>
 
-      {/* 标签页 */}
-      <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList>
-          <TabsTrigger value="all">全部</TabsTrigger>
-          <TabsTrigger value="overdue" className="text-red-600">
-            <AlertTriangle className="h-4 w-4 mr-1" />
-            逾期 ({stats.overdueCount})
-          </TabsTrigger>
-          <TabsTrigger value="pending">
-            <Clock className="h-4 w-4 mr-1" />
-            待收款 ({stats.pendingCount})
-          </TabsTrigger>
-          <TabsTrigger value="paid">
-            <CheckCircle className="h-4 w-4 mr-1" />
-            已结清 ({stats.paidCount})
-          </TabsTrigger>
-        </TabsList>
-
-        <TabsContent value={activeTab} className="mt-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>回款计划列表</CardTitle>
-            </CardHeader>
-            <CardContent className="p-0">
-              {filteredPayments.length === 0 ? (
-                <div className="text-center py-12 text-muted-foreground">
-                  <Receipt className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                  <p>暂无回款计划</p>
-                  <Button variant="link" onClick={() => setShowAddDialog(true)}>
-                    创建第一个回款计划
-                  </Button>
-                </div>
-              ) : (
-                filteredPayments.map(payment => (
-                  <PaymentRow
-                    key={payment.id}
-                    payment={payment}
-                    onRecord={() => {
-                      setSelectedPayment(payment);
-                      setShowRecordDialog(true);
-                    }}
-                  />
-                ))
-              )}
-            </CardContent>
-          </Card>
-        </TabsContent>
-      </Tabs>
-
-      {/* 新建回款计划对话框 */}
-      <Dialog open={showAddDialog} onOpenChange={setShowAddDialog}>
-        <DialogContent className="max-w-lg">
-          <DialogHeader>
-            <DialogTitle>新建回款计划</DialogTitle>
-          </DialogHeader>
+      {/* 回款列表 */}
+      <Card>
+        <CardHeader>
+          <CardTitle>回款计划列表</CardTitle>
+          <CardDescription>共 {filteredPayments.length} 条记录</CardDescription>
+        </CardHeader>
+        <CardContent>
           <div className="space-y-4">
-            <div>
-              <Label>计划名称 *</Label>
-              <Input
-                value={newPlan.title}
-                onChange={(e) => setNewPlan({ ...newPlan, title: e.target.value })}
-                placeholder="例如：XX项目首付款"
-              />
-            </div>
-            
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label>关联客户</Label>
-                <Select value={newPlan.customerId} onValueChange={(v) => setNewPlan({ ...newPlan, customerId: v, customerName: state.customers.find(c => c.id === v)?.name || '' })}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="选择客户" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {state.customers.map(c => (
-                      <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+            {filteredPayments.length === 0 ? (
+              <div className="text-center py-8 text-muted-foreground">
+                暂无回款计划
               </div>
-              
-              <div>
-                <Label>关联商机</Label>
-                <Select value={newPlan.opportunityId} onValueChange={(v) => setNewPlan({ ...newPlan, opportunityId: v, opportunityName: state.opportunities.find(o => o.id === v)?.title || '' })}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="选择商机" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {state.opportunities.map(o => (
-                      <SelectItem key={o.id} value={o.id}>{o.title}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-            
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label>回款金额 *</Label>
-                <Input
-                  type="number"
-                  value={newPlan.totalAmount}
-                  onChange={(e) => setNewPlan({ ...newPlan, totalAmount: e.target.value })}
-                  placeholder="0.00"
-                />
-              </div>
-              
-              <div>
-                <Label>到期日期 *</Label>
-                <Input
-                  type="date"
-                  value={newPlan.dueDate}
-                  onChange={(e) => setNewPlan({ ...newPlan, dueDate: e.target.value })}
-                />
-              </div>
-            </div>
+            ) : (
+              filteredPayments.map((payment) => (
+                <div 
+                  key={payment.id}
+                  className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50 transition-colors"
+                >
+                  <div className="flex-1 space-y-1">
+                    <div className="flex items-center gap-2">
+                      <span className="font-medium">{payment.customerName}</span>
+                      {payment.status === 'overdue' && (
+                        <Badge variant="destructive" className="text-xs">
+                          <AlertTriangle className="h-3 w-3 mr-1" />
+                          逾期
+                        </Badge>
+                      )}
+                      {payment.status === 'completed' && (
+                        <Badge variant="secondary" className="text-xs bg-green-100 text-green-800">
+                          <CheckCircle className="h-3 w-3 mr-1" />
+                          已回款
+                        </Badge>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                      <span className="flex items-center gap-1">
+                        <Building2 className="h-3 w-3" />
+                        {payment.opportunityName}
+                      </span>
+                      <span className="flex items-center gap-1">
+                        <Calendar className="h-3 w-3" />
+                        {payment.dueDate}
+                      </span>
+                    </div>
+                  </div>
+                  
+                  <div className="flex items-center gap-6">
+                    <div className="text-right">
+                      <div className="flex items-center gap-2">
+                        <span className="font-semibold">¥{(payment.amount - payment.paidAmount).toLocaleString()}</span>
+                        <span className="text-sm text-muted-foreground">/ ¥{payment.amount.toLocaleString()}</span>
+                      </div>
+                      <div className="w-32 h-2 bg-gray-200 rounded-full overflow-hidden mt-1">
+                        <div 
+                          className="h-full bg-green-500 rounded-full transition-all"
+                          style={{ width: `${(payment.paidAmount / payment.amount) * 100}%` }}
+                        />
+                      </div>
+                    </div>
+                    
+                    {payment.status !== 'completed' && (
+                      <Button 
+                        size="sm" 
+                        onClick={() => handleRecordPayment(payment)}
+                      >
+                        登记回款
+                      </Button>
+                    )}
+                  </div>
+                </div>
+              ))
+            )}
           </div>
-          
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setShowAddDialog(false)}>取消</Button>
-            <Button onClick={handleCreatePlan}>创建计划</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+        </CardContent>
+      </Card>
 
       {/* 登记回款对话框 */}
       <Dialog open={showRecordDialog} onOpenChange={setShowRecordDialog}>
-        <DialogContent className="max-w-md">
+        <DialogContent>
           <DialogHeader>
             <DialogTitle>登记回款</DialogTitle>
           </DialogHeader>
           {selectedPayment && (
-            <div className="space-y-4">
-              <div className="bg-muted p-3 rounded-lg">
-                <p className="font-medium">{selectedPayment.title}</p>
-                <p className="text-sm text-muted-foreground">
-                  待收金额: ¥{selectedPayment.pendingAmount.toLocaleString()}
-                </p>
+            <div className="space-y-4 py-4">
+              <div className="space-y-2">
+                <Label>客户</Label>
+                <div className="font-medium">{selectedPayment.customerName}</div>
               </div>
-              
-              <div>
-                <Label>回款金额 *</Label>
+              <div className="space-y-2">
+                <Label>项目</Label>
+                <div className="font-medium">{selectedPayment.opportunityName}</div>
+              </div>
+              <div className="space-y-2">
+                <Label>待回金额</Label>
+                <div className="font-medium text-lg">
+                  ¥{(selectedPayment.amount - selectedPayment.paidAmount).toLocaleString()}
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="amount">回款金额</Label>
                 <Input
+                  id="amount"
                   type="number"
+                  placeholder="请输入回款金额"
                   value={recordAmount}
                   onChange={(e) => setRecordAmount(e.target.value)}
-                  placeholder="请输入回款金额"
-                  max={selectedPayment.pendingAmount}
-                />
-                <p className="text-xs text-muted-foreground mt-1">
-                  最大可登记金额: ¥{selectedPayment.pendingAmount.toLocaleString()}
-                </p>
-              </div>
-              
-              <div>
-                <Label>收款方式</Label>
-                <Select value={recordMethod} onValueChange={setRecordMethod}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="选择收款方式" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="bank_transfer">🏦 银行转账</SelectItem>
-                    <SelectItem value="cash">💵 现金</SelectItem>
-                    <SelectItem value="credit_card">💳 信用卡</SelectItem>
-                    <SelectItem value="check">📝 支票</SelectItem>
-                    <SelectItem value="other">💰 其他</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              
-              <div>
-                <Label>备注</Label>
-                <Textarea
-                  value={recordNotes}
-                  onChange={(e) => setRecordNotes(e.target.value)}
-                  placeholder="添加备注信息..."
-                  rows={2}
                 />
               </div>
             </div>
           )}
-          
           <DialogFooter>
-            <Button variant="outline" onClick={() => setShowRecordDialog(false)}>取消</Button>
-            <Button onClick={handleRecordPayment}>确认登记</Button>
+            <Button variant="outline" onClick={() => setShowRecordDialog(false)}>
+              取消
+            </Button>
+            <Button onClick={() => setShowRecordDialog(false)}>
+              确认登记
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

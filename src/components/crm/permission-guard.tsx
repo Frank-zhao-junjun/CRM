@@ -54,11 +54,11 @@ interface PermissionGuardProps {
   // 子元素
   children: ReactNode;
   // 包裹元素的标签
-  as?: keyof JSX.IntrinsicElements;
+  as?: 'div' | 'span' | 'button' | 'a' | 'section' | 'article';
 }
 
 // PermissionGuard 组件
-export function PermissionGuard({
+function PermissionGuard({
   permission,
   permissions = [],
   mode = 'all',
@@ -196,13 +196,7 @@ interface PermissionBadgeProps {
   size?: 'sm' | 'md' | 'lg';
 }
 
-// 导出所有权限相关组件
-export const PermissionComponents = {
-  Guard: PermissionGuard,
-  Button: PermissionButton,
-  Link: PermissionLink,
-  Page: PermissionPage,
-  Badge: PermissionBadge,
-};
+// 导出权限组件
+export { PermissionGuard };
 
 export default PermissionGuard;

@@ -1,6 +1,6 @@
 'use client';
 
-import { createContext, useContext, useState, useCallback, useEffect, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useCallback, useEffect, useMemo, ReactNode } from 'react';
 import { Customer, Contact, SalesOpportunity, DashboardStats, Activity, OpportunityStage, SalesLead, Product, PaymentPlan, Task } from './crm-types';
 
 interface CRMContextType {
@@ -711,7 +711,7 @@ export function CRMProvider({ children }: { children: ReactNode }) {
     };
     await apiPost('addPaymentPlan', newPlan);
     setPaymentPlans(prev => [...prev, newPlan]);
-    addActivity('created', 'lead' as any, newPlan.id, newPlan.title, `创建回款计划 "${newPlan.title}"`);
+    addActivity('created', 'lead' as any, newPlan.id, newPlan.customerName || '回款计划', `创建回款计划`);
   }, [addActivity]);
 
   const updatePaymentPlan = useCallback(async (id: string, updates: Partial<PaymentPlan>) => {
@@ -720,7 +720,7 @@ export function CRMProvider({ children }: { children: ReactNode }) {
     setPaymentPlans(prev => prev.map(p => p.id === id ? { ...p, ...updated } : p));
     const plan = paymentPlans.find(p => p.id === id);
     if (plan) {
-      addActivity('updated', 'lead' as any, id, plan.title, `更新回款计划 ${plan.title}`);
+      addActivity('updated', 'lead' as any, id, plan.customerName || '回款计划', `更新回款计划 ${plan.customerName || '回款计划'}`);
     }
   }, [paymentPlans, addActivity]);
 
@@ -729,7 +729,7 @@ export function CRMProvider({ children }: { children: ReactNode }) {
     const plan = paymentPlans.find(p => p.id === id);
     setPaymentPlans(prev => prev.filter(p => p.id !== id));
     if (plan) {
-      addActivity('deleted', 'lead' as any, id, plan.title, `删除回款计划 ${plan.title}`);
+      addActivity('deleted', 'lead' as any, id, plan.customerName || '回款计划', `删除回款计划 ${plan.customerName || '回款计划'}`);
     }
   }, [paymentPlans, addActivity]);
 
@@ -738,18 +738,43 @@ export function CRMProvider({ children }: { children: ReactNode }) {
     if (!plan) return;
     
     const newPaidAmount = plan.paidAmount + amount;
-    const newPendingAmount = Math.max(0, plan.totalAmount - newPaidAmount);
+    const newPendingAmount = Math.max(0, plan.amount - newPaidAmount);
     
     await updatePaymentPlan(planId, {
       paidAmount: newPaidAmount,
-      pendingAmount: newPendingAmount,
-      status: newPaidAmount >= plan.totalAmount ? 'paid' : 'partial',
-      paymentMethod: method as any,
+      status: newPaidAmount >= plan.amount ? 'completed' : 'partial',
     });
     
-    addActivity('updated', 'lead' as any, planId, plan.title, `登记回款 ¥${amount.toLocaleString()}`);
-  }, [paymentPlans, updatePaymentPlan, addActivity]);
+    addActivity('updated', 'lead' as any, planId, plan.customerName || '回款计划', `登记回款 ¥${amount.toLocaleString()}`);
 
+  }, [paymentPlans, updatePaymentPlan, addActivity]);
+	
+  // Calculate today and overdue payments
+  const todayPayments = useMemo(() => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    
+    return paymentPlans.filter(plan => {
+      if (!plan.dueDate || plan.status === 'completed') return false;
+      const dueDate = new Date(plan.dueDate);
+      return dueDate >= today && dueDate < tomorrow;
+    });
+  }, [paymentPlans]);
+
+  const overduePayments = useMemo(() => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    return paymentPlans.filter(plan => {
+      if (!plan.dueDate || plan.status === 'completed') return false;
+      const dueDate = new Date(plan.dueDate);
+      return dueDate < today;
+    });
+  }, [paymentPlans]);
+
+  // Task operations (V4.1 新增)
   // Task operations (V4.1 新增)
   const addTask = useCallback(async (task: Omit<Task, 'id' | 'createdAt' | 'updatedAt'>) => {
     const newTask: Task = {

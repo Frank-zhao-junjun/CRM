@@ -68,7 +68,7 @@ export async function POST(request: NextRequest) {
       );
     }
     
-    const client = getSupabaseClient();
+    const client = await getSupabaseClient();
     
     // 检查角色名是否已存在
     const { data: existingRole } = await client
@@ -112,7 +112,7 @@ export async function POST(request: NextRequest) {
         .in('name', permissions);
       
       const permIdMap = new Map<string, string>();
-      perms?.forEach((p: Permission) => {
+      perms?.forEach((p: { id: string; name: string }) => {
         permIdMap.set(p.name, p.id);
       });
       
@@ -164,7 +164,7 @@ export async function PUT(request: NextRequest) {
       );
     }
     
-    const client = getSupabaseClient();
+    const client = await getSupabaseClient();
     
     // 检查角色是否存在
     const { data: existingRole } = await client
@@ -210,12 +210,12 @@ export async function PUT(request: NextRequest) {
     if (description !== undefined) {
       updates.description = description;
     }
-    updates.updated_at = new Date().toISOString();
+    updates.updated_at = new Date();
     
     if (Object.keys(updates).length > 0) {
       const { error: updateError } = await client
         .from('roles')
-        .update(updates)
+        .update(updates as Record<string, unknown>)
         .eq('id', id);
       
       if (updateError) {
@@ -248,7 +248,7 @@ export async function PUT(request: NextRequest) {
           .in('name', permissions);
         
         const permIdMap = new Map<string, string>();
-        perms?.forEach((p: Permission) => {
+        perms?.forEach((p: { id: string; name: string }) => {
           permIdMap.set(p.name, p.id);
         });
         
@@ -300,7 +300,7 @@ export async function DELETE(request: NextRequest) {
       );
     }
     
-    const client = getSupabaseClient();
+    const client = await getSupabaseClient();
     
     // 检查角色是否存在
     const { data: existingRole } = await client

@@ -38,3 +38,14 @@ export function CRMLayout({ children }: { children: React.ReactNode }) {
     </CRMProvider>
   );
 }
+
+// 报表布局 - 使用相同的 CRM 布局
+export function ReportsLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <CRMProvider>
+      <MobileNavProvider>
+        <LayoutContent>{children}</LayoutContent>
+      </MobileNavProvider>
+    </CRMProvider>
+  );
+}

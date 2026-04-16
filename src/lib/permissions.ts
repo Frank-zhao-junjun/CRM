@@ -186,7 +186,7 @@ export async function getUserPermissions(userId: string): Promise<Set<string>> {
     if (cached) return cached;
   }
   
-  const client = getSupabaseClient();
+  const client = await getSupabaseClient();
   
   // 查询用户的角色
   const { data: userRoles, error: userRolesError } = await client
@@ -278,7 +278,7 @@ export async function getAllRoles(): Promise<Array<{
   is_system: boolean;
   created_at: string;
 }>> {
-  const client = getSupabaseClient();
+  const client = await getSupabaseClient();
   const { data, error } = await client
     .from('roles')
     .select('*')
@@ -301,7 +301,7 @@ export async function getRoleWithPermissions(roleId: string): Promise<{
   is_system: boolean;
   permissions: string[];
 } | null> {
-  const client = getSupabaseClient();
+  const client = await getSupabaseClient();
   
   // 获取角色信息
   const { data: role, error: roleError } = await client
@@ -453,7 +453,7 @@ export function getCategoryLabel(category: string): string {
 
 // 初始化默认权限和角色
 export async function initializeDefaultPermissions(): Promise<void> {
-  const client = getSupabaseClient();
+  const client = await getSupabaseClient();
   
   // 检查是否已经初始化
   const { data: existingRoles } = await client

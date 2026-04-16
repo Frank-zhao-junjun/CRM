@@ -93,7 +93,7 @@ export default function NewInvoicePage() {
         ...prev,
         orderId: order.id,
         customerId: order.customerId,
-        customerName: order.customerName,
+        customerName: order.customerName || '未知客户',
       }));
       // 从订单items带入
       // 这里简化处理，实际可以从API获取订单详情
@@ -412,7 +412,7 @@ export default function NewInvoicePage() {
 // 需要导入 Table 组件
 import {
   Table,
-  TableBody as TableBodyComponent,
+  TableBody,
   TableCell,
   TableHead,
   TableHeader,

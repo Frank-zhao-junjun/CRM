@@ -8,7 +8,7 @@ import * as XLSX from 'xlsx';
 import * as db from '@/lib/crm-database';
 
 // 字段配置
-const ENTITY_COLUMNS: Record<string, { headers: string[]; keys: string[]; labels: Record<string, string> }> = {
+const ENTITY_COLUMNS: Record<string, { headers: string[]; keys: string[]; labels?: Record<string, Record<string, string>> }> = {
   customers: {
     headers: ['ID', '姓名', '邮箱', '电话', '公司', '状态', '行业', '网站', '地址', '备注', '创建时间', '更新时间'],
     keys: ['id', 'name', 'email', 'phone', 'company', 'status', 'industry', 'website', 'address', 'notes', 'created_at', 'updated_at'],
@@ -140,7 +140,7 @@ function generateCSV(data: ExportRecord[], config: typeof ENTITY_COLUMNS[string]
   for (const record of data) {
     const row = config.keys.map(key => {
       const value = record[key as keyof ExportRecord];
-      return escapeCSV(formatValue(key, value, config.labels));
+      return escapeCSV(formatValue(key, value, config.labels || {}));
     });
     rows.push(row);
   }
@@ -155,7 +155,7 @@ function generateExcel(data: ExportRecord[], config: typeof ENTITY_COLUMNS[strin
   for (const record of data) {
     const row = config.keys.map(key => {
       const value = record[key as keyof ExportRecord];
-      return formatValue(key, value, config.labels) as string | number | boolean | null;
+      return formatValue(key, value, config.labels || {}) as string | number | boolean | null;
     });
     rows.push(row);
   }
@@ -216,7 +216,7 @@ export async function GET(request: NextRequest) {
       });
     } else {
       const excel = generateExcel(data, config);
-      return new Response(excel, {
+      return new Response(new Uint8Array(excel), {
         status: 200,
         headers: {
           'Content-Type': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',

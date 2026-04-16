@@ -85,15 +85,17 @@ function validateRow(
   row: Record<string, string>,
   entityType: string,
   rowIndex: number
-): { valid: boolean; errors: Array<{ field: string; message: string }>; data: Record<string, unknown> } {
+): { rowIndex: number; valid: boolean; errors: Array<{ field: string; message: string }>; data: Record<string, unknown> } {
   const errors: Array<{ field: string; message: string }> = [];
   const config = ENTITY_FIELDS[entityType];
   const data: Record<string, unknown> = {};
+  let valid = true;
   
   for (const field of config.required) {
     const value = row[field]?.trim();
     if (!value) {
       errors.push({ field, message: `${field}不能为空` });
+      valid = false;
     } else {
       data[field] = value;
     }
@@ -134,7 +136,7 @@ function validateRow(
     }
   }
   
-  return { valid: errors.length === 0, errors, data };
+  return { rowIndex, valid: errors.length === 0, errors, data };
 }
 
 // 解析文件
@@ -177,13 +179,13 @@ async function createImportRecord(entityType: string, data: Record<string, unkno
   try {
     switch (entityType) {
       case 'customers':
-        return await db.createCustomer(data as Parameters<typeof db.createCustomer>[0]);
+        return await db.createCustomer(data as unknown as Parameters<typeof db.createCustomer>[0]);
       case 'contacts':
-        return await db.createContact(data as Parameters<typeof db.createContact>[0]);
+        return await db.createContact(data as unknown as Parameters<typeof db.createContact>[0]);
       case 'leads':
-        return await db.createLead(data as Parameters<typeof db.createLead>[0]);
+        return await db.createLead(data as unknown as Parameters<typeof db.createLead>[0]);
       case 'opportunities':
-        return await db.createOpportunity(data as Parameters<typeof db.createOpportunity>[0]);
+        return await db.createOpportunity(data as unknown as Parameters<typeof db.createOpportunity>[0]);
       default:
         return null;
     }

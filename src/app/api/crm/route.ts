@@ -431,7 +431,7 @@ export async function POST(request: NextRequest) {
         console.log('[Products API] updateProduct called but products table not available');
         // 返回成功响应，前端将使用本地状态
         return NextResponse.json({ 
-          id: id,
+          id: data.id,
           ...data,
           updatedAt: new Date().toISOString(),
           _note: 'Product updated in local state (database table pending)'
@@ -602,7 +602,6 @@ export async function PUT(request: NextRequest) {
           entityType: 'opportunity',
           entityId: updated.id,
           entityName: updated.title,
-          data: { oldStage: opportunity.stage, newStage: data.stage },
         }).catch(() => { /* 静默处理工作流错误 */ });
         
         return NextResponse.json(updated);
@@ -656,7 +655,7 @@ export async function PUT(request: NextRequest) {
           entity_type: 'lead' as any,
           entity_id: plan.id,
           entity_name: plan.title,
-          description: `创建回款计划 "${plan.title}"，金额 ¥${Number(plan.total_amount).toLocaleString()}`,
+          description: `创建回款计划 "${plan.title}"，金额 ¥${Number(plan.totalAmount).toLocaleString()}`,
           timestamp: new Date(),
         });
         return NextResponse.json(plan);

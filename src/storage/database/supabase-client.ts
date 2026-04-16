@@ -1,6 +1,6 @@
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
-import { execSync } from 'child_process';
 
+// Server-only module - do not import in client components
 let envLoaded = false;
 
 interface SupabaseCredentials {
@@ -8,20 +8,23 @@ interface SupabaseCredentials {
   anonKey: string;
 }
 
-function loadEnv(): void {
+async function loadEnv(): Promise<void> {
   if (envLoaded || (process.env.COZE_SUPABASE_URL && process.env.COZE_SUPABASE_ANON_KEY)) {
     return;
   }
 
   try {
     // 尝试加载 dotenv 配置
-    import('dotenv').then((dotenv) => {
+    try {
+      const dotenv = await import('dotenv');
       dotenv.config();
-    }).catch(() => {
+    } catch {
       // dotenv not available
-    });
+    }
 
-    const pythonCode = `
+    // Only try to load from cloud credentials on server side
+    if (typeof window === 'undefined') {
+      const pythonCode = `
 import os
 import sys
 try:
@@ -35,25 +38,27 @@ except Exception as e:
     print(f"# Error: {e}", file=sys.stderr)
 `;
 
-    const output = execSync(`python3 -c '${pythonCode.replace(/'/g, "'\"'\"'")}'`, {
-      encoding: 'utf-8',
-      timeout: 10000,
-      stdio: ['pipe', 'pipe', 'pipe'],
-    });
+      const { execSync } = await import('child_process');
+      const output = execSync(`python3 -c '${pythonCode.replace(/'/g, "'\"'\"'")}'`, {
+        encoding: 'utf-8',
+        timeout: 10000,
+        stdio: ['pipe', 'pipe', 'pipe'],
+      });
 
-    const lines = output.trim().split('\n');
-    for (const line of lines) {
-      if (line.startsWith('#')) continue;
-      const eqIndex = line.indexOf('=');
-      if (eqIndex > 0) {
-        const key = line.substring(0, eqIndex);
-        let value = line.substring(eqIndex + 1);
-        if ((value.startsWith("'") && value.endsWith("'")) ||
-            (value.startsWith('"') && value.endsWith('"'))) {
-          value = value.slice(1, -1);
-        }
-        if (!process.env[key]) {
-          process.env[key] = value;
+      const lines = output.trim().split('\n');
+      for (const line of lines) {
+        if (line.startsWith('#')) continue;
+        const eqIndex = line.indexOf('=');
+        if (eqIndex > 0) {
+          const key = line.substring(0, eqIndex);
+          let value = line.substring(eqIndex + 1);
+          if ((value.startsWith("'") && value.endsWith("'")) ||
+              (value.startsWith('"') && value.endsWith('"'))) {
+            value = value.slice(1, -1);
+          }
+          if (!process.env[key]) {
+            process.env[key] = value;
+          }
         }
       }
     }
@@ -64,8 +69,8 @@ except Exception as e:
   }
 }
 
-function getSupabaseCredentials(): SupabaseCredentials {
-  loadEnv();
+async function getSupabaseCredentials(): Promise<SupabaseCredentials> {
+  await loadEnv();
 
   const url = process.env.COZE_SUPABASE_URL;
   const anonKey = process.env.COZE_SUPABASE_ANON_KEY;
@@ -80,19 +85,19 @@ function getSupabaseCredentials(): SupabaseCredentials {
   return { url, anonKey };
 }
 
-function getSupabaseServiceRoleKey(): string | undefined {
-  loadEnv();
+async function getSupabaseServiceRoleKey(): Promise<string | undefined> {
+  await loadEnv();
   return process.env.COZE_SUPABASE_SERVICE_ROLE_KEY;
 }
 
-function getSupabaseClient(token?: string): SupabaseClient {
-  const { url, anonKey } = getSupabaseCredentials();
+export async function getSupabaseClient(token?: string): Promise<SupabaseClient> {
+  const { url, anonKey } = await getSupabaseCredentials();
 
   let key: string;
   if (token) {
     key = anonKey;
   } else {
-    const serviceRoleKey = getSupabaseServiceRoleKey();
+    const serviceRoleKey = await getSupabaseServiceRoleKey();
     key = serviceRoleKey ?? anonKey;
   }
 
@@ -122,4 +127,4 @@ function getSupabaseClient(token?: string): SupabaseClient {
   });
 }
 
-export { loadEnv, getSupabaseCredentials, getSupabaseServiceRoleKey, getSupabaseClient };
+export { loadEnv, getSupabaseCredentials, getSupabaseServiceRoleKey };

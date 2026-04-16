@@ -8,7 +8,7 @@ export async function GET(request: NextRequest) {
     const searchParams = request.nextUrl.searchParams;
     const userId = searchParams.get('userId');
     
-    const client = getSupabaseClient();
+    const client = await getSupabaseClient();
     
     // 如果指定了用户ID，只获取该用户的角色
     if (userId) {
@@ -39,7 +39,7 @@ export async function GET(request: NextRequest) {
         id: string; 
         user_id: string; 
         created_at: string; 
-        roles: { id: string; name: string; description: string | null; is_system: boolean } 
+        roles: { id: string; name: string; description: string | null; is_system: boolean }[] 
       }) => ({
         id: ur.id,
         user_id: ur.user_id,
@@ -89,7 +89,7 @@ export async function GET(request: NextRequest) {
       id: string; 
       user_id: string; 
       created_at: string; 
-      roles: { id: string; name: string; description: string | null; is_system: boolean } 
+      roles: { id: string; name: string; description: string | null; is_system: boolean }[] 
     }) => {
       if (!usersMap.has(ur.user_id)) {
         usersMap.set(ur.user_id, {
@@ -98,7 +98,9 @@ export async function GET(request: NextRequest) {
           roles: [],
         });
       }
-      usersMap.get(ur.user_id)?.roles.push(ur.roles);
+      if (ur.roles && ur.roles.length > 0) {
+        usersMap.get(ur.user_id)?.roles.push(ur.roles[0]);
+      }
     });
     
     const users = Array.from(usersMap.values());

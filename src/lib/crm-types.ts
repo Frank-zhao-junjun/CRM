@@ -371,43 +371,6 @@ export const WORKFLOW_ACTION_CONFIG: Record<WorkflowActionType, { label: string;
   update_field: { label: '更新字段', description: '自动更新实体字段值' },
 };
 
-// ============ 任务管理 ============
-export type TaskPriority = 'low' | 'medium' | 'high' | 'urgent';
-export type TaskStatus = 'pending' | 'in_progress' | 'completed' | 'cancelled';
-export type TaskSource = 'manual' | 'workflow';
-
-export interface CRMTask {
-  id: string;
-  title: string;
-  description?: string;
-  entityType?: 'lead' | 'opportunity' | 'customer' | 'quote';
-  entityId?: string;
-  entityName?: string;
-  priority: TaskPriority;
-  status: TaskStatus;
-  dueDate?: string;
-  source: TaskSource;
-  workflowId?: string;
-  assignedTo: string;
-  completedAt?: string;
-  createdAt: string;
-  updatedAt: string;
-}
-
-export const TASK_PRIORITY_CONFIG: Record<TaskPriority, { label: string; className: string; color: string; icon: string }> = {
-  low: { label: '低', className: 'bg-slate-500/10 text-slate-600 dark:text-slate-400 border-slate-500/20', color: 'text-slate-600 dark:text-slate-400', icon: '↓' },
-  medium: { label: '中', className: 'bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20', color: 'text-blue-600 dark:text-blue-400', icon: '→' },
-  high: { label: '高', className: 'bg-orange-500/10 text-orange-600 dark:text-orange-400 border-orange-500/20', color: 'text-orange-600 dark:text-orange-400', icon: '↑' },
-  urgent: { label: '紧急', className: 'bg-red-500/10 text-red-600 dark:text-red-400 border-red-500/20', color: 'text-red-600 dark:text-red-400', icon: '!!' },
-};
-
-export const TASK_STATUS_CONFIG: Record<TaskStatus, { label: string; className: string; color: string }> = {
-  pending: { label: '待处理', className: 'bg-gray-500/10 text-gray-600 dark:text-gray-400 border-gray-500/20', color: 'text-gray-600 dark:text-gray-400' },
-  in_progress: { label: '进行中', className: 'bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20', color: 'text-blue-600 dark:text-blue-400' },
-  completed: { label: '已完成', className: 'bg-green-500/10 text-green-600 dark:text-green-400 border-green-500/20', color: 'text-green-600 dark:text-green-400' },
-  cancelled: { label: '已取消', className: 'bg-stone-500/10 text-stone-600 dark:text-stone-400 border-stone-500/20', color: 'text-stone-600 dark:text-stone-400' },
-};
-
 // ============ 统计数据 ============
 export interface DashboardStats {
   totalCustomers: number;
@@ -598,3 +561,46 @@ export const TASK_STATUS_CONFIG: Record<TaskStatus, { label: string; className: 
   completed: { label: '已完成', className: 'bg-green-500/10 text-green-600 dark:text-green-400 border-green-500/20', color: 'text-green-600' },
   cancelled: { label: '已取消', className: 'bg-stone-500/10 text-stone-600 dark:text-stone-400 border-stone-500/20', color: 'text-stone-600' },
 };
+
+// ============ 回款管理类型 ============
+export type PaymentStatus = 'pending' | 'partial' | 'completed' | 'overdue';
+export type PaymentMethod = 'bank_transfer' | 'cash' | 'check' | 'credit_card' | 'other';
+
+export interface PaymentPlan {
+  id: string;
+  orderId: string;
+  customerId: string;
+  customerName: string;
+  amount: number;
+  paidAmount: number;
+  status: PaymentStatus;
+  dueDate: string;
+  paidDate?: string;
+  notes?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface PaymentStats {
+  totalAmount: number;
+  paidAmount: number;
+  pendingAmount: number;
+  overdueAmount: number;
+  completionRate: number;
+}
+
+export const PAYMENT_STATUS_CONFIG: Record<PaymentStatus, { label: string; color: string; textColor: string; bgColor: string }> = {
+  pending: { label: '待回款', color: 'text-yellow-600', textColor: 'text-yellow-600', bgColor: 'bg-yellow-50' },
+  partial: { label: '部分回款', color: 'text-blue-600', textColor: 'text-blue-600', bgColor: 'bg-blue-50' },
+  completed: { label: '已回款', color: 'text-green-600', textColor: 'text-green-600', bgColor: 'bg-green-50' },
+  overdue: { label: '逾期', color: 'text-red-600', textColor: 'text-red-600', bgColor: 'bg-red-50' },
+};
+
+export const PAYMENT_METHOD_CONFIG: Record<PaymentMethod, { label: string }> = {
+  bank_transfer: { label: '银行转账' },
+  cash: { label: '现金' },
+  check: { label: '支票' },
+  credit_card: { label: '信用卡' },
+  other: { label: '其他' },
+};
+

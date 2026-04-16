@@ -11,7 +11,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: '缺少标签ID' }, { status: 400 });
     }
 
-    const client = getSupabaseClient();
+    const client = await getSupabaseClient();
     const { data, error } = await client
       .from('customer_tags')
       .select('customer:customers(*)')
@@ -19,7 +19,7 @@ export async function GET(request: NextRequest) {
 
     if (error) throw new Error(`按标签筛选客户失败: ${error.message}`);
 
-    const customers = data?.map((item: { customer: Customer }) => item.customer).filter(Boolean) || [];
+    const customers = data?.map((item: any) => item.customer).filter(Boolean) || [];
     return NextResponse.json(customers);
   } catch (error) {
     console.error('按标签筛选客户失败:', error);

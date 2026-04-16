@@ -29,7 +29,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import { Plus, Search, FileText, Trash2, Building2, Briefcase, FileBarGraph } from 'lucide-react';
+import { Plus, Search, FileText, Trash2, Building2, Briefcase, BarChart3 } from 'lucide-react';
 import Link from 'next/link';
 import { CONTRACT_STATUS_CONFIG, type Contract, type ContractStatus } from '@/lib/crm-types';
 import { format } from 'date-fns';
@@ -194,7 +194,7 @@ export default function ContractsPage() {
         <Card>
           <CardContent className="flex flex-col items-center justify-center py-16">
             <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-indigo-500/10 to-blue-500/10 flex items-center justify-center mb-4">
-              <FileBarGraph className="h-8 w-8 text-muted-foreground/50" />
+              <BarChart3 className="h-8 w-8 text-muted-foreground/50" />
             </div>
             <h3 className="text-lg font-semibold mb-1">暂无合同</h3>
             <p className="text-sm text-muted-foreground mb-4">开始创建你的第一个合同</p>
@@ -228,7 +228,7 @@ export default function ContractsPage() {
                   >
                     <TableCell>
                       <div className="flex items-center gap-2">
-                        <FileBarGraph className="h-4 w-4 text-muted-foreground shrink-0" />
+                        <BarChart3 className="h-4 w-4 text-muted-foreground shrink-0" />
                         <span className="font-medium">{contract.contractNumber}</span>
                       </div>
                     </TableCell>

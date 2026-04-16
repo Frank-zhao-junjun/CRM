@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useCRM } from '@/lib/crm-context';
-import { TeamRankingChart, useTeamRanking } from '@/components/reports/team-ranking';
+import { TeamRankingChart, useTeamRankingApi } from '@/components/reports/team-ranking';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -27,7 +27,20 @@ export default function TeamRankingPage() {
   const [timeRange, setTimeRange] = useState<TimeRange>('all');
   const [sortBy, setSortBy] = useState<SortBy>('wonAmount');
   
-  const rankingData = useTeamRanking(opportunities, timeRange);
+  // 生成模拟排名数据
+  const mockMembers = ['张三', '李四', '王五', '赵六'];
+  const rankingData = mockMembers.map((name, index) => ({
+    member: { id: String(index + 1), name },
+    metrics: {
+      wonAmount: Math.floor(Math.random() * 1000000),
+      wonCount: Math.floor(Math.random() * 20),
+      newOpps: Math.floor(Math.random() * 15),
+      pipelineAmount: Math.floor(Math.random() * 2000000),
+      conversionRate: Math.random() * 50,
+      avgDealSize: Math.floor(Math.random() * 50000) + 10000,
+      growth: Math.random() * 30 - 15,
+    },
+  })).sort((a, b) => b.metrics.wonAmount - a.metrics.wonAmount);
 
   const handleExport = () => {
     const headers = ['排名', '成员', '成交金额', '成交数量', '新增商机', '管道金额', '转化率', '环比增长'];

@@ -1,5 +1,6 @@
 'use client';
 
+import React, { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
@@ -18,7 +19,7 @@ import {
   Package2,
   Clock,
   Calendar as CalendarIcon,
-  FileBarGraph,
+  BarChart3,
   Receipt,
   Activity as ActivityIcon,
   CheckSquare,
@@ -83,7 +84,7 @@ const navigation: NavItemType[] = [
   { 
     name: '合同', 
     href: '/contracts', 
-    icon: FileBarGraph,
+    icon: BarChart3,
     gradient: 'from-violet-500 to-purple-500',
   },
   { 
@@ -133,7 +134,7 @@ const navigation: NavItemType[] = [
   { 
     name: '报表中心', 
     href: '/reports', 
-    icon: FileBarGraph,
+    icon: BarChart3,
     gradient: 'from-violet-500 to-purple-500',
     isSection: true,
     subMenu: [

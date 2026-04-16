@@ -105,7 +105,15 @@ export function exportToExcel<T extends Record<string, unknown>>(
 
 // 下载文件
 export function downloadFile(content: string | Uint8Array, fileName: string, mimeType: string): void {
-  const blob = new Blob([content], { type: mimeType });
+  let blob: Blob;
+  if (typeof content === 'string') {
+    blob = new Blob([content], { type: mimeType });
+  } else {
+    // 转换为普通数组避免类型问题
+    const arr = new Uint8Array(content.length);
+    arr.set(content);
+    blob = new Blob([arr], { type: mimeType });
+  }
   const url = URL.createObjectURL(blob);
   const link = document.createElement('a');
   link.href = url;

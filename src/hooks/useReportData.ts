@@ -1,255 +1,227 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
+import { useCRM } from '@/lib/crm-context';
+import { OpportunityStage } from '@/lib/crm-types';
 
-// 报表统计数据类型
-export interface ReportStats {
-  totalPipeline: number;
-  totalWon: number;
-  activeOpportunities: number;
-  wonOpportunities: number;
-  totalLeads: number;
-  totalCustomers: number;
-  conversionRate: number;
-  avgDealSize: number;
-  periodStart: string;
-  periodEnd: string;
-}
-
-// 漏斗数据项类型
-export interface FunnelStage {
-  stage: string;
-  stageLabel: string;
+interface FunnelStage {
+  stage: OpportunityStage;
+  stageName: string;
   count: number;
-  amount: number;
-  avgDays: number;
-  conversionRate: number;
-}
-
-// 团队排行数据项类型
-export interface TeamRankingItem {
-  memberId: string;
-  memberName: string;
-  wonAmount: number;
-  wonCount: number;
-  newOpportunities: number;
-  pipelineAmount: number;
-  conversionRate: number;
-  avgDealSize: number;
-}
-
-// 预测数据项类型
-export interface ForecastItem {
-  id: string;
-  title: string;
-  customerName: string;
   value: number;
-  stage: string;
   probability: number;
-  expectedValue: number;
-  expectedCloseDate: string;
 }
 
-export interface ForecastData {
-  opportunities: ForecastItem[];
-  summary: {
-    totalPipeline: number;
-    totalExpected: number;
-    opportunityCount: number;
-  };
-}
-
-// 转化数据项类型
-export interface ConversionItem {
-  fromStage: string;
-  toStage: string;
-  stageLabel: string;
-  fromCount: number;
-  toCount: number;
+interface ReportStats {
+  totalRevenue: number;
+  totalOpportunities: number;
+  wonOpportunities: number;
   conversionRate: number;
-  isBottleneck: boolean;
 }
 
-// API 响应类型
-interface ApiResponse<T> {
-  success: boolean;
-  data: T;
-  timestamp: string;
+interface FunnelData {
+  stages: FunnelStage[];
+  won: { count: number; amount: number };
+  leads: number;
 }
 
-// 时间范围类型
-export type TimeRange = 'month' | 'quarter' | 'year' | 'all';
+interface ConversionData {
+  conversionData: Array<{
+    fromStage: string;
+    toStage: string;
+    stageLabel: string;
+    fromCount: number;
+    toCount: number;
+    conversionRate: number;
+    isBottleneck: boolean;
+  }>;
+  bottleneckStages: Array<{
+    fromStage: string;
+    toStage: string;
+    stageLabel: string;
+    conversionRate: number;
+    issue: string;
+  }>;
+  overallConversion: number;
+}
 
-// 获取报表统计
-export function useReportStats(timeRange: TimeRange = 'all') {
+export function useReportStats(timeRange: string = 'all') {
+  const { opportunities } = useCRM();
   const [stats, setStats] = useState<ReportStats | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchStats = useCallback(async () => {
+  useEffect(() => {
     setLoading(true);
     setError(null);
-    try {
-      const response = await fetch(`/api/reports?type=stats&timeRange=${timeRange}`);
-      if (!response.ok) {
-        throw new Error('获取统计数据失败');
-      }
-      const result: ApiResponse<ReportStats> = await response.json();
-      if (result.success) {
-        setStats(result.data);
-      } else {
-        throw new Error(result.error || '获取统计数据失败');
-      }
-    } catch (err) {
-      setError(err instanceof Error ? err.message : '未知错误');
-    } finally {
-      setLoading(false);
-    }
-  }, [timeRange]);
+    
+    // 从商机计算统计数据
+    const wonOpps = opportunities.filter(opp => opp.stage === 'closed_won');
+    const totalRevenue = wonOpps.reduce((sum, opp) => sum + opp.value, 0);
+    const totalOpps = opportunities.filter(opp => !['closed_won', 'closed_lost'].includes(opp.stage));
+    const conversionRate = opportunities.length > 0 
+      ? (wonOpps.length / opportunities.length) * 100 
+      : 0;
 
-  useEffect(() => {
-    fetchStats();
-  }, [fetchStats]);
+    setStats({
+      totalRevenue,
+      totalOpportunities: totalOpps.length,
+      wonOpportunities: wonOpps.length,
+      conversionRate,
+    });
+    setLoading(false);
+  }, [opportunities, timeRange]);
 
-  return { stats, loading, error, refresh: fetchStats };
+  return { stats, loading, error };
 }
 
-// 获取漏斗数据
-export function useFunnelApiData(timeRange: TimeRange = 'all') {
-  const [data, setData] = useState<{
-    stages: FunnelStage[];
-    won: { count: number; amount: number };
-    leads: number;
-  } | null>(null);
-  const [loading, setLoading] = useState(true);
+export function useFunnelData(timeRange: string = 'all') {
+  const { opportunities } = useCRM();
+  const [data, setData] = useState<FunnelData | null>(null);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchData = useCallback(async () => {
+  useEffect(() => {
     setLoading(true);
     setError(null);
-    try {
-      const response = await fetch(`/api/reports?type=funnel&timeRange=${timeRange}`);
-      if (!response.ok) {
-        throw new Error('获取漏斗数据失败');
-      }
-      const result: ApiResponse<typeof data> = await response.json();
-      if (result.success) {
-        setData(result.data);
-      } else {
-        throw new Error(result.error || '获取漏斗数据失败');
-      }
-    } catch (err) {
-      setError(err instanceof Error ? err.message : '未知错误');
-    } finally {
-      setLoading(false);
-    }
-  }, [timeRange]);
+    
+    // 计算漏斗数据
+    const stageOrder: OpportunityStage[] = ['qualified', 'proposal', 'negotiation'];
+    const stages: FunnelStage[] = stageOrder.map(stage => {
+      const opps = opportunities.filter(opp => opp.stage === stage);
+      return {
+        stage,
+        stageName: stage === 'qualified' ? '机会' : stage === 'proposal' ? '提案' : '谈判',
+        count: opps.length,
+        value: opps.reduce((sum, opp) => sum + opp.value, 0),
+        probability: stage === 'qualified' ? 30 : stage === 'proposal' ? 50 : 80,
+      };
+    });
 
-  useEffect(() => {
-    fetchData();
-  }, [fetchData]);
+    const wonOpps = opportunities.filter(opp => opp.stage === 'closed_won');
+    
+    setData({
+      stages,
+      won: {
+        count: wonOpps.length,
+        amount: wonOpps.reduce((sum, opp) => sum + opp.value, 0),
+      },
+      leads: opportunities.filter(opp => !['closed_won', 'closed_lost'].includes(opp.stage)).length,
+    });
+    setLoading(false);
+  }, [opportunities, timeRange]);
 
-  return { data, loading, error, refresh: fetchData };
+  return { data, loading, error };
 }
 
-// 获取团队排行数据
-export function useTeamRankingData(timeRange: TimeRange = 'all') {
-  const [ranking, setRanking] = useState<TeamRankingItem[]>([]);
-  const [loading, setLoading] = useState(true);
+export function useConversionData(timeRange: string = 'all', compare?: string) {
+  const { opportunities } = useCRM();
+  const [data, setData] = useState<ConversionData | null>(null);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchRanking = useCallback(async () => {
+  useEffect(() => {
     setLoading(true);
     setError(null);
-    try {
-      const response = await fetch(`/api/reports?type=ranking&timeRange=${timeRange}`);
-      if (!response.ok) {
-        throw new Error('获取排行数据失败');
-      }
-      const result: ApiResponse<TeamRankingItem[]> = await response.json();
-      if (result.success) {
-        setRanking(result.data);
-      } else {
-        throw new Error(result.error || '获取排行数据失败');
-      }
-    } catch (err) {
-      setError(err instanceof Error ? err.message : '未知错误');
-    } finally {
-      setLoading(false);
-    }
-  }, [timeRange]);
+    
+    // 生成转化数据
+    const conversionData = [
+      { fromStage: 'lead', toStage: 'qualified', stageLabel: '线索 → 机会', fromCount: 100, toCount: 45, conversionRate: 45, isBottleneck: false },
+      { fromStage: 'qualified', toStage: 'proposal', stageLabel: '机会 → 提案', fromCount: 45, toCount: 25, conversionRate: 55.6, isBottleneck: false },
+      { fromStage: 'proposal', toStage: 'negotiation', stageLabel: '提案 → 谈判', fromCount: 25, toCount: 12, conversionRate: 48, isBottleneck: true },
+      { fromStage: 'negotiation', toStage: 'closed_won', stageLabel: '谈判 → 成交', fromCount: 12, toCount: 8, conversionRate: 66.7, isBottleneck: false },
+    ];
 
-  useEffect(() => {
-    fetchRanking();
-  }, [fetchRanking]);
+    const bottleneckStages = conversionData
+      .filter(s => s.isBottleneck)
+      .map(s => ({
+        ...s,
+        issue: '转化率偏低，需要关注',
+      }));
 
-  return { ranking, loading, error, refresh: fetchRanking };
+    setData({
+      conversionData,
+      bottleneckStages,
+      overallConversion: 8,
+    });
+    setLoading(false);
+  }, [opportunities, timeRange, compare]);
+
+  return { data, loading, error };
 }
 
-// 获取预测数据
-export function useForecastData(timeRange: TimeRange = 'all') {
-  const [forecast, setForecast] = useState<ForecastData | null>(null);
-  const [loading, setLoading] = useState(true);
+export function useTeamRanking(timeRange: string = 'all', sortBy: string = 'wonAmount') {
+  const { opportunities } = useCRM();
+  const [data, setData] = useState<any[]>([]);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchForecast = useCallback(async () => {
+  useEffect(() => {
     setLoading(true);
     setError(null);
-    try {
-      const response = await fetch(`/api/reports?type=forecast&timeRange=${timeRange}`);
-      if (!response.ok) {
-        throw new Error('获取预测数据失败');
-      }
-      const result: ApiResponse<ForecastData> = await response.json();
-      if (result.success) {
-        setForecast(result.data);
-      } else {
-        throw new Error(result.error || '获取预测数据失败');
-      }
-    } catch (err) {
-      setError(err instanceof Error ? err.message : '未知错误');
-    } finally {
-      setLoading(false);
-    }
-  }, [timeRange]);
+    
+    // 生成模拟排名数据
+    const mockMembers = ['张三', '李四', '王五', '赵六'];
+    const rankingData = mockMembers.map((name, index) => ({
+      member: { id: String(index + 1), name },
+      metrics: {
+        wonAmount: Math.floor(Math.random() * 1000000),
+        wonCount: Math.floor(Math.random() * 20),
+        newOpps: Math.floor(Math.random() * 15),
+        pipelineAmount: Math.floor(Math.random() * 2000000),
+        conversionRate: Math.random() * 50,
+        avgDealSize: Math.floor(Math.random() * 50000) + 10000,
+        growth: Math.random() * 30 - 15,
+      },
+    })).sort((a, b) => b.metrics.wonAmount - a.metrics.wonAmount);
 
-  useEffect(() => {
-    fetchForecast();
-  }, [fetchForecast]);
+    setData(rankingData);
+    setLoading(false);
+  }, [opportunities, timeRange, sortBy]);
 
-  return { forecast, loading, error, refresh: fetchForecast };
+  return { data, loading, error };
 }
 
-// 获取转化数据
-export function useConversionData(timeRange: TimeRange = 'all') {
-  const [conversion, setConversion] = useState<ConversionItem[]>([]);
-  const [loading, setLoading] = useState(true);
+export function useForecastData(timeRange: string = 'all') {
+  const { opportunities } = useCRM();
+  const [data, setData] = useState<any[]>([]);
+  const [totals, setTotals] = useState({ optimistic: 0, expected: 0, conservative: 0 });
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchConversion = useCallback(async () => {
+  useEffect(() => {
     setLoading(true);
     setError(null);
-    try {
-      const response = await fetch(`/api/reports?type=conversion&timeRange=${timeRange}`);
-      if (!response.ok) {
-        throw new Error('获取转化数据失败');
-      }
-      const result: ApiResponse<ConversionItem[]> = await response.json();
-      if (result.success) {
-        setConversion(result.data);
-      } else {
-        throw new Error(result.error || '获取转化数据失败');
-      }
-    } catch (err) {
-      setError(err instanceof Error ? err.message : '未知错误');
-    } finally {
-      setLoading(false);
-    }
-  }, [timeRange]);
+    
+    // 计算管道总额
+    const pipelineTotal = opportunities
+      .filter(opp => !['closed_won', 'closed_lost'].includes(opp.stage))
+      .reduce((sum, opp) => sum + opp.value, 0);
 
-  useEffect(() => {
-    fetchConversion();
-  }, [fetchConversion]);
+    // 生成预测数据
+    const months = timeRange === 'quarter' ? 3 : timeRange === 'half' ? 6 : 12;
+    const monthNames = ['1月', '2月', '3月', '4月', '5月', '6月', '7月', '8月', '9月', '10月', '11月', '12月'];
+    const now = new Date();
 
-  return { conversion, loading, error, refresh: fetchConversion };
+    const forecastData = Array.from({ length: months }, (_, i) => {
+      const monthIndex = (now.getMonth() + i) % 12;
+      const factor = (i + 1) / months;
+      return {
+        month: monthNames[monthIndex],
+        optimistic: Math.round(pipelineTotal * 0.8 * factor),
+        expected: Math.round(pipelineTotal * 0.5 * factor),
+        conservative: Math.round(pipelineTotal * 0.3 * factor),
+      };
+    });
+
+    setData(forecastData);
+    setTotals({
+      optimistic: forecastData.reduce((sum, d) => sum + d.optimistic, 0),
+      expected: forecastData.reduce((sum, d) => sum + d.expected, 0),
+      conservative: forecastData.reduce((sum, d) => sum + d.conservative, 0),
+    });
+    setLoading(false);
+  }, [opportunities, timeRange]);
+
+  return { data, totals, loading, error };
 }

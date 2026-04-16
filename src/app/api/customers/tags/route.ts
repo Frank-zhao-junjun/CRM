@@ -11,7 +11,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: '缺少客户ID' }, { status: 400 });
     }
 
-    const client = getSupabaseClient();
+    const client = await getSupabaseClient();
     const { data, error } = await client
       .from('customer_tags')
       .select('tag:tags(*)')
@@ -19,7 +19,7 @@ export async function GET(request: NextRequest) {
 
     if (error) throw new Error(`获取客户标签失败: ${error.message}`);
 
-    const tags = data?.map((item: { tag: Tag }) => item.tag).filter(Boolean) || [];
+    const tags = data?.map((item: any) => item.tag).filter(Boolean) || [];
     return NextResponse.json(tags as Tag[]);
   } catch (error) {
     console.error('获取客户标签失败:', error);
@@ -35,7 +35,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: '缺少客户ID或标签ID' }, { status: 400 });
     }
 
-    const client = getSupabaseClient();
+    const client = await getSupabaseClient();
 
     const { error: insertError } = await client
       .from('customer_tags')
@@ -82,7 +82,7 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ error: '缺少客户ID或标签ID' }, { status: 400 });
     }
 
-    const client = getSupabaseClient();
+    const client = await getSupabaseClient();
 
     const { error } = await client
       .from('customer_tags')
@@ -121,7 +121,7 @@ export async function PUT(request: NextRequest) {
     }
 
     const { customerId, tagIds } = body;
-    const client = getSupabaseClient();
+    const client = await getSupabaseClient();
 
     const { data: existingTags } = await client
       .from('customer_tags')

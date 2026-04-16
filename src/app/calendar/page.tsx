@@ -9,7 +9,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
-import { useToast } from '@/hooks/use-toast';
+import { toast as sonnerToast } from 'sonner';
 import { format } from 'date-fns';
 
 export default function CalendarPage() {
@@ -22,7 +22,7 @@ export default function CalendarPage() {
   const [createDate, setCreateDate] = useState<Date>(new Date());
   const [isEventDialogOpen, setIsEventDialogOpen] = useState(false);
   
-  const { toast } = useToast();
+  const showToast = sonnerToast;
 
   // Form state for creating/editing events
   const [formData, setFormData] = useState({
@@ -48,15 +48,11 @@ export default function CalendarPage() {
         setEvents(result.data);
       }
     } catch (error) {
-      toast({
-        title: '获取事件失败',
-        description: '请稍后重试',
-        variant: 'destructive',
-      });
+      sonnerToast.error('获取事件失败');
     } finally {
       setIsLoading(false);
     }
-  }, [currentDate, toast]);
+  }, [currentDate]);
 
   useEffect(() => {
     fetchEvents();
@@ -115,19 +111,12 @@ export default function CalendarPage() {
               : e
           )
         );
-        toast({
-          title: '事件已移动',
-          description: `已移动到 ${format(newDate, 'M月d日')}`,
-        });
+        sonnerToast.success('事件已移动');
       }
     } catch {
-      toast({
-        title: '操作失败',
-        description: '请稍后重试',
-        variant: 'destructive',
-      });
+      sonnerToast.error('操作失败');
     }
-  }, [events, toast]);
+  }, [events]);
 
   // Submit form
   const handleSubmit = async (isNew: boolean) => {
@@ -141,26 +130,15 @@ export default function CalendarPage() {
 
       const result = await response.json();
       if (result.success) {
-        toast({
-          title: isNew ? '事件已创建' : '事件已更新',
-          description: result.message,
-        });
+        sonnerToast.success(isNew ? '事件已创建' : '事件已更新');
         setIsCreateDialogOpen(false);
         setIsEventDialogOpen(false);
         fetchEvents();
       } else {
-        toast({
-          title: '操作失败',
-          description: result.message,
-          variant: 'destructive',
-        });
+        sonnerToast.error(result.message || '操作失败');
       }
     } catch {
-      toast({
-        title: '操作失败',
-        description: '请稍后重试',
-        variant: 'destructive',
-      });
+      sonnerToast.error('操作失败');
     }
   };
 
@@ -175,19 +153,12 @@ export default function CalendarPage() {
 
       const result = await response.json();
       if (result.success) {
-        toast({
-          title: '事件已删除',
-          description: result.message,
-        });
+        sonnerToast.success('事件已删除');
         setIsEventDialogOpen(false);
         fetchEvents();
       }
     } catch {
-      toast({
-        title: '删除失败',
-        description: '请稍后重试',
-        variant: 'destructive',
-      });
+      sonnerToast.error('删除失败');
     }
   };
 

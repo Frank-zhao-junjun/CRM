@@ -6,11 +6,11 @@ import { clearPermissionCache } from '@/lib/permissions';
 // 获取用户角色列表
 export async function GET(
   request: NextRequest,
-  { params }: { params: { userId: string } }
+  { params }: { params: Promise<{ userId: string }> }
 ) {
   try {
-    const userId = params.userId;
-    const client = getSupabaseClient();
+    const { userId } = await params;
+    const client = await getSupabaseClient();
     
     // 获取用户的角色
     const { data: userRoles, error: userRolesError } = await client
@@ -41,12 +41,15 @@ export async function GET(
       id: string; 
       user_id: string; 
       created_at: string; 
-      roles: { id: string; name: string; description: string | null; is_system: boolean } 
+      roles: { id: string; name: string; description: string | null; is_system: boolean }[] 
     }) => ({
-      id: ur.id,
+      userRoleId: ur.id,
       user_id: ur.user_id,
       created_at: ur.created_at,
-      ...ur.roles,
+      role_id: ur.roles[0]?.id,
+      role_name: ur.roles[0]?.name,
+      role_description: ur.roles[0]?.description,
+      is_system: ur.roles[0]?.is_system,
     })) || [];
     
     return NextResponse.json(formattedUserRoles);
@@ -62,10 +65,10 @@ export async function GET(
 // 分配用户角色
 export async function POST(
   request: NextRequest,
-  { params }: { params: { userId: string } }
+  { params }: { params: Promise<{ userId: string }> }
 ) {
   try {
-    const userId = params.userId;
+    const { userId } = await params;
     const body = await request.json();
     const { role_id } = body;
     
@@ -76,7 +79,7 @@ export async function POST(
       );
     }
     
-    const client = getSupabaseClient();
+    const client = await getSupabaseClient();
     
     // 检查角色是否存在
     const { data: role, error: roleError } = await client
@@ -141,10 +144,10 @@ export async function POST(
 // 批量更新用户角色
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { userId: string } }
+  { params }: { params: Promise<{ userId: string }> }
 ) {
   try {
-    const userId = params.userId;
+    const { userId } = await params;
     const body = await request.json();
     const { role_ids } = body;
     
@@ -155,7 +158,7 @@ export async function PUT(
       );
     }
     
-    const client = getSupabaseClient();
+    const client = await getSupabaseClient();
     
     // 删除现有角色
     const { error: deleteError } = await client
@@ -214,12 +217,15 @@ export async function PUT(
       id: string; 
       user_id: string; 
       created_at: string; 
-      roles: { id: string; name: string; description: string | null; is_system: boolean } 
+      roles: { id: string; name: string; description: string | null; is_system: boolean }[] 
     }) => ({
-      id: ur.id,
+      userRoleId: ur.id,
       user_id: ur.user_id,
       created_at: ur.created_at,
-      ...ur.roles,
+      role_id: ur.roles[0]?.id,
+      role_name: ur.roles[0]?.name,
+      role_description: ur.roles[0]?.description,
+      is_system: ur.roles[0]?.is_system,
     })) || [];
     
     return NextResponse.json(formattedRoles);
@@ -235,10 +241,10 @@ export async function PUT(
 // 移除用户角色
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { userId: string } }
+  { params }: { params: Promise<{ userId: string }> }
 ) {
   try {
-    const userId = params.userId;
+    const { userId } = await params;
     const searchParams = request.nextUrl.searchParams;
     const roleId = searchParams.get('role_id');
     
@@ -249,7 +255,7 @@ export async function DELETE(
       );
     }
     
-    const client = getSupabaseClient();
+    const client = await getSupabaseClient();
     
     // 删除用户角色关联
     const { error: deleteError } = await client

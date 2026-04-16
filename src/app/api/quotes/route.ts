@@ -98,7 +98,6 @@ export async function POST(request: NextRequest) {
           entityType: 'quote',
           entityId: quote.id,
           entityName: quote.title,
-          data: { newStatus: 'active' },
         }).catch(() => {});
         return NextResponse.json(quote);
       }
@@ -110,7 +109,6 @@ export async function POST(request: NextRequest) {
           entityType: 'quote',
           entityId: quote.id,
           entityName: quote.title,
-          data: { newStatus: 'accepted' },
         }).catch(() => {});
         return NextResponse.json(quote);
       }
@@ -122,7 +120,6 @@ export async function POST(request: NextRequest) {
           entityType: 'quote',
           entityId: quote.id,
           entityName: quote.title,
-          data: { newStatus: 'rejected' },
         }).catch(() => {});
         return NextResponse.json(quote);
       }

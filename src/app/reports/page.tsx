@@ -18,11 +18,20 @@ import {
 import Link from 'next/link';
 import { formatCurrency } from '@/lib/utils';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import type { TimeRange } from '@/hooks/useReportData';
+import { useCRM } from '@/lib/crm-context';
+
+type TimeRange = 'all' | 'quarter' | 'half' | 'year';
 
 export default function ReportsIndexPage() {
   const [timeRange, setTimeRange] = useState<TimeRange>('all');
   const { stats, loading, error } = useReportStats(timeRange);
+  const { opportunities } = useCRM();
+
+  // 计算管道统计
+  const activeOpps = opportunities.filter(opp => !['closed_won', 'closed_lost'].includes(opp.stage));
+  const wonOpps = opportunities.filter(opp => opp.stage === 'closed_won');
+  const totalPipeline = activeOpps.reduce((sum, opp) => sum + opp.value, 0);
+  const wonRevenue = wonOpps.reduce((sum, opp) => sum + opp.value, 0);
 
   const reportCards = [
     {
@@ -33,7 +42,7 @@ export default function ReportsIndexPage() {
       gradient: 'from-blue-500 to-cyan-500',
       stats: {
         label: '管道总额',
-        value: stats ? formatCurrency(stats.totalPipeline) : '-',
+        value: formatCurrency(totalPipeline),
       },
     },
     {
@@ -43,8 +52,8 @@ export default function ReportsIndexPage() {
       icon: Trophy,
       gradient: 'from-yellow-500 to-amber-500',
       stats: {
-        label: '团队总数',
-        value: stats ? `${stats.totalCustomers} 客户` : '-',
+        label: '已成交额',
+        value: formatCurrency(wonRevenue),
       },
     },
     {
@@ -55,7 +64,7 @@ export default function ReportsIndexPage() {
       gradient: 'from-green-500 to-emerald-500',
       stats: {
         label: '预期收入',
-        value: stats ? formatCurrency(stats.totalPipeline * 0.5) : '-',
+        value: formatCurrency(totalPipeline * 0.5),
       },
     },
     {
@@ -66,7 +75,7 @@ export default function ReportsIndexPage() {
       gradient: 'from-purple-500 to-violet-500',
       stats: {
         label: '活跃商机',
-        value: stats ? `${stats.activeOpportunities} 个` : '-',
+        value: `${activeOpps.length} 个`,
       },
     },
   ];
@@ -114,7 +123,7 @@ export default function ReportsIndexPage() {
       )}
 
       {/* 概览统计 */}
-      {!loading && !error && stats && (
+      {!loading && !error && (
         <>
           <div className="grid gap-4 md:grid-cols-4">
             <Card>
@@ -123,9 +132,9 @@ export default function ReportsIndexPage() {
                 <DollarSign className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">{formatCurrency(stats.totalPipeline)}</div>
+                <div className="text-2xl font-bold">{formatCurrency(totalPipeline)}</div>
                 <p className="text-xs text-muted-foreground">
-                  {stats.activeOpportunities} 个活跃商机
+                  {activeOpps.length} 个活跃商机
                 </p>
               </CardContent>
             </Card>
@@ -135,9 +144,9 @@ export default function ReportsIndexPage() {
                 <Target className="h-4 w-4 text-green-500" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">{formatCurrency(stats.totalWon)}</div>
+                <div className="text-2xl font-bold">{formatCurrency(wonRevenue)}</div>
                 <p className="text-xs text-muted-foreground">
-                  {stats.wonOpportunities} 个成交项目
+                  {wonOpps.length} 个成交项目
                 </p>
               </CardContent>
             </Card>
@@ -147,9 +156,9 @@ export default function ReportsIndexPage() {
                 <Users className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">{stats.totalLeads}</div>
+                <div className="text-2xl font-bold">{opportunities.length}</div>
                 <p className="text-xs text-muted-foreground">
-                  待转化潜在客户
+                  总商机数量
                 </p>
               </CardContent>
             </Card>
@@ -160,7 +169,7 @@ export default function ReportsIndexPage() {
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">
-                  {stats.conversionRate.toFixed(1)}%
+                  {opportunities.length > 0 ? ((wonOpps.length / opportunities.length) * 100).toFixed(1) : 0}%
                 </div>
                 <p className="text-xs text-muted-foreground">
                   商机成交转化率

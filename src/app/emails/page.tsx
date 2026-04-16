@@ -252,13 +252,10 @@ export default function EmailHistoryPage() {
                         <TableCell>
                           {log.entity_type && log.entity_name ? (
                             <div className="flex items-center gap-1">
-                              {ENTITY_TYPE_CONFIG[log.entity_type as keyof typeof ENTITY_TYPE_CONFIG]?.icon && (
-                                {(EntityIcon => (
-                                  <EntityIcon className="h-4 w-4 text-muted-foreground" />
-                                ))(
-                                  ENTITY_TYPE_CONFIG[log.entity_type as keyof typeof ENTITY_TYPE_CONFIG].icon
-                                )}
-                              )}
+                              {(() => {
+                                const Icon = ENTITY_TYPE_CONFIG[log.entity_type as keyof typeof ENTITY_TYPE_CONFIG]?.icon;
+                                return Icon ? <Icon className="h-4 w-4 text-muted-foreground" /> : null;
+                              })()}
                               <span className="text-sm">{log.entity_name}</span>
                             </div>
                           ) : (

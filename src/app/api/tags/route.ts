@@ -6,7 +6,7 @@ const generateId = () => `tag_${Date.now()}_${Math.random().toString(36).substri
 
 export async function GET() {
   try {
-    const client = getSupabaseClient();
+    const client = await getSupabaseClient();
     const { data, error } = await client
       .from('tags')
       .select('*')
@@ -45,7 +45,7 @@ export async function POST(request: NextRequest) {
       usage_count: 0,
     };
 
-    const client = getSupabaseClient();
+    const client = await getSupabaseClient();
     const { data, error } = await client
       .from('tags')
       .insert(tag)
@@ -95,7 +95,7 @@ export async function PUT(request: NextRequest) {
     if (body.icon !== undefined) updates.icon = body.icon;
     if (body.description !== undefined) updates.description = body.description;
 
-    const client = getSupabaseClient();
+    const client = await getSupabaseClient();
     const { data, error } = await client
       .from('tags')
       .update(updates)
@@ -130,7 +130,7 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ error: '缺少标签ID' }, { status: 400 });
     }
 
-    const client = getSupabaseClient();
+    const client = await getSupabaseClient();
     const { error } = await client
       .from('tags')
       .delete()

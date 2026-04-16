@@ -3,6 +3,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseClient } from '@/storage/database/supabase-client';
+import { SupabaseClient } from '@supabase/supabase-js';
 
 interface SearchResult {
   id: string;
@@ -37,7 +38,7 @@ function getEntityUrl(type: SearchResult['type'], id: string): string {
 }
 
 // Search customers
-async function searchCustomers(client: ReturnType<typeof getSupabaseClient>, query: string): Promise<SearchResult[]> {
+async function searchCustomers(client: SupabaseClient, query: string): Promise<SearchResult[]> {
   const { data, error } = await client
     .from('customers')
     .select('id, name, email, company')
@@ -56,7 +57,7 @@ async function searchCustomers(client: ReturnType<typeof getSupabaseClient>, que
 }
 
 // Search contacts
-async function searchContacts(client: ReturnType<typeof getSupabaseClient>, query: string): Promise<SearchResult[]> {
+async function searchContacts(client: SupabaseClient, query: string): Promise<SearchResult[]> {
   const { data, error } = await client
     .from('contacts')
     .select('id, first_name, last_name, email, phone, customer_name')
@@ -75,7 +76,7 @@ async function searchContacts(client: ReturnType<typeof getSupabaseClient>, quer
 }
 
 // Search opportunities
-async function searchOpportunities(client: ReturnType<typeof getSupabaseClient>, query: string): Promise<SearchResult[]> {
+async function searchOpportunities(client: SupabaseClient, query: string): Promise<SearchResult[]> {
   const { data, error } = await client
     .from('opportunities')
     .select('id, title, customer_name, value')
@@ -94,7 +95,7 @@ async function searchOpportunities(client: ReturnType<typeof getSupabaseClient>,
 }
 
 // Search leads
-async function searchLeads(client: ReturnType<typeof getSupabaseClient>, query: string): Promise<SearchResult[]> {
+async function searchLeads(client: SupabaseClient, query: string): Promise<SearchResult[]> {
   const { data, error } = await client
     .from('leads')
     .select('id, title, customer_name, estimated_value')
@@ -113,7 +114,7 @@ async function searchLeads(client: ReturnType<typeof getSupabaseClient>, query: 
 }
 
 // Search quotes
-async function searchQuotes(client: ReturnType<typeof getSupabaseClient>, query: string): Promise<SearchResult[]> {
+async function searchQuotes(client: SupabaseClient, query: string): Promise<SearchResult[]> {
   const { data, error } = await client
     .from('quotes')
     .select('id, quote_number, title, customer_name, total_amount')
@@ -132,7 +133,7 @@ async function searchQuotes(client: ReturnType<typeof getSupabaseClient>, query:
 }
 
 // Search orders
-async function searchOrders(client: ReturnType<typeof getSupabaseClient>, query: string): Promise<SearchResult[]> {
+async function searchOrders(client: SupabaseClient, query: string): Promise<SearchResult[]> {
   const { data, error } = await client
     .from('orders')
     .select('id, order_number, title, customer_name, total_amount')
@@ -151,7 +152,7 @@ async function searchOrders(client: ReturnType<typeof getSupabaseClient>, query:
 }
 
 // Search contracts
-async function searchContracts(client: ReturnType<typeof getSupabaseClient>, query: string): Promise<SearchResult[]> {
+async function searchContracts(client: SupabaseClient, query: string): Promise<SearchResult[]> {
   const { data, error } = await client
     .from('contracts')
     .select('id, contract_number, title, customer_name, total_amount')
@@ -170,7 +171,7 @@ async function searchContracts(client: ReturnType<typeof getSupabaseClient>, que
 }
 
 // Search products
-async function searchProducts(client: ReturnType<typeof getSupabaseClient>, query: string): Promise<SearchResult[]> {
+async function searchProducts(client: SupabaseClient, query: string): Promise<SearchResult[]> {
   const { data, error } = await client
     .from('products')
     .select('id, name, sku, unit_price')
@@ -205,7 +206,7 @@ export async function GET(request: NextRequest) {
       }, { status: 400 });
     }
 
-    const client = getSupabaseClient();
+    const client = await getSupabaseClient();
 
     // Execute all searches in parallel
     const [

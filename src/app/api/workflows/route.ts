@@ -17,7 +17,7 @@ export async function GET(request: NextRequest) {
       }
       let logs: Awaited<ReturnType<typeof db.getWorkflowLogs>> = [];
       if (includeLogs) {
-        logs = await db.getWorkflowLogs(id, 20);
+        logs = await db.getWorkflowLogs(id);
       }
       return NextResponse.json({ ...workflow, logs });
     }
@@ -30,7 +30,7 @@ export async function GET(request: NextRequest) {
     const workflows = await db.getAllWorkflows();
     
     // Get recent workflow logs
-    const recentLogs = await db.getWorkflowLogs(undefined, 10);
+    const recentLogs = await db.getWorkflowLogs('');
 
     return NextResponse.json({ workflows, recentLogs });
   } catch (error) {
@@ -73,7 +73,6 @@ export async function POST(request: NextRequest) {
           entityType: data.entityType,
           entityId: data.entityId,
           entityName: data.entityName,
-          data: data.data,
         });
         return NextResponse.json({ success: true, executedCount });
       }

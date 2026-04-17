@@ -174,15 +174,15 @@ export function ActivityTimeline({
         {showFilters && (
           <div className="flex flex-wrap gap-2 mt-4">
             <Select 
-              value={filters.entity_type || ''} 
-              onValueChange={(v) => handleFilterChange('entity_type', v)}
+              value={filters.entity_type || 'all'} 
+              onValueChange={(v) => handleFilterChange('entity_type', v === 'all' ? '' : v)}
             >
               <SelectTrigger className="w-[140px]">
                 <Filter className="h-4 w-4 mr-2" />
                 <SelectValue placeholder="实体类型" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">全部类型</SelectItem>
+                <SelectItem value="all">全部类型</SelectItem>
                 {Object.entries(ENTITY_TYPE_CONFIG).map(([key, config]) => (
                   <SelectItem key={key} value={key}>{config.label}</SelectItem>
                 ))}
@@ -190,14 +190,14 @@ export function ActivityTimeline({
             </Select>
 
             <Select 
-              value={filters.type || ''} 
-              onValueChange={(v) => handleFilterChange('type', v)}
+              value={filters.type || 'all'} 
+              onValueChange={(v) => handleFilterChange('type', v === 'all' ? '' : v)}
             >
               <SelectTrigger className="w-[140px]">
                 <SelectValue placeholder="操作类型" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">全部操作</SelectItem>
+                <SelectItem value="all">全部操作</SelectItem>
                 {Object.entries(ACTIVITY_TYPE_CONFIG).map(([key, config]) => (
                   <SelectItem key={key} value={key}>{config.label}</SelectItem>
                 ))}

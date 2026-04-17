@@ -768,3 +768,65 @@ export type Ticket = typeof tickets.$inferSelect;
 export type InsertTicket = typeof tickets.$inferInsert;
 export type TicketComment = typeof ticketComments.$inferSelect;
 export type InsertTicketComment = typeof ticketComments.$inferInsert;
+
+// ============ 可视化工作流自动化模块 (V5.2) ============
+
+// 可视化工作流表
+export const automationWorkflows = pgTable(
+  'automation_workflows',
+  {
+    id: varchar('id', { length: 36 }).primaryKey().default(sql`gen_random_uuid()`),
+    name: varchar('name', { length: 255 }).notNull(),
+    description: text('description'),
+    is_active: boolean('is_active').default(true).notNull(),
+    is_system: boolean('is_system').default(false).notNull(), // 系统预设模板
+    trigger_type: varchar('trigger_type', { length: 50 }).notNull(), // schedule, event, manual
+    trigger_config: text('trigger_config').notNull(), // JSON: cron表达式或事件配置
+    nodes: text('nodes').notNull(), // JSON: 节点配置
+    edges: text('edges').notNull(), // JSON: 连线配置
+    version: integer('version').notNull().default(1),
+    execution_count: integer('execution_count').notNull().default(0),
+    success_count: integer('success_count').notNull().default(0),
+    failure_count: integer('failure_count').notNull().default(0),
+    last_executed_at: timestamp('last_executed_at', { withTimezone: true }),
+    created_by: varchar('created_by', { length: 100 }),
+    created_at: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+    updated_at: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => [
+    index('automation_workflows_active_idx').on(table.is_active),
+    index('automation_workflows_trigger_type_idx').on(table.trigger_type),
+    index('automation_workflows_created_at_idx').on(table.created_at),
+  ]
+);
+
+// 可视化工作流执行日志表
+export const automationWorkflowExecutions = pgTable(
+  'automation_workflow_executions',
+  {
+    id: varchar('id', { length: 36 }).primaryKey().default(sql`gen_random_uuid()`),
+    workflow_id: varchar('workflow_id', { length: 36 }).notNull().references(() => automationWorkflows.id, { onDelete: 'cascade' }),
+    trigger_type: varchar('trigger_type', { length: 50 }).notNull(), // schedule, event, manual
+    trigger_source: text('trigger_source'), // 触发来源详情
+    status: varchar('status', { length: 20 }).notNull().default('running'), // running, success, failed, cancelled
+    started_at: timestamp('started_at', { withTimezone: true }).defaultNow().notNull(),
+    completed_at: timestamp('completed_at', { withTimezone: true }),
+    duration_ms: integer('duration_ms'), // 执行耗时
+    input_data: text('input_data'), // JSON: 触发时的输入数据
+    output_data: text('output_data'), // JSON: 执行结果
+    error_message: text('error_message'),
+    node_executions: text('node_executions'), // JSON: 各节点执行详情
+    created_at: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => [
+    index('automation_workflow_executions_workflow_id_idx').on(table.workflow_id),
+    index('automation_workflow_executions_status_idx').on(table.status),
+    index('automation_workflow_executions_created_at_idx').on(table.created_at),
+  ]
+);
+
+// 可视化工作流类型导出
+export type AutomationWorkflow = typeof automationWorkflows.$inferSelect;
+export type InsertAutomationWorkflow = typeof automationWorkflows.$inferInsert;
+export type AutomationWorkflowExecution = typeof automationWorkflowExecutions.$inferSelect;
+export type InsertAutomationWorkflowExecution = typeof automationWorkflowExecutions.$inferInsert;

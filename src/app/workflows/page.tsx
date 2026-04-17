@@ -1,507 +1,696 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
+import React, { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
-import { Switch } from '@/components/ui/switch';
+import { Input } from '@/components/ui/input';
+import { Badge } from '@/components/ui/badge';
 import {
-  Zap, Plus, Play, Trash2, Clock, AlertTriangle, CheckCircle2,
-  Loader2, ArrowRight, Activity, FileText,
-} from 'lucide-react';
-import { cn } from '@/lib/utils';
-import { formatDistanceToNow } from 'date-fns';
-import { zhCN } from 'date-fns/locale';
-import {
-  WORKFLOW_TRIGGER_CONFIG,
-  WORKFLOW_ACTION_CONFIG,
-  type WorkflowTriggerType,
-  type Workflow,
-  type WorkflowLog,
-  type WorkflowAction,
-} from '@/lib/crm-types';
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from '@/components/ui/dialog';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
+import {
+  Play,
+  Plus,
+  Search,
+  MoreHorizontal,
+  Workflow,
+  Pencil,
+  Trash2,
+  Eye,
+  RefreshCw,
+  Zap,
+  Clock,
+  User,
+  CheckCircle,
+  XCircle,
+} from 'lucide-react';
+import {
+  WorkflowEditor,
+  WorkflowTemplate,
+} from '@/components/workflows/workflow-editor';
+import { TemplateSelector } from '@/components/workflows/template-selector';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 
-interface WorkflowWithLogs extends Workflow {
-  logs?: WorkflowLog[];
+interface Workflow {
+  id: string;
+  name: string;
+  description: string;
+  trigger_type: string;
+  trigger_config: Record<string, string>;
+  status: string;
+  execution_count: number;
+  last_executed_at: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+interface WorkflowExecution {
+  id: string;
+  workflow_id: string;
+  workflow_name: string;
+  status: string;
+  started_at: string;
+  completed_at: string | null;
+  error: string | null;
+  trigger_type: string;
 }
 
 export default function WorkflowsPage() {
-  const [workflows, setWorkflows] = useState<WorkflowWithLogs[]>([]);
-  const [logs, setLogs] = useState<WorkflowLog[]>([]);
+  const router = useRouter();
+  const [workflows, setWorkflows] = useState<Workflow[]>([]);
+  const [executions, setExecutions] = useState<WorkflowExecution[]>([]);
   const [loading, setLoading] = useState(true);
-  const [showCreate, setShowCreate] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [editorOpen, setEditorOpen] = useState(false);
+  const [editorMode, setEditorMode] = useState<'create' | 'edit'>('create');
+  const [editingWorkflow, setEditingWorkflow] = useState<Workflow | null>(null);
+  const [templateDialogOpen, setTemplateDialogOpen] = useState(false);
+  const [detailDialogOpen, setDetailDialogOpen] = useState(false);
+  const [selectedWorkflow, setSelectedWorkflow] = useState<Workflow | null>(null);
+  const [executionsLoading, setExecutionsLoading] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
 
-  const fetchData = useCallback(async () => {
+  // 加载工作流列表
+  const loadWorkflows = async () => {
     try {
       setLoading(true);
       const res = await fetch('/api/workflows');
-      if (res.ok) {
-        const data = await res.json();
-        setWorkflows((data.workflows || []).map((w: Record<string, unknown>) => ({
-          id: w.id as string,
-          name: w.name as string,
-          description: w.description as string,
-          triggerType: w.trigger_type as WorkflowTriggerType,
-          triggerEntity: w.trigger_entity as string,
-          conditions: typeof w.conditions === 'string' ? JSON.parse(w.conditions || '{}') : w.conditions || [],
-          actions: typeof w.actions === 'string' ? JSON.parse(w.actions || '[]') : w.actions || [],
-          isActive: w.is_active as boolean,
-          isTemplate: w.is_template as boolean,
-          runCount: w.run_count as number,
-          lastRunAt: w.last_run_at as string,
-          createdAt: w.created_at as string,
-          updatedAt: w.updated_at as string,
-        })));
-        setLogs((data.recentLogs || []).map((l: Record<string, unknown>) => ({
-          id: l.id as string,
-          workflowId: l.workflow_id as string,
-          workflowName: l.workflow_name as string,
-          triggerType: l.trigger_type as string,
-          triggerEntity: l.trigger_entity as string,
-          triggerEntityId: l.trigger_entity_id as string,
-          actionTaken: l.action_taken as string,
-          actionDetail: l.action_detail as string,
-          result: l.result as 'success' | 'failed',
-          createdAt: l.created_at as string,
-        })));
+      const data = await res.json();
+      if (data.success) {
+        setWorkflows(data.data);
       }
-    } catch {
-      /* silent */
+    } catch (error) {
+      console.error('加载工作流失败:', error);
     } finally {
       setLoading(false);
     }
+  };
+
+  // 加载执行日志
+  const loadExecutions = async () => {
+    try {
+      setExecutionsLoading(true);
+      const res = await fetch('/api/workflows/executions');
+      const data = await res.json();
+      if (data.success) {
+        setExecutions(data.data.slice(0, 20)); // 只显示最近20条
+      }
+    } catch (error) {
+      console.error('加载执行日志失败:', error);
+    } finally {
+      setExecutionsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadWorkflows();
+    loadExecutions();
   }, []);
 
-  useEffect(() => { fetchData(); }, [fetchData]);
+  // 过滤工作流
+  const filteredWorkflows = workflows.filter((w) => {
+    const matchesSearch = w.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      w.description.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesStatus = statusFilter === 'all' || w.status === statusFilter;
+    return matchesSearch && matchesStatus;
+  });
 
-  const toggleWorkflow = async (id: string, isActive: boolean) => {
-    const res = await fetch('/api/workflows', {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ id, data: { isActive: !isActive } }),
+  // 创建工作流
+  const handleCreate = () => {
+    setTemplateDialogOpen(true);
+  };
+
+  // 从模板创建
+  const handleTemplateSelect = (template: WorkflowTemplate) => {
+    setTemplateDialogOpen(false);
+    setEditingWorkflow({
+      id: '',
+      name: template.name,
+      description: template.description,
+      trigger_type: template.triggerType,
+      trigger_config: template.triggerConfig,
+      status: 'draft',
+      execution_count: 0,
+      last_executed_at: null,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
     });
-    if (res.ok) fetchData();
+    setEditorMode('create');
+    setEditorOpen(true);
   };
 
-  const deleteWorkflow = async (id: string) => {
-    if (!confirm('确定要删除此工作流？')) return;
-    const res = await fetch(`/api/workflows?id=${id}`, { method: 'DELETE' });
-    if (res.ok) fetchData();
+  // 编辑工作流
+  const handleEdit = (workflow: Workflow) => {
+    setEditingWorkflow(workflow);
+    setEditorMode('edit');
+    setEditorOpen(true);
   };
 
-  const seedTemplates = async () => {
-    const res = await fetch('/api/workflows', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action: 'seedTemplates' }),
-    });
-    if (res.ok) fetchData();
+  // 查看工作流
+  const handleView = (workflow: Workflow) => {
+    setSelectedWorkflow(workflow);
+    setDetailDialogOpen(true);
   };
 
-  const activeCount = workflows.filter(w => w.isActive).length;
-  const templateCount = workflows.filter(w => w.isTemplate).length;
-
-  return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight">工作流自动化</h1>
-          <p className="text-muted-foreground mt-1">配置自动化规则，让系统自动执行重复任务</p>
-        </div>
-        <div className="flex items-center gap-3">
-          <Button variant="outline" size="sm" onClick={seedTemplates}>
-            <FileText className="h-4 w-4 mr-1" />
-            初始化模板
-          </Button>
-          <Dialog open={showCreate} onOpenChange={setShowCreate}>
-            <DialogTrigger asChild>
-              <Button size="sm">
-                <Plus className="h-4 w-4 mr-1" />
-                新建工作流
-              </Button>
-            </DialogTrigger>
-            <CreateWorkflowDialog onClose={() => { setShowCreate(false); fetchData(); }} />
-          </Dialog>
-        </div>
-      </div>
-
-      {/* Stats */}
-      <div className="grid gap-3 grid-cols-4">
-        <Card className="card-hover">
-          <CardContent className="p-4">
-            <div className="flex items-center gap-3">
-              <div className="flex items-center justify-center w-9 h-9 rounded-lg bg-gradient-to-br from-purple-500/10 to-pink-500/10">
-                <Zap className="h-4 w-4 text-purple-600 dark:text-purple-400" />
-              </div>
-              <div>
-                <p className="text-xs text-muted-foreground">工作流总数</p>
-                <p className="text-xl font-bold">{workflows.length}</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card className="card-hover">
-          <CardContent className="p-4">
-            <div className="flex items-center gap-3">
-              <div className="flex items-center justify-center w-9 h-9 rounded-lg bg-gradient-to-br from-green-500/10 to-emerald-500/10">
-                <Play className="h-4 w-4 text-green-600 dark:text-green-400" />
-              </div>
-              <div>
-                <p className="text-xs text-muted-foreground">已启用</p>
-                <p className="text-xl font-bold text-green-600">{activeCount}</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card className="card-hover">
-          <CardContent className="p-4">
-            <div className="flex items-center gap-3">
-              <div className="flex items-center justify-center w-9 h-9 rounded-lg bg-gradient-to-br from-blue-500/10 to-cyan-500/10">
-                <FileText className="h-4 w-4 text-blue-600 dark:text-blue-400" />
-              </div>
-              <div>
-                <p className="text-xs text-muted-foreground">模板</p>
-                <p className="text-xl font-bold">{templateCount}</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card className="card-hover">
-          <CardContent className="p-4">
-            <div className="flex items-center gap-3">
-              <div className="flex items-center justify-center w-9 h-9 rounded-lg bg-gradient-to-br from-orange-500/10 to-amber-500/10">
-                <Activity className="h-4 w-4 text-orange-600 dark:text-orange-400" />
-              </div>
-              <div>
-                <p className="text-xs text-muted-foreground">总执行次数</p>
-                <p className="text-xl font-bold">{workflows.reduce((sum, w) => sum + w.runCount, 0)}</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Workflow List */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Zap className="h-5 w-5 text-purple-600 dark:text-purple-400" />
-            工作流列表
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          {loading ? (
-            <div className="flex items-center justify-center py-12">
-              <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-            </div>
-          ) : workflows.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-16 text-center">
-              <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-muted to-muted/50 flex items-center justify-center mb-4">
-                <Zap className="h-8 w-8 text-muted-foreground/50" />
-              </div>
-              <p className="text-sm text-muted-foreground">暂无工作流</p>
-              <p className="text-xs text-muted-foreground/60 mt-1">点击「初始化模板」快速创建常用工作流</p>
-              <Button variant="outline" size="sm" className="mt-4" onClick={seedTemplates}>
-                初始化模板
-              </Button>
-            </div>
-          ) : (
-            <div className="space-y-3">
-              {workflows.map((workflow) => {
-                const triggerConfig = WORKFLOW_TRIGGER_CONFIG[workflow.triggerType];
-                const actions: WorkflowAction[] = workflow.actions || [];
-                return (
-                  <div
-                    key={workflow.id}
-                    className={cn(
-                      'flex items-start justify-between p-4 rounded-xl border transition-all duration-200',
-                      'hover:border-primary/30 hover:shadow-md',
-                      workflow.isActive ? 'border-green-200 dark:border-green-900/50 bg-green-50/30 dark:bg-green-950/10' : 'border-border'
-                    )}
-                  >
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2">
-                        <h3 className="font-semibold text-sm">{workflow.name}</h3>
-                        {workflow.isTemplate && (
-                          <Badge variant="outline" className="text-xs">模板</Badge>
-                        )}
-                        <Badge
-                          variant={workflow.isActive ? 'default' : 'secondary'}
-                          className={cn('text-xs', workflow.isActive && 'bg-green-600')}
-                        >
-                          {workflow.isActive ? '已启用' : '已禁用'}
-                        </Badge>
-                      </div>
-                      {workflow.description && (
-                        <p className="text-xs text-muted-foreground mt-1">{workflow.description}</p>
-                      )}
-                      <div className="flex items-center gap-4 mt-2">
-                        {/* Trigger */}
-                        <div className="flex items-center gap-1.5 text-xs">
-                          <span className="text-muted-foreground">触发:</span>
-                          <Badge variant="outline" className="text-xs">
-                            {triggerConfig?.label || workflow.triggerType}
-                          </Badge>
-                        </div>
-                        <ArrowRight className="h-3 w-3 text-muted-foreground" />
-                        {/* Actions */}
-                        <div className="flex items-center gap-1.5 text-xs">
-                          <span className="text-muted-foreground">动作:</span>
-                          {actions.map((action, idx) => (
-                            <Badge key={idx} variant="outline" className="text-xs">
-                              {WORKFLOW_ACTION_CONFIG[action.type]?.label || action.type}
-                            </Badge>
-                          ))}
-                        </div>
-                      </div>
-                      {workflow.runCount > 0 && (
-                        <div className="flex items-center gap-3 mt-2 text-xs text-muted-foreground">
-                          <span>执行 {workflow.runCount} 次</span>
-                          {workflow.lastRunAt && (
-                            <span>最近: {formatDistanceToNow(new Date(workflow.lastRunAt), { addSuffix: true, locale: zhCN })}</span>
-                          )}
-                        </div>
-                      )}
-                    </div>
-                    <div className="flex items-center gap-2 ml-4">
-                      <Switch
-                        checked={workflow.isActive}
-                        onCheckedChange={() => toggleWorkflow(workflow.id, workflow.isActive)}
-                      />
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8 text-red-500 hover:text-red-600"
-                        onClick={() => deleteWorkflow(workflow.id)}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          )}
-        </CardContent>
-      </Card>
-
-      {/* Recent Logs */}
-      {logs.length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Activity className="h-5 w-5 text-orange-600 dark:text-orange-400" />
-              执行日志
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-2">
-              {logs.map((log) => (
-                <div key={log.id} className={cn(
-                  'flex items-center justify-between p-3 rounded-lg border',
-                  log.result === 'success' ? 'border-green-200 dark:border-green-900/50' : 'border-red-200 dark:border-red-900/50'
-                )}>
-                  <div className="flex items-center gap-3">
-                    {log.result === 'success' ? (
-                      <CheckCircle2 className="h-4 w-4 text-green-500 shrink-0" />
-                    ) : (
-                      <AlertTriangle className="h-4 w-4 text-red-500 shrink-0" />
-                    )}
-                    <div>
-                      <p className="text-sm font-medium">{log.workflowName}</p>
-                      <p className="text-xs text-muted-foreground">
-                        {WORKFLOW_ACTION_CONFIG[log.actionTaken as keyof typeof WORKFLOW_ACTION_CONFIG]?.label || log.actionTaken}
-                      </p>
-                    </div>
-                  </div>
-                  <div className="text-right">
-                    <Badge variant={log.result === 'success' ? 'default' : 'destructive'} className="text-xs">
-                      {log.result === 'success' ? '成功' : '失败'}
-                    </Badge>
-                    <p className="text-xs text-muted-foreground mt-1">
-                      {formatDistanceToNow(new Date(log.createdAt), { addSuffix: true, locale: zhCN })}
-                    </p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      )}
-    </div>
-  );
-}
-
-// Create Workflow Dialog
-function CreateWorkflowDialog({ onClose }: { onClose: () => void }) {
-  const [name, setName] = useState('');
-  const [description, setDescription] = useState('');
-  const [triggerType, setTriggerType] = useState<WorkflowTriggerType>('lead_created');
-  const [actionType, setActionType] = useState<'create_task' | 'send_notification'>('create_task');
-  const [taskTitle, setTaskTitle] = useState('');
-  const [taskPriority, setTaskPriority] = useState('medium');
-  const [delayHours, setDelayHours] = useState('24');
-  const [notifTitle, setNotifTitle] = useState('');
-  const [notifMessage, setNotifMessage] = useState('');
-  const [saving, setSaving] = useState(false);
-
-  const handleSubmit = async () => {
-    if (!name) return;
-    setSaving(true);
+  // 删除工作流
+  const handleDelete = async (id: string) => {
     try {
-      const triggerConfig = WORKFLOW_TRIGGER_CONFIG[triggerType];
-      const actions = actionType === 'create_task' ? [{
-        type: 'create_task',
-        config: {
-          title: taskTitle || `跟进${triggerConfig?.entity || '客户'}`,
-          priority: taskPriority,
-          delayHours: Number(delayHours),
-          assignedTo: 'sales_a',
-        },
-      }] : [{
-        type: 'send_notification',
-        config: {
-          notificationType: 'info',
-          title: notifTitle || `${name}通知`,
-          message: notifMessage || `${name}已触发`,
-        },
-      }];
-
-      await fetch('/api/workflows', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          action: 'create',
-          data: {
-            name,
-            description,
-            triggerType,
-            triggerEntity: triggerConfig?.entity || 'lead',
-            conditions: {},
-            actions,
-            isActive: true,
-          },
-        }),
+      const res = await fetch(`/api/workflows/${id}`, {
+        method: 'DELETE',
       });
-      onClose();
-    } catch {
-      /* silent */
-    } finally {
-      setSaving(false);
+      const data = await res.json();
+      if (data.success) {
+        loadWorkflows();
+      }
+    } catch (error) {
+      console.error('删除失败:', error);
+    }
+    setConfirmDelete(null);
+  };
+
+  // 保存工作流
+  const handleSave = async (workflowData: {
+    name: string;
+    description: string;
+    triggerType: string;
+    triggerConfig: Record<string, string>;
+    nodes: unknown[];
+    edges: unknown[];
+  }) => {
+    try {
+      if (editorMode === 'edit' && editingWorkflow?.id) {
+        // 更新
+        await fetch(`/api/workflows/${editingWorkflow.id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            name: workflowData.name,
+            description: workflowData.description,
+            trigger_type: workflowData.triggerType,
+            trigger_config: workflowData.triggerConfig,
+            nodes: workflowData.nodes,
+            edges: workflowData.edges,
+          }),
+        });
+      } else {
+        // 创建
+        await fetch('/api/workflows', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            name: workflowData.name,
+            description: workflowData.description,
+            trigger_type: workflowData.triggerType,
+            trigger_config: workflowData.triggerConfig,
+            nodes: workflowData.nodes,
+            edges: workflowData.edges,
+          }),
+        });
+      }
+      loadWorkflows();
+      setEditorOpen(false);
+    } catch (error) {
+      console.error('保存失败:', error);
+    }
+  };
+
+  // 执行工作流
+  const handleExecute = async (id: string) => {
+    try {
+      await fetch(`/api/workflows/${id}/execute`, {
+        method: 'POST',
+      });
+      loadExecutions();
+    } catch (error) {
+      console.error('执行失败:', error);
+    }
+  };
+
+  // 发布/取消发布
+  const handleToggleStatus = async (workflow: Workflow) => {
+    try {
+      const newStatus = workflow.status === 'active' ? 'draft' : 'active';
+      await fetch(`/api/workflows/${workflow.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: newStatus }),
+      });
+      loadWorkflows();
+    } catch (error) {
+      console.error('状态更新失败:', error);
+    }
+  };
+
+  // 状态显示
+  const getStatusBadge = (status: string) => {
+    switch (status) {
+      case 'active':
+        return <Badge className="bg-green-100 text-green-700 hover:bg-green-100">已启用</Badge>;
+      case 'draft':
+        return <Badge variant="secondary">草稿</Badge>;
+      case 'inactive':
+        return <Badge variant="outline">已停用</Badge>;
+      default:
+        return <Badge variant="outline">{status}</Badge>;
+    }
+  };
+
+  // 执行状态显示
+  const getExecutionStatusBadge = (status: string) => {
+    switch (status) {
+      case 'completed':
+        return <Badge className="bg-green-100 text-green-700">成功</Badge>;
+      case 'failed':
+        return <Badge variant="destructive">失败</Badge>;
+      case 'running':
+        return <Badge variant="default" className="bg-blue-100 text-blue-700">运行中</Badge>;
+      default:
+        return <Badge variant="outline">{status}</Badge>;
+    }
+  };
+
+  // 触发类型显示
+  const getTriggerTypeLabel = (type: string) => {
+    switch (type) {
+      case 'manual':
+        return '手动';
+      case 'schedule':
+        return '定时';
+      case 'event':
+        return '事件';
+      default:
+        return type;
     }
   };
 
   return (
-    <DialogContent className="sm:max-w-lg">
-      <DialogHeader>
-        <DialogTitle>新建工作流</DialogTitle>
-      </DialogHeader>
-      <div className="space-y-4 mt-4">
-        <div className="space-y-2">
-          <Label>工作流名称</Label>
-          <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="如：新线索自动跟进" />
+    <div className="container mx-auto py-6 space-y-6">
+      {/* 头部 */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold">工作流自动化</h1>
+          <p className="text-sm text-muted-foreground">
+            设计自动化业务流程，提高工作效率
+          </p>
         </div>
-        <div className="space-y-2">
-          <Label>描述</Label>
-          <Textarea value={description} onChange={(e) => setDescription(e.target.value)} placeholder="工作流的功能说明" rows={2} />
-        </div>
-        <div className="space-y-2">
-          <Label>触发条件</Label>
-          <Select value={triggerType} onValueChange={(v) => setTriggerType(v as WorkflowTriggerType)}>
-            <SelectTrigger>
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {Object.entries(WORKFLOW_TRIGGER_CONFIG).map(([key, config]) => (
-                <SelectItem key={key} value={key}>
-                  <div>
-                    <span className="font-medium">{config.label}</span>
-                    <span className="text-xs text-muted-foreground ml-2">{config.description}</span>
-                  </div>
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-        <div className="space-y-2">
-          <Label>执行动作</Label>
-          <Select value={actionType} onValueChange={(v) => setActionType(v as 'create_task' | 'send_notification')}>
-            <SelectTrigger>
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="create_task">创建任务</SelectItem>
-              <SelectItem value="send_notification">发送通知</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-
-        {actionType === 'create_task' && (
-          <div className="space-y-3 p-3 rounded-lg border bg-muted/30">
-            <div className="space-y-2">
-              <Label className="text-xs">任务标题</Label>
-              <Input value={taskTitle} onChange={(e) => setTaskTitle(e.target.value)} placeholder="跟进新线索" />
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-2">
-                <Label className="text-xs">优先级</Label>
-                <Select value={taskPriority} onValueChange={setTaskPriority}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="low">低</SelectItem>
-                    <SelectItem value="medium">中</SelectItem>
-                    <SelectItem value="high">高</SelectItem>
-                    <SelectItem value="urgent">紧急</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2">
-                <Label className="text-xs">截止时间(小时后)</Label>
-                <Input type="number" value={delayHours} onChange={(e) => setDelayHours(e.target.value)} />
-              </div>
-            </div>
-          </div>
-        )}
-
-        {actionType === 'send_notification' && (
-          <div className="space-y-3 p-3 rounded-lg border bg-muted/30">
-            <div className="space-y-2">
-              <Label className="text-xs">通知标题</Label>
-              <Input value={notifTitle} onChange={(e) => setNotifTitle(e.target.value)} placeholder="工作流通知" />
-            </div>
-            <div className="space-y-2">
-              <Label className="text-xs">通知内容</Label>
-              <Textarea value={notifMessage} onChange={(e) => setNotifMessage(e.target.value)} placeholder="通知的详细内容" rows={2} />
-            </div>
-          </div>
-        )}
-
-        <div className="flex justify-end gap-2">
-          <Button variant="outline" onClick={onClose}>取消</Button>
-          <Button onClick={handleSubmit} disabled={!name || saving}>
-            {saving ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : <Plus className="h-4 w-4 mr-1" />}
-            创建
+        <div className="flex gap-2">
+          <Button
+            variant="outline"
+            onClick={() => {
+              loadWorkflows();
+              loadExecutions();
+            }}
+          >
+            <RefreshCw className="h-4 w-4 mr-2" />
+            刷新
+          </Button>
+          <Button onClick={handleCreate}>
+            <Plus className="h-4 w-4 mr-2" />
+            新建工作流
           </Button>
         </div>
       </div>
-    </DialogContent>
+
+      {/* 统计卡片 */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-sm font-medium">总工作流</CardTitle>
+            <Workflow className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{workflows.length}</div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-sm font-medium">已启用</CardTitle>
+            <Zap className="h-4 w-4 text-green-500" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">
+              {workflows.filter((w) => w.status === 'active').length}
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-sm font-medium">今日执行</CardTitle>
+            <Play className="h-4 w-4 text-blue-500" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">
+              {executions.filter((e) => {
+                const today = new Date().toDateString();
+                return new Date(e.started_at).toDateString() === today;
+              }).length}
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-sm font-medium">成功率</CardTitle>
+            <CheckCircle className="h-4 w-4 text-emerald-500" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">
+              {executions.length > 0
+                ? Math.round(
+                    (executions.filter((e) => e.status === 'completed').length /
+                      executions.length) *
+                      100
+                  )
+                : 0}
+              %
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* 列表和执行日志 */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* 工作流列表 */}
+        <div className="lg:col-span-2">
+          <Card>
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle>工作流列表</CardTitle>
+                  <CardDescription>管理你的自动化工作流</CardDescription>
+                </div>
+                <div className="flex gap-2">
+                  <div className="relative">
+                    <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      placeholder="搜索工作流..."
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                      className="pl-8 w-[200px]"
+                    />
+                  </div>
+                  <select
+                    className="px-3 py-2 border rounded-md text-sm"
+                    value={statusFilter}
+                    onChange={(e) => setStatusFilter(e.target.value)}
+                  >
+                    <option value="all">全部状态</option>
+                    <option value="active">已启用</option>
+                    <option value="draft">草稿</option>
+                  </select>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent>
+              {loading ? (
+                <div className="flex items-center justify-center py-8">
+                  <RefreshCw className="h-6 w-6 animate-spin text-muted-foreground" />
+                </div>
+              ) : filteredWorkflows.length === 0 ? (
+                <div className="text-center py-8 text-muted-foreground">
+                  <Workflow className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                  <p>暂无工作流</p>
+                  <Button
+                    variant="link"
+                    className="mt-2"
+                    onClick={handleCreate}
+                  >
+                    创建第一个工作流
+                  </Button>
+                </div>
+              ) : (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>名称</TableHead>
+                      <TableHead>触发类型</TableHead>
+                      <TableHead>状态</TableHead>
+                      <TableHead>执行次数</TableHead>
+                      <TableHead>最近执行</TableHead>
+                      <TableHead className="w-[80px]">操作</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {filteredWorkflows.map((workflow) => (
+                      <TableRow key={workflow.id}>
+                        <TableCell>
+                          <div>
+                            <div className="font-medium">{workflow.name}</div>
+                            {workflow.description && (
+                              <div className="text-xs text-muted-foreground truncate max-w-[200px]">
+                                {workflow.description}
+                              </div>
+                            )}
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant="outline">
+                            {getTriggerTypeLabel(workflow.trigger_type)}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>{getStatusBadge(workflow.status)}</TableCell>
+                        <TableCell>{workflow.execution_count}</TableCell>
+                        <TableCell className="text-xs text-muted-foreground">
+                          {workflow.last_executed_at
+                            ? new Date(workflow.last_executed_at).toLocaleString('zh-CN')
+                            : '-'}
+                        </TableCell>
+                        <TableCell>
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" size="sm">
+                                <MoreHorizontal className="h-4 w-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem onClick={() => handleView(workflow)}>
+                                <Eye className="h-4 w-4 mr-2" />
+                                查看
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => handleEdit(workflow)}>
+                                <Pencil className="h-4 w-4 mr-2" />
+                                编辑
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => handleExecute(workflow.id)}>
+                                <Play className="h-4 w-4 mr-2" />
+                                立即执行
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => handleToggleStatus(workflow)}>
+                                {workflow.status === 'active' ? (
+                                  <>
+                                    <XCircle className="h-4 w-4 mr-2" />
+                                    停用
+                                  </>
+                                ) : (
+                                  <>
+                                    <CheckCircle className="h-4 w-4 mr-2" />
+                                    启用
+                                  </>
+                                )}
+                              </DropdownMenuItem>
+                              <DropdownMenuItem
+                                className="text-red-600"
+                                onClick={() => setConfirmDelete(workflow.id)}
+                              >
+                                <Trash2 className="h-4 w-4 mr-2" />
+                                删除
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* 执行日志 */}
+        <div>
+          <Card>
+            <CardHeader>
+              <CardTitle>执行日志</CardTitle>
+              <CardDescription>最近的工作流执行记录</CardDescription>
+            </CardHeader>
+            <CardContent>
+              {executionsLoading ? (
+                <div className="flex items-center justify-center py-8">
+                  <RefreshCw className="h-6 w-6 animate-spin text-muted-foreground" />
+                </div>
+              ) : executions.length === 0 ? (
+                <div className="text-center py-8 text-muted-foreground">
+                  <Clock className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                  <p className="text-sm">暂无执行记录</p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {executions.map((execution) => (
+                    <div
+                      key={execution.id}
+                      className="flex items-start gap-3 p-3 border rounded-lg"
+                    >
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2">
+                          <span className="font-medium text-sm truncate">
+                            {execution.workflow_name}
+                          </span>
+                          {getExecutionStatusBadge(execution.status)}
+                        </div>
+                        <div className="text-xs text-muted-foreground mt-1">
+                          <div className="flex items-center gap-2">
+                            <Clock className="h-3 w-3" />
+                            {new Date(execution.started_at).toLocaleString('zh-CN')}
+                          </div>
+                          {execution.error && (
+                            <div className="text-red-500 mt-1 truncate">
+                              {execution.error}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+
+      {/* 模板选择弹窗 */}
+      <Dialog open={templateDialogOpen} onOpenChange={setTemplateDialogOpen}>
+        <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+          <TemplateSelector
+            onSelect={handleTemplateSelect}
+            onCancel={() => setTemplateDialogOpen(false)}
+          />
+        </DialogContent>
+      </Dialog>
+
+      {/* 工作流编辑器 */}
+      <WorkflowEditor
+        open={editorOpen}
+        onClose={() => setEditorOpen(false)}
+        onSave={handleSave}
+        initialData={
+          editingWorkflow
+            ? {
+                id: editingWorkflow.id,
+                name: editingWorkflow.name,
+                description: editingWorkflow.description,
+                triggerType: editingWorkflow.trigger_type,
+                triggerConfig: editingWorkflow.trigger_config,
+                nodes: [],
+                edges: [],
+              }
+            : undefined
+        }
+        mode={editorMode}
+      />
+
+      {/* 工作流详情 */}
+      <Dialog open={detailDialogOpen} onOpenChange={setDetailDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{selectedWorkflow?.name}</DialogTitle>
+            <DialogDescription>工作流详情</DialogDescription>
+          </DialogHeader>
+          {selectedWorkflow && (
+            <div className="space-y-4">
+              <div>
+                <Label className="text-xs text-muted-foreground">描述</Label>
+                <p className="mt-1">{selectedWorkflow.description || '无'}</p>
+              </div>
+              <div>
+                <Label className="text-xs text-muted-foreground">触发类型</Label>
+                <p className="mt-1">
+                  <Badge variant="outline">
+                    {getTriggerTypeLabel(selectedWorkflow.trigger_type)}
+                  </Badge>
+                </p>
+              </div>
+              <div>
+                <Label className="text-xs text-muted-foreground">状态</Label>
+                <div className="mt-1">{getStatusBadge(selectedWorkflow.status)}</div>
+              </div>
+              <div>
+                <Label className="text-xs text-muted-foreground">触发配置</Label>
+                <pre className="mt-1 p-2 bg-muted rounded text-xs overflow-auto">
+                  {JSON.stringify(selectedWorkflow.trigger_config, null, 2)}
+                </pre>
+              </div>
+              <div>
+                <Label className="text-xs text-muted-foreground">执行统计</Label>
+                <p className="mt-1">
+                  共执行 {selectedWorkflow.execution_count} 次
+                  {selectedWorkflow.last_executed_at && (
+                    <span className="text-muted-foreground ml-2">
+                      最近: {new Date(selectedWorkflow.last_executed_at).toLocaleString('zh-CN')}
+                    </span>
+                  )}
+                </p>
+              </div>
+              <div>
+                <Label className="text-xs text-muted-foreground">创建时间</Label>
+                <p className="mt-1">
+                  {new Date(selectedWorkflow.created_at).toLocaleString('zh-CN')}
+                </p>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* 删除确认 */}
+      <Dialog open={!!confirmDelete} onOpenChange={() => setConfirmDelete(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>确认删除</DialogTitle>
+            <DialogDescription>
+              确定要删除这个工作流吗？此操作无法撤销。
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex justify-end gap-2">
+            <Button variant="outline" onClick={() => setConfirmDelete(null)}>
+              取消
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={() => confirmDelete && handleDelete(confirmDelete)}
+            >
+              删除
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+    </div>
   );
 }

@@ -28,6 +28,7 @@ import {
   AlertTriangle,
   Cpu,
   Ticket,
+  GitBranch,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
@@ -168,6 +169,13 @@ const navigation: NavItemType[] = [
     icon: Ticket,
     gradient: 'from-teal-500 to-cyan-500',
     badge: 'V5.2',
+  },
+  { 
+    name: '工作流自动化', 
+    href: '/workflows', 
+    icon: GitBranch,
+    gradient: 'from-pink-500 to-rose-500',
+    badge: 'NEW',
   },
   { 
     name: '流程自动化', 

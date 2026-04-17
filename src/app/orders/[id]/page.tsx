@@ -25,8 +25,15 @@ import {
 import { ArrowLeft, Package, CheckCircle, XCircle, ArrowRight, Edit, Trash2, Building2, Briefcase, FileText, Calendar, CreditCard } from 'lucide-react';
 import Link from 'next/link';
 import { ORDER_STATUS_CONFIG, type Order, type OrderStatus } from '@/lib/crm-types';
-import { format } from 'date-fns';
+import { format, isValid, parseISO } from 'date-fns';
 import { zhCN } from 'date-fns/locale';
+
+function safeFormat(dateValue: string | null | undefined, fmt: string): string {
+  if (!dateValue) return '-';
+  const date = parseISO(dateValue);
+  if (!isValid(date)) return '-';
+  try { return format(date, fmt, { locale: zhCN }); } catch { return '-'; }
+}
 import { cn } from '@/lib/utils';
 
 export default function OrderDetailPage() {
@@ -131,7 +138,7 @@ export default function OrderDetailPage() {
               <h1 className="text-2xl font-bold tracking-tight font-mono">{order.orderNumber}</h1>
               <Badge className={statusConf.className}>{statusConf.label}</Badge>
             </div>
-            <p className="text-muted-foreground text-sm mt-1">创建于 {format(new Date(order.createdAt), 'yyyy-MM-dd HH:mm', { locale: zhCN })}</p>
+            <p className="text-muted-foreground text-sm mt-1">创建于 {safeFormat(order.createdAt, 'yyyy-MM-dd HH:mm')}</p>
           </div>
         </div>
         <div className="flex items-center gap-2 flex-wrap">
@@ -323,7 +330,7 @@ export default function OrderDetailPage() {
                   <Calendar className="h-4 w-4 mt-0.5 text-muted-foreground" />
                   <div>
                     <p className="text-xs text-muted-foreground">订单日期</p>
-                    <p className="font-medium">{format(new Date(order.orderDate), 'yyyy-MM-dd')}</p>
+                    <p className="font-medium">{safeFormat(order.orderDate, 'yyyy-MM-dd')}</p>
                   </div>
                 </div>
               )}
@@ -332,7 +339,7 @@ export default function OrderDetailPage() {
                   <Calendar className="h-4 w-4 mt-0.5 text-muted-foreground" />
                   <div>
                     <p className="text-xs text-muted-foreground">预计交付日期</p>
-                    <p className="font-medium">{format(new Date(order.deliveryDate), 'yyyy-MM-dd')}</p>
+                    <p className="font-medium">{safeFormat(order.deliveryDate, 'yyyy-MM-dd')}</p>
                   </div>
                 </div>
               )}

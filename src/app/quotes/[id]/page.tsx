@@ -25,8 +25,15 @@ import {
 import { ArrowLeft, Send, ArrowRight, FileText, Briefcase, GitBranch, MessageSquare, Building2, Edit, Trash2, Calendar } from 'lucide-react';
 import Link from 'next/link';
 import { QUOTE_STATUS_CONFIG, type Quote, type QuoteStatus } from '@/lib/crm-types';
-import { format } from 'date-fns';
+import { format, isValid, parseISO } from 'date-fns';
 import { zhCN } from 'date-fns/locale';
+
+function safeFormat(dateValue: string | null | undefined, fmt: string): string {
+  if (!dateValue) return '-';
+  const date = parseISO(dateValue);
+  if (!isValid(date)) return '-';
+  try { return format(date, fmt, { locale: zhCN }); } catch { return '-'; }
+}
 import { cn } from '@/lib/utils';
 
 export default function QuoteDetailPage() {
@@ -157,7 +164,7 @@ export default function QuoteDetailPage() {
                 V{quote.version}
               </Badge>
             </div>
-            <p className="text-muted-foreground text-sm mt-1">创建于 {format(new Date(quote.createdAt), 'yyyy-MM-dd HH:mm', { locale: zhCN })}</p>
+            <p className="text-muted-foreground text-sm mt-1">创建于 {safeFormat(quote.createdAt, 'yyyy-MM-dd HH:mm')}</p>
           </div>
         </div>
         <div className="flex items-center gap-2 flex-wrap">
@@ -304,7 +311,7 @@ export default function QuoteDetailPage() {
                   <span className="text-muted-foreground">有效期开始</span>
                   <div className="mt-1 flex items-center gap-1">
                     <Calendar className="h-3.5 w-3.5" />
-                    {format(new Date(quote.validFrom), 'yyyy-MM-dd')}
+                    {safeFormat(quote.validFrom, 'yyyy-MM-dd')}
                   </div>
                 </div>
               )}
@@ -313,16 +320,16 @@ export default function QuoteDetailPage() {
                   <span className="text-muted-foreground">有效期结束</span>
                   <div className="mt-1 flex items-center gap-1">
                     <Calendar className="h-3.5 w-3.5" />
-                    {format(new Date(quote.validUntil), 'yyyy-MM-dd')}
+                    {safeFormat(quote.validUntil, 'yyyy-MM-dd')}
                   </div>
                 </div>
               )}
               <Separator />
               <div className="flex justify-between text-xs text-muted-foreground">
-                <span>创建: {format(new Date(quote.createdAt), 'yyyy-MM-dd HH:mm', { locale: zhCN })}</span>
+                <span>创建: {safeFormat(quote.createdAt, 'yyyy-MM-dd HH:mm')}</span>
               </div>
               <div className="flex justify-between text-xs text-muted-foreground">
-                <span>更新: {format(new Date(quote.updatedAt), 'yyyy-MM-dd HH:mm', { locale: zhCN })}</span>
+                <span>更新: {safeFormat(quote.updatedAt, 'yyyy-MM-dd HH:mm')}</span>
               </div>
             </CardContent>
           </Card>
@@ -371,7 +378,7 @@ export default function QuoteDetailPage() {
                         </div>
                         <div className="text-xs text-muted-foreground flex items-center gap-2 mt-0.5">
                           <span>¥{vq.total.toLocaleString()}</span>
-                          <span>{format(new Date(vq.createdAt), 'yyyy-MM-dd')}</span>
+                          <span>{safeFormat(vq.createdAt, 'yyyy-MM-dd')}</span>
                         </div>
                         {vq.revisionReason && (
                           <p className="text-xs text-purple-500 truncate mt-0.5">{vq.revisionReason}</p>

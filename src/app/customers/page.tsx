@@ -39,8 +39,15 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import { format } from 'date-fns';
+import { format, isValid, parseISO } from 'date-fns';
 import { zhCN } from 'date-fns/locale';
+
+function safeFormat(dateValue: string | null | undefined, fmt: string): string {
+  if (!dateValue) return '-';
+  const date = parseISO(dateValue);
+  if (!isValid(date)) return '-';
+  try { return format(date, fmt, { locale: zhCN }); } catch { return '-'; }
+}
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import type { Tag as TagType } from '@/storage/database/shared/schema';
 
@@ -396,7 +403,7 @@ export default function CustomersPage() {
                           </Badge>
                         </TableCell>
                         <TableCell className="text-muted-foreground text-sm">
-                          {format(new Date(customer.createdAt), 'yyyy/MM/dd', { locale: zhCN })}
+                          {safeFormat(customer.createdAt, 'yyyy/MM/dd')}
                         </TableCell>
                         <TableCell>
                           <Button
@@ -487,7 +494,7 @@ export default function CustomersPage() {
                     
                     <div className="flex items-center justify-between mt-3 pt-3 border-t">
                       <span className="text-xs text-muted-foreground">
-                        创建于 {format(new Date(customer.createdAt), 'yyyy/MM/dd', { locale: zhCN })}
+                        创建于 {safeFormat(customer.createdAt, 'yyyy/MM/dd')}
                       </span>
                       <ChevronRight className="h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors" />
                     </div>

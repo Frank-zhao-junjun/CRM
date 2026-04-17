@@ -8,7 +8,15 @@ import { Badge } from '@/components/ui/badge';
 import { ArrowLeft, Edit, Package, DollarSign, Hash, Layers, ToggleRight, Calendar } from 'lucide-react';
 import Link from 'next/link';
 import { PRODUCT_CATEGORY_CONFIG } from '@/lib/crm-types';
-import { format } from 'date-fns';
+import { format, isValid, parseISO } from 'date-fns';
+import { zhCN } from 'date-fns/locale';
+
+function safeFormat(dateValue: string | null | undefined, fmt: string): string {
+  if (!dateValue) return '-';
+  const date = parseISO(dateValue);
+  if (!isValid(date)) return '-';
+  try { return format(date, fmt, { locale: zhCN }); } catch { return '-'; }
+}
 
 export default function ProductDetailPage() {
   const params = useParams();
@@ -211,7 +219,7 @@ export default function ProductDetailPage() {
                   <span className="text-sm">创建时间</span>
                 </div>
                 <span className="text-sm">
-                  {format(new Date(product.createdAt), 'yyyy-MM-dd')}
+                  {safeFormat(product.createdAt, 'yyyy-MM-dd')}
                 </span>
               </div>
               <div className="flex items-center justify-between">
@@ -220,7 +228,7 @@ export default function ProductDetailPage() {
                   <span className="text-sm">更新时间</span>
                 </div>
                 <span className="text-sm">
-                  {format(new Date(product.updatedAt), 'yyyy-MM-dd')}
+                  {safeFormat(product.updatedAt, 'yyyy-MM-dd')}
                 </span>
               </div>
             </CardContent>

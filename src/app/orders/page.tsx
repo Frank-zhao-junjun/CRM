@@ -34,7 +34,15 @@ import {
 import { Plus, Search, Package, Trash2, MoreVertical, X, CheckCircle, XCircle, ArrowRight } from 'lucide-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { ORDER_STATUS_CONFIG, type Order, type OrderStatus } from '@/lib/crm-types';
-import { format } from 'date-fns';
+import { format, isValid, parseISO } from 'date-fns';
+import { zhCN } from 'date-fns/locale';
+
+function safeFormat(dateValue: string | null | undefined, fmt: string): string {
+  if (!dateValue) return '-';
+  const date = parseISO(dateValue);
+  if (!isValid(date)) return '-';
+  try { return format(date, fmt, { locale: zhCN }); } catch { return '-'; }
+}
 import Link from 'next/link';
 
 interface OrderItemForm {
@@ -329,8 +337,8 @@ export default function OrdersPage() {
                       <TableCell><Badge className={statusConf.className}>{statusConf.label}</Badge></TableCell>
                       <TableCell className="text-muted-foreground">{order.customerName || '-'}</TableCell>
                       <TableCell className="font-medium">¥{order.total.toLocaleString()}</TableCell>
-                      <TableCell className="text-muted-foreground text-sm">{order.orderDate ? format(new Date(order.orderDate), 'yyyy/MM/dd') : '-'}</TableCell>
-                      <TableCell className="text-muted-foreground text-sm">{order.deliveryDate ? format(new Date(order.deliveryDate), 'yyyy/MM/dd') : '-'}</TableCell>
+                      <TableCell className="text-muted-foreground text-sm">{order.orderDate ? safeFormat(order.orderDate, 'yyyy/MM/dd') : '-'}</TableCell>
+                      <TableCell className="text-muted-foreground text-sm">{order.deliveryDate ? safeFormat(order.deliveryDate, 'yyyy/MM/dd') : '-'}</TableCell>
                       <TableCell onClick={e => e.stopPropagation()}>
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>

@@ -35,8 +35,15 @@ import {
 import { ArrowLeft, BarChart3, Building2, Briefcase, FileText, Edit, Trash2, Calendar, CheckCircle, XCircle, Play, Ban, AlertTriangle } from 'lucide-react';
 import Link from 'next/link';
 import { CONTRACT_STATUS_CONFIG, type Contract, type ContractStatus, type ContractMilestone } from '@/lib/crm-types';
-import { format } from 'date-fns';
+import { format, isValid, parseISO } from 'date-fns';
 import { zhCN } from 'date-fns/locale';
+
+function safeFormat(dateValue: string | null | undefined, fmt: string): string {
+  if (!dateValue) return '-';
+  const date = parseISO(dateValue);
+  if (!isValid(date)) return '-';
+  try { return format(date, fmt, { locale: zhCN }); } catch { return '-'; }
+}
 import { ActivityTimeline } from '@/components/crm/activity-timeline';
 import { cn } from '@/lib/utils';
 
@@ -164,7 +171,7 @@ export default function ContractDetailPage() {
               <Badge className={cn(statusConf.className)}>{statusConf.label}</Badge>
             </div>
             <p className="text-muted-foreground text-sm mt-1">
-              创建于 {format(new Date(contract.createdAt), 'yyyy-MM-dd HH:mm', { locale: zhCN })}
+              创建于 {safeFormat(contract.createdAt, 'yyyy-MM-dd HH:mm')}
             </p>
           </div>
         </div>
@@ -254,7 +261,7 @@ export default function ContractDetailPage() {
                           {milestone.expectedDate && (
                             <span className="text-xs text-muted-foreground flex items-center gap-1">
                               <Calendar className="w-3 h-3" />
-                              {format(new Date(milestone.expectedDate), 'yyyy-MM-dd')}
+                              {safeFormat(milestone.expectedDate, 'yyyy-MM-dd')}
                             </span>
                           )}
                         </div>
@@ -263,7 +270,7 @@ export default function ContractDetailPage() {
                         )}
                         {milestone.completedDate && (
                           <p className="text-xs text-green-600 mt-1">
-                            已完成于 {format(new Date(milestone.completedDate), 'yyyy-MM-dd')}
+                            已完成于 {safeFormat(milestone.completedDate, 'yyyy-MM-dd')}
                           </p>
                         )}
                       </div>
@@ -363,19 +370,19 @@ export default function ContractDetailPage() {
               <div>
                 <span className="text-muted-foreground">签约日期</span>
                 <div className="mt-1 font-medium">
-                  {contract.signingDate ? format(new Date(contract.signingDate), 'yyyy-MM-dd') : '-'}
+                  {contract.signingDate ? safeFormat(contract.signingDate, 'yyyy-MM-dd') : '-'}
                 </div>
               </div>
               <div>
                 <span className="text-muted-foreground">生效日期</span>
                 <div className="mt-1 font-medium">
-                  {contract.effectiveDate ? format(new Date(contract.effectiveDate), 'yyyy-MM-dd') : '-'}
+                  {contract.effectiveDate ? safeFormat(contract.effectiveDate, 'yyyy-MM-dd') : '-'}
                 </div>
               </div>
               <div>
                 <span className="text-muted-foreground">到期日期</span>
                 <div className="mt-1 font-medium">
-                  {contract.expirationDate ? format(new Date(contract.expirationDate), 'yyyy-MM-dd') : '-'}
+                  {contract.expirationDate ? safeFormat(contract.expirationDate, 'yyyy-MM-dd') : '-'}
                 </div>
               </div>
 

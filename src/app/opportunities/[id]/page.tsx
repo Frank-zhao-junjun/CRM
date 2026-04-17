@@ -30,8 +30,15 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { useState, useEffect, useCallback } from 'react';
-import { format } from 'date-fns';
+import { format, isValid, parseISO } from 'date-fns';
 import { zhCN } from 'date-fns/locale';
+
+function safeFormat(dateValue: string | null | undefined, fmt: string, options?: { locale?: typeof zhCN }): string {
+  if (!dateValue) return '-';
+  const date = typeof dateValue === 'string' ? parseISO(dateValue) : new Date(dateValue);
+  if (!isValid(date)) return '-';
+  return format(date, fmt, options);
+}
 import { ActivityTimeline } from '@/components/crm/activity-timeline';
 import { FollowUpTimeline } from '@/components/crm/follow-up-timeline';
 import { FOLLOW_UP_METHOD_CONFIG, type FollowUpMethod } from '@/lib/crm-types';
@@ -324,7 +331,7 @@ export default function OpportunityDetailPage() {
                   <p className="text-sm text-muted-foreground">预计成交</p>
                   <p className="font-medium">
                     {opportunity.expectedCloseDate
-                      ? format(new Date(opportunity.expectedCloseDate), 'yyyy/MM/dd', { locale: zhCN })
+                      ? safeFormat(opportunity.expectedCloseDate, 'yyyy/MM/dd', { locale: zhCN })
                       : '-'}
                   </p>
                 </div>
@@ -467,7 +474,7 @@ export default function OpportunityDetailPage() {
               <div>
                 <p className="text-lg font-bold">
                   {followUpStats.lastFollowUp
-                    ? format(new Date(followUpStats.lastFollowUp), 'MM/dd', { locale: zhCN })
+                    ? safeFormat(followUpStats.lastFollowUp, 'MM/dd', { locale: zhCN })
                     : '-'}
                 </p>
                 <p className="text-xs text-muted-foreground">最近跟进</p>
@@ -486,8 +493,8 @@ export default function OpportunityDetailPage() {
       <Card>
         <CardContent className="py-4">
           <div className="flex justify-between text-sm text-muted-foreground">
-            <span>创建时间: {format(new Date(opportunity.createdAt), 'yyyy-MM-dd HH:mm', { locale: zhCN })}</span>
-            <span>更新时间: {format(new Date(opportunity.updatedAt), 'yyyy-MM-dd HH:mm', { locale: zhCN })}</span>
+            <span>创建时间: {safeFormat(opportunity.createdAt, 'yyyy-MM-dd HH:mm', { locale: zhCN })}</span>
+            <span>更新时间: {safeFormat(opportunity.updatedAt, 'yyyy-MM-dd HH:mm', { locale: zhCN })}</span>
           </div>
         </CardContent>
       </Card>
@@ -557,7 +564,7 @@ export default function OpportunityDetailPage() {
                             </Badge>
                           </div>
                           <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                            <span>创建于 {format(new Date(quote.createdAt), 'yyyy-MM-dd')}</span>
+                            <span>创建于 {safeFormat(quote.createdAt, 'yyyy-MM-dd')}</span>
                             {quote.revisionReason && (
                               <>
                                 <span className="text-muted-foreground/40">|</span>

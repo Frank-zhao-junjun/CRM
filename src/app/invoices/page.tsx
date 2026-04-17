@@ -31,7 +31,15 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Plus, Search, FileText, MoreVertical, Trash2, Eye, Edit, Printer } from 'lucide-react';
 import { INVOICE_STATUS_CONFIG, type Invoice, type InvoiceStatus } from '@/lib/crm-types';
-import { format } from 'date-fns';
+import { format, isValid, parseISO } from 'date-fns';
+import { zhCN } from 'date-fns/locale';
+
+function safeFormat(dateValue: string | null | undefined, fmt: string): string {
+  if (!dateValue) return '-';
+  const date = parseISO(dateValue);
+  if (!isValid(date)) return '-';
+  try { return format(date, fmt, { locale: zhCN }); } catch { return '-'; }
+}
 import Link from 'next/link';
 
 export default function InvoicesPage() {
@@ -236,7 +244,7 @@ export default function InvoicesPage() {
                         {INVOICE_STATUS_CONFIG[invoice.status].label}
                       </Badge>
                     </TableCell>
-                    <TableCell>{format(new Date(invoice.issueDate), 'yyyy-MM-dd')}</TableCell>
+                    <TableCell>{safeFormat(invoice.issueDate, 'yyyy-MM-dd')}</TableCell>
                     <TableCell className="text-right">
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>

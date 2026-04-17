@@ -9,7 +9,15 @@ import { Separator } from '@/components/ui/separator';
 import { ArrowLeft, Edit, Printer, Trash2, FileText, CheckCircle, RotateCcw } from 'lucide-react';
 import Link from 'next/link';
 import { INVOICE_STATUS_CONFIG, type Invoice, type InvoiceStatus } from '@/lib/crm-types';
-import { format } from 'date-fns';
+import { format, isValid, parseISO } from 'date-fns';
+import { zhCN } from 'date-fns/locale';
+
+function safeFormat(dateValue: string | null | undefined, fmt: string): string {
+  if (!dateValue) return '-';
+  const date = parseISO(dateValue);
+  if (!isValid(date)) return '-';
+  try { return format(date, fmt, { locale: zhCN }); } catch { return '-'; }
+}
 
 export default function InvoiceDetailPage() {
   const router = useRouter();
@@ -112,7 +120,7 @@ export default function InvoiceDetailPage() {
               </Badge>
             </div>
             <p className="text-muted-foreground">
-              创建于 {format(new Date(invoice.createdAt), 'yyyy-MM-dd HH:mm')}
+              创建于 {safeFormat(invoice.createdAt, 'yyyy-MM-dd HH:mm')}
             </p>
           </div>
         </div>
@@ -273,18 +281,18 @@ export default function InvoiceDetailPage() {
             <div className="grid grid-cols-2 gap-4 text-sm">
               <div>
                 <p className="text-muted-foreground">开票日期</p>
-                <p className="font-medium">{format(new Date(invoice.issueDate), 'yyyy-MM-dd')}</p>
+                <p className="font-medium">{safeFormat(invoice.issueDate, 'yyyy-MM-dd')}</p>
               </div>
               {invoice.dueDate && (
                 <div>
                   <p className="text-muted-foreground">到期日期</p>
-                  <p className="font-medium">{format(new Date(invoice.dueDate), 'yyyy-MM-dd')}</p>
+                  <p className="font-medium">{safeFormat(invoice.dueDate, 'yyyy-MM-dd')}</p>
                 </div>
               )}
               {invoice.paidDate && (
                 <div>
                   <p className="text-muted-foreground">收款日期</p>
-                  <p className="font-medium">{format(new Date(invoice.paidDate), 'yyyy-MM-dd')}</p>
+                  <p className="font-medium">{safeFormat(invoice.paidDate, 'yyyy-MM-dd')}</p>
                 </div>
               )}
               {invoice.paymentMethod && (

@@ -41,7 +41,15 @@ import { Plus, Search, Building2, DollarSign, Lightbulb, MoreVertical, ArrowRigh
 import Link from 'next/link';
 import { LEAD_STATUS_CONFIG, LEAD_SOURCE_CONFIG } from '@/lib/crm-types';
 import { cn } from '@/lib/utils';
-import { format } from 'date-fns';
+import { format, isValid, parseISO } from 'date-fns';
+import { zhCN } from 'date-fns/locale';
+
+function safeFormat(dateValue: string | null | undefined, fmt: string): string {
+  if (!dateValue) return '-';
+  const date = parseISO(dateValue);
+  if (!isValid(date)) return '-';
+  try { return format(date, fmt, { locale: zhCN }); } catch { return '-'; }
+}
 import { QuickFollowUp } from '@/components/crm/quick-follow-up';
 
 async function handleExport(format: 'csv' | 'xlsx') {
@@ -332,7 +340,7 @@ export default function LeadsPage() {
                       </div>
                     </TableCell>
                     <TableCell className="text-muted-foreground text-sm">
-                      {format(new Date(lead.createdAt), 'yyyy-MM-dd')}
+                      {safeFormat(lead.createdAt, 'yyyy-MM-dd')}
                     </TableCell>
                     <TableCell onClick={(e) => e.stopPropagation()}>
                       <DropdownMenu>

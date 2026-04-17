@@ -32,7 +32,15 @@ import {
 import { Plus, Search, FileText, Trash2, Building2, Briefcase, BarChart3 } from 'lucide-react';
 import Link from 'next/link';
 import { CONTRACT_STATUS_CONFIG, type Contract, type ContractStatus } from '@/lib/crm-types';
-import { format } from 'date-fns';
+import { format, isValid, parseISO } from 'date-fns';
+import { zhCN } from 'date-fns/locale';
+
+function safeFormat(dateValue: string | null | undefined, fmt: string): string {
+  if (!dateValue) return '-';
+  const date = parseISO(dateValue);
+  if (!isValid(date)) return '-';
+  try { return format(date, fmt, { locale: zhCN }); } catch { return '-'; }
+}
 import { cn } from '@/lib/utils';
 
 export default function ContractsPage() {
@@ -274,7 +282,7 @@ export default function ContractsPage() {
                       ¥{contract.amount.toLocaleString()}
                     </TableCell>
                     <TableCell className="text-sm text-muted-foreground">
-                      {contract.expirationDate ? format(new Date(contract.expirationDate), 'yyyy-MM-dd') : '-'}
+                      {contract.expirationDate ? safeFormat(contract.expirationDate, 'yyyy-MM-dd') : '-'}
                     </TableCell>
                     <TableCell>
                       <Button

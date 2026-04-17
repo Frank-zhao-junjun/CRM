@@ -32,7 +32,15 @@ import {
 import { Plus, Search, FileText, Trash2, Building2, Briefcase } from 'lucide-react';
 import Link from 'next/link';
 import { QUOTE_STATUS_CONFIG, type Quote, type QuoteStatus } from '@/lib/crm-types';
-import { format } from 'date-fns';
+import { format, isValid, parseISO } from 'date-fns';
+import { zhCN } from 'date-fns/locale';
+
+function safeFormat(dateValue: string | null | undefined, fmt: string): string {
+  if (!dateValue) return '-';
+  const date = parseISO(dateValue);
+  if (!isValid(date)) return '-';
+  try { return format(date, fmt, { locale: zhCN }); } catch { return '-'; }
+}
 import { cn } from '@/lib/utils';
 
 export default function QuotesPage() {
@@ -268,7 +276,7 @@ export default function QuotesPage() {
                       ¥{quote.total.toLocaleString()}
                     </TableCell>
                     <TableCell className="text-sm text-muted-foreground">
-                      {format(new Date(quote.createdAt), 'yyyy-MM-dd')}
+                      {safeFormat(quote.createdAt, 'yyyy-MM-dd')}
                     </TableCell>
                     <TableCell>
                       <Button

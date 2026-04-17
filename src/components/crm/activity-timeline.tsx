@@ -18,8 +18,15 @@ import {
   PaginationLink, PaginationNext, PaginationPrevious 
 } from '@/components/ui/pagination';
 import { Calendar, Filter, Activity as ActivityIcon, Loader2, ExternalLink, Building2, User, TrendingUp, FileText, CreditCard, FileCheck, Package } from 'lucide-react';
-import { formatDistanceToNow, format } from 'date-fns';
+import { formatDistanceToNow, format, isValid, parseISO } from 'date-fns';
 import { zhCN } from 'date-fns/locale';
+
+function safeFormat(dateValue: string | null | undefined, fmt: string): string {
+  if (!dateValue) return '-';
+  const date = parseISO(dateValue);
+  if (!isValid(date)) return '-';
+  try { return format(date, fmt, { locale: zhCN }); } catch { return '-'; }
+}
 
 // 活动类型配置
 const ACTIVITY_TYPE_CONFIG = {
@@ -282,7 +289,7 @@ export function ActivityTimeline({
                       </TableCell>
                       <TableCell>
                         <div className="text-sm">
-                          <div>{format(new Date(activity.timestamp), 'yyyy-MM-dd HH:mm')}</div>
+                          <div>{safeFormat(activity.timestamp, 'yyyy-MM-dd HH:mm')}</div>
                           <div className="text-xs text-muted-foreground">
                             {formatDistanceToNow(new Date(activity.timestamp), { addSuffix: true, locale: zhCN })}
                           </div>
@@ -388,7 +395,7 @@ export function ActivityTimeline({
               <div>
                 <h4 className="font-medium">发生时间</h4>
                 <p className="text-muted-foreground">
-                  {format(new Date(selectedActivity.timestamp), 'yyyy年MM月dd日 HH:mm:ss')}
+                  {safeFormat(selectedActivity.timestamp, 'yyyy年MM月dd日 HH:mm:ss')}
                 </p>
               </div>
               

@@ -1,6 +1,6 @@
 'use client';
 
-import { User } from 'lucide-react';
+import { User, Search } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { usePathname } from 'next/navigation';
 import { NotificationBell } from './notification-bell';
@@ -48,20 +48,20 @@ export function Header() {
   };
 
   return (
-    <header className="sticky top-0 z-40 bg-background border-b">
-      <div className="flex items-center justify-between h-16 px-4 lg:px-6">
-        <div className="flex items-center gap-4">
-          <h1 className="text-xl font-semibold">{getDynamicTitle()}</h1>
+    <header className="sticky top-0 z-40 bg-background/80 backdrop-blur-xl border-b border-border/50">
+      <div className="flex items-center justify-between h-14 px-4 lg:px-6">
+        <div className="flex items-center gap-3">
+          <h1 className="text-base font-semibold tracking-tight">{getDynamicTitle()}</h1>
         </div>
         
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1.5">
           {/* Global Search */}
           <GlobalSearch className="hidden md:block" />
           
           <NotificationBell />
           
-          <Button variant="ghost" size="icon">
-            <User className="h-5 w-5" />
+          <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg">
+            <User className="h-4 w-4" />
           </Button>
         </div>
       </div>

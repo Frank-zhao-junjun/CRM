@@ -153,44 +153,43 @@ export default function CustomerDetailPage() {
   );
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <Button variant="ghost" size="icon" asChild>
+    <div className="page-section">
+      <div className="page-header">
+        <div className="flex items-center gap-3">
+          <Button variant="ghost" size="icon" asChild className="h-8 w-8">
             <Link href="/customers">
-              <ArrowLeft className="h-5 w-5" />
+              <ArrowLeft className="h-4 w-4" />
             </Link>
           </Button>
           <div>
-            <h2 className="text-2xl font-bold">{customer.name}</h2>
-            <p className="text-muted-foreground">{customer.company}</p>
+            <h2 className="section-title text-xl">{customer.name}</h2>
+            <p className="text-muted-foreground/60 text-sm mt-0.5 ml-4">{customer.company}</p>
           </div>
         </div>
-        <div className="flex gap-2">
+        <div className="flex items-center gap-2">
           {customer.email && (
-            <Button variant="outline" onClick={() => setShowEmailDialog(true)}>
-              <Send className="h-4 w-4 mr-2" />
+            <Button variant="outline" size="sm" className="gap-1.5 h-8 text-xs" onClick={() => setShowEmailDialog(true)}>
+              <Send className="h-3.5 w-3.5" />
               发送邮件
             </Button>
           )}
-          <Button variant="outline" asChild>
+          <Button variant="outline" size="sm" className="gap-1.5 h-8 text-xs" asChild>
             <Link href={`/customers/${customer.id}/edit`}>
-              <Edit className="h-4 w-4 mr-2" />
+              <Edit className="h-3.5 w-3.5" />
               编辑
             </Link>
           </Button>
-          <Button variant="destructive" onClick={() => setShowDeleteDialog(true)}>
-            <Trash2 className="h-4 w-4 mr-2" />
+          <Button variant="destructive" size="sm" className="gap-1.5 h-8 text-xs" onClick={() => setShowDeleteDialog(true)}>
+            <Trash2 className="h-3.5 w-3.5" />
             删除
           </Button>
         </div>
       </div>
 
       {/* 客户标签 */}
-      <Card>
+      <Card className="card-elevated border-0">
         <CardHeader className="flex flex-row items-center justify-between pb-3">
-          <CardTitle className="text-base flex items-center gap-2">
-            <Tag className="h-4 w-4" />
+          <CardTitle className="section-title text-base">
             客户标签
           </CardTitle>
           <Button variant="ghost" size="sm" onClick={openTagSelector}>

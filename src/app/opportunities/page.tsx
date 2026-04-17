@@ -154,47 +154,48 @@ export default function OpportunitiesPage() {
   };
 
   return (
-    <div className="space-y-8">
+    <div className="page-section">
       {/* Header */}
-      <div className="relative">
-        <div className="absolute inset-0 bg-gradient-to-r from-orange-500/5 via-transparent to-amber-500/5 rounded-3xl -z-10" />
-        <div className="flex flex-col sm:flex-row gap-4 justify-between">
-          <div>
-            <h1 className="text-3xl font-bold tracking-tight gradient-text">商机</h1>
-            <p className="text-muted-foreground mt-1">
-              共 {filteredOpportunities.length} 个商机，总价值 ¥{filteredOpportunities.reduce((sum, o) => sum + o.value, 0).toLocaleString()}
-            </p>
-          </div>
-          <Button 
-            onClick={() => router.push('/opportunities/new')}
-            className="gap-2 bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 shadow-lg shadow-orange-500/25 transition-all duration-300"
-          >
-            <Plus className="h-4 w-4" />
-            新建机会
-          </Button>
+      <div className="page-header">
+        <div>
+          <h1 className="section-title text-xl">商机</h1>
+          <p className="text-muted-foreground/60 text-sm mt-1 ml-4">
+            共 {filteredOpportunities.length} 个商机，总价值 ¥{filteredOpportunities.reduce((sum, o) => sum + (o.value ?? 0), 0).toLocaleString()}
+          </p>
+        </div>
+        <div className="flex items-center gap-2">
           <Link href="/opportunities/kanban">
-            <Button variant="outline" className="gap-2">
-              <LayoutGrid className="h-4 w-4" />
+            <Button variant="outline" size="sm" className="gap-1.5 h-8 text-xs">
+              <LayoutGrid className="h-3.5 w-3.5" />
               看板视图
             </Button>
           </Link>
-      </div>
+          <Button 
+            onClick={() => router.push('/opportunities/new')}
+            size="sm"
+            className="gap-1.5 h-8"
+          >
+            <Plus className="h-3.5 w-3.5" />
+            新建机会
+          </Button>
         </div>
+      </div>
+
       {/* Filters */}
-      <Card className="card-hover">
+      <Card className="border-0 shadow-sm">
         <CardContent className="p-4">
-          <div className="flex flex-col sm:flex-row gap-4">
+          <div className="flex flex-col sm:flex-row gap-3">
             <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground/50" />
               <Input
                 placeholder="搜索商机名称或客户..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                className="pl-10 h-11 bg-background/50"
+                className="pl-9 h-9 bg-muted/30 border-0 focus-visible:bg-background focus-visible:ring-1 text-sm"
               />
             </div>
             <Select value={stageFilter} onValueChange={setStageFilter}>
-              <SelectTrigger className="w-full sm:w-[180px] h-11">
+              <SelectTrigger className="w-full sm:w-[180px] h-9 text-sm">
                 <SelectValue placeholder="筛选阶段" />
               </SelectTrigger>
               <SelectContent>

@@ -116,7 +116,7 @@ export default function QuotesPage() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight gradient-text">报价单</h1>
+          <h1 className="section-title text-xl">报价单</h1>
           <p className="text-muted-foreground mt-1">共 {filteredQuotes.length} 个报价单</p>
         </div>
         <Button onClick={() => router.push('/quotes/new')} className="gap-2">

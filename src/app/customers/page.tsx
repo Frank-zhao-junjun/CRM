@@ -194,71 +194,69 @@ export default function CustomersPage() {
   const selectedTag = allTags.find(t => t.id === tagFilter);
 
   return (
-    <div className="space-y-8">
+    <div className="page-section">
       {/* Header */}
-      <div className="relative">
-        <div className="absolute inset-0 bg-gradient-to-r from-purple-500/5 via-transparent to-pink-500/5 rounded-3xl -z-10" />
-        <div className="flex flex-col sm:flex-row gap-4 justify-between">
-          <div>
-            <h1 className="text-3xl font-bold tracking-tight gradient-text">客户管理</h1>
-            <p className="text-muted-foreground mt-1">
-              共 {filteredCustomers.length} 个客户
-              {tagFilter !== 'all' && selectedTag && (
-                <span className="ml-2 inline-flex items-center gap-1">
-                  <span
-                    className="inline-block w-2 h-2 rounded-full"
-                    style={{ backgroundColor: selectedTag.color }}
-                  />
-                  <span style={{ color: selectedTag.color }}>筛选自: {selectedTag.name}</span>
-                </span>
-              )}
-            </p>
-          </div>
-          <div className="flex gap-2">
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="outline" className="gap-2">
-                  <Download className="h-4 w-4" />
-                  导出
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuItem onClick={() => handleExport('csv')} className="gap-2">
-                  <FileSpreadsheet className="h-4 w-4" />
-                  导出为 CSV
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => handleExport('xlsx')} className="gap-2">
-                  <FileSpreadsheet className="h-4 w-4" />
-                  导出为 Excel
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-            <Button 
-              onClick={() => router.push('/customers/new')}
-              className="gap-2 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 shadow-lg shadow-purple-500/25 transition-all duration-300"
-            >
-              <Plus className="h-4 w-4" />
-              新建客户
-            </Button>
-          </div>
+      <div className="page-header">
+        <div>
+          <h1 className="section-title text-xl">客户管理</h1>
+          <p className="text-muted-foreground/60 text-sm mt-1 ml-4">
+            共 {filteredCustomers.length} 个客户
+            {tagFilter !== 'all' && selectedTag && (
+              <span className="ml-2 inline-flex items-center gap-1">
+                <span
+                  className="inline-block w-2 h-2 rounded-full"
+                  style={{ backgroundColor: selectedTag.color }}
+                />
+                <span style={{ color: selectedTag.color }}>筛选自: {selectedTag.name}</span>
+              </span>
+            )}
+          </p>
+        </div>
+        <div className="flex items-center gap-2">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" size="sm" className="gap-1.5 h-8 text-xs">
+                <Download className="h-3.5 w-3.5" />
+                导出
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={() => handleExport('csv')} className="gap-2">
+                <FileSpreadsheet className="h-4 w-4" />
+                导出为 CSV
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => handleExport('xlsx')} className="gap-2">
+                <FileSpreadsheet className="h-4 w-4" />
+                导出为 Excel
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+          <Button 
+            onClick={() => router.push('/customers/new')}
+            size="sm"
+            className="gap-1.5 h-8"
+          >
+            <Plus className="h-3.5 w-3.5" />
+            新建客户
+          </Button>
         </div>
       </div>
 
       {/* Filters */}
-      <Card className="card-hover">
+      <Card className="border-0 shadow-sm">
         <CardContent className="p-4">
-          <div className="flex flex-col sm:flex-row gap-4">
+          <div className="flex flex-col sm:flex-row gap-3">
             <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground/50" />
               <Input
                 placeholder="搜索客户名称、公司或邮箱..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                className="pl-10 h-11 bg-background/50"
+                className="pl-9 h-9 bg-muted/30 border-0 focus-visible:bg-background focus-visible:ring-1 text-sm"
               />
             </div>
             <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="w-full sm:w-[140px] h-11">
+              <SelectTrigger className="w-full sm:w-[140px] h-9 text-sm">
                 <SelectValue placeholder="筛选状态" />
               </SelectTrigger>
               <SelectContent>
@@ -269,9 +267,9 @@ export default function CustomersPage() {
               </SelectContent>
             </Select>
             <Select value={tagFilter} onValueChange={setTagFilter}>
-              <SelectTrigger className="w-full sm:w-[160px] h-11">
+              <SelectTrigger className="w-full sm:w-[160px] h-9 text-sm">
                 <div className="flex items-center gap-2">
-                  <Tag className="h-4 w-4" />
+                  <Tag className="h-3.5 w-3.5" />
                   <SelectValue placeholder="按标签筛选" />
                 </div>
               </SelectTrigger>

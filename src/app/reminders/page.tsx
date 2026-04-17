@@ -225,7 +225,7 @@ export default function RemindersPage() {
         <div className="absolute inset-0 bg-gradient-to-r from-orange-500/5 via-transparent to-red-500/5 rounded-3xl -z-10" />
         <div className="flex flex-col sm:flex-row gap-4 justify-between">
           <div>
-            <h1 className="text-3xl font-bold tracking-tight gradient-text">智能提醒</h1>
+            <h1 className="section-title text-xl">智能提醒</h1>
             <p className="text-muted-foreground mt-1">
               跟踪任务、商机、合同、回款等重要时间节点
             </p>

@@ -129,59 +129,46 @@ export default function DashboardPage() {
     }));
 
   return (
-    <div className="space-y-6 sm:space-y-8">
+    <div className="page-section">
       {/* Header */}
-      <div className="relative">
-        <div className="absolute inset-0 bg-gradient-to-r from-primary/5 via-transparent to-purple-500/5 rounded-3xl -z-10" />
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">
-              <span className="gradient-text">欢迎回来</span>
-            </h1>
-            <p className="text-muted-foreground mt-1 text-sm sm:text-base">
-              这里是你的业务数据总览
-            </p>
-          </div>
-          <div className="hidden md:flex items-center gap-2 text-sm text-muted-foreground">
-            <Sparkles className="h-4 w-4 text-primary animate-pulse" />
-            <span>实时更新</span>
-          </div>
+      <div className="page-header">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight">
+            <span className="gradient-text">欢迎回来</span>
+          </h1>
+          <p className="text-muted-foreground mt-1 text-sm">
+            这里是你的业务数据总览
+          </p>
+        </div>
+        <div className="hidden md:flex items-center gap-2 text-xs text-muted-foreground/60">
+          <Sparkles className="h-3.5 w-3.5 text-primary" />
+          <span>实时更新</span>
         </div>
       </div>
 
-      {/* 统计卡片 - 响应式网格布局 */}
-      <div className="grid gap-3 grid-cols-2 sm:grid-cols-3 lg:grid-cols-5">
-        {statCards.map((stat, index) => {
+      {/* 统计卡片 */}
+      <div className="grid gap-3 grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 stagger-in">
+        {statCards.map((stat) => {
           const value = stats[stat.key as keyof typeof stats] as number;
           return (
             <Card 
               key={stat.key} 
-              className={cn(
-                "card-hover relative overflow-hidden cursor-pointer",
-                "animate-in slide-in-from-bottom-4",
-              )}
-              style={{ animationDelay: `${index * 80}ms` }}
+              className="stat-card cursor-pointer border-0"
               onClick={() => stat.link && router.push(stat.link)}
             >
-              <div className={cn("absolute inset-0", stat.bgGradient)} />
-              <CardContent className="relative p-3 sm:p-4">
-                <div className="flex items-center gap-2 sm:gap-3">
+              <CardContent className="relative p-4">
+                <div className="flex items-center gap-3">
                   <div className={cn(
-                    "relative flex items-center justify-center w-8 h-8 sm:w-9 sm:h-9 rounded-lg shrink-0",
-                    "bg-gradient-to-br shadow-md",
+                    "flex items-center justify-center w-10 h-10 rounded-xl shrink-0",
+                    "bg-gradient-to-br shadow-sm",
                     stat.gradient
                   )}>
-                    <stat.icon className="h-4 w-4 text-white" />
+                    <stat.icon className="h-5 w-5 text-white" />
                   </div>
                   <div className="min-w-0 flex-1">
-                    <p className="text-xs text-muted-foreground truncate">{stat.label}</p>
-                    <div className="text-lg sm:text-xl font-bold tracking-tight">
-                      <span className={cn(
-                        "bg-gradient-to-r bg-clip-text text-transparent",
-                        stat.gradient
-                      )}>
-                        {stat.prefix || ''}{typeof value === 'number' ? value.toLocaleString() : value}
-                      </span>
+                    <p className="text-xs text-muted-foreground/70 font-medium">{stat.label}</p>
+                    <div className="text-xl font-bold tracking-tight mt-0.5">
+                      {stat.prefix || ''}{typeof value === 'number' ? value.toLocaleString() : value}
                     </div>
                   </div>
                 </div>
@@ -193,20 +180,15 @@ export default function DashboardPage() {
 
       {/* 今日待办 */}
       <TodayTodoCard
-        className="animate-in slide-in-from-bottom-4 duration-500"
         onFollowUp={(entityType, entityId, entityName) => setQuickFollowUp({ open: true, entityType, entityId, entityName })}
       />
 
       {/* 双列卡片区域 */}
-      <div className="grid gap-4 lg:gap-6 lg:grid-cols-2">
+      <div className="grid gap-4 lg:grid-cols-2">
         {/* 销售漏斗 */}
-        <Card className="card-hover animate-in slide-in-from-left-4 duration-500">
-          <CardHeader className="relative">
-            <div className="absolute -left-4 top-0 bottom-0 w-1 bg-gradient-to-b from-primary to-purple-500 rounded-full" />
-            <CardTitle className="flex items-center gap-2">
-              <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-gradient-to-br from-primary/10 to-purple-500/10">
-                <TrendingUp className="h-4 w-4 text-primary" />
-              </div>
+        <Card className="card-elevated border-0">
+          <CardHeader className="pb-2">
+            <CardTitle className="section-title text-base">
               销售漏斗
             </CardTitle>
           </CardHeader>
@@ -216,13 +198,9 @@ export default function DashboardPage() {
         </Card>
 
         {/* 销售数据分析 */}
-        <Card className="card-hover animate-in slide-in-from-right-4 duration-500">
-          <CardHeader className="relative">
-            <div className="absolute -left-4 top-0 bottom-0 w-1 bg-gradient-to-b from-primary to-purple-500 rounded-full" />
-            <CardTitle className="flex items-center gap-2">
-              <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-gradient-to-br from-primary/10 to-purple-500/10">
-                <TrendingUp className="h-4 w-4 text-primary" />
-              </div>
+        <Card className="card-elevated border-0">
+          <CardHeader className="pb-2">
+            <CardTitle className="section-title text-base">
               销售分析
             </CardTitle>
           </CardHeader>
@@ -236,65 +214,55 @@ export default function DashboardPage() {
       </div>
 
       {/* 管道金额分布 */}
-      <Card className="card-hover animate-in slide-in-from-bottom-4 duration-500">
-        <CardContent className="p-3 sm:p-4">
+      <Card className="card-elevated border-0">
+        <CardContent className="p-4">
           <StageValueDistribution data={funnelData} />
         </CardContent>
       </Card>
 
-      {/* 双列卡片区域 - 最近活动和最近机会 */}
-      <div className="grid gap-4 lg:gap-6 lg:grid-cols-2">
-        <Card className="card-hover animate-in slide-in-from-right-4 duration-500">
-          <CardHeader className="relative">
-            <div className="absolute -left-4 top-0 bottom-0 w-1 bg-gradient-to-b from-green-500 to-emerald-500 rounded-full" />
-            <CardTitle className="flex items-center gap-2">
-              <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-gradient-to-br from-green-500/10 to-emerald-500/10">
-                <ActivityIcon className="h-4 w-4 text-green-600 dark:text-green-400" />
-              </div>
+      {/* 最近活动 */}
+      <div className="grid gap-4 lg:grid-cols-2">
+        <Card className="card-elevated border-0">
+          <CardHeader className="pb-2">
+            <CardTitle className="section-title text-base">
               最近活动
-              <Badge variant="secondary" className="ml-auto">{activities.length}</Badge>
+              <Badge variant="secondary" className="ml-auto text-[10px]">{activities.length}</Badge>
             </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-1">
               {activities.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-12 text-center">
-                  <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-muted to-muted/50 flex items-center justify-center mb-4">
-                    <Clock className="h-8 w-8 text-muted-foreground/50" />
+                <div className="flex flex-col items-center justify-center py-10 text-center">
+                  <div className="w-12 h-12 rounded-xl bg-muted/50 flex items-center justify-center mb-3">
+                    <Clock className="h-6 w-6 text-muted-foreground/40" />
                   </div>
                   <p className="text-sm text-muted-foreground">暂无活动记录</p>
-                  <p className="text-xs text-muted-foreground/60 mt-1">开始创建客户或商机来跟踪活动</p>
+                  <p className="text-xs text-muted-foreground/50 mt-1">开始创建客户或商机来跟踪活动</p>
                 </div>
               ) : (
-                activities.slice(0, 6).map((activity, index) => {
+                activities.slice(0, 6).map((activity) => {
                   const colorConfig = activityColors[activity.type as keyof typeof activityColors] || activityColors.updated;
                   return (
                     <div 
                       key={activity.id} 
-                      className={cn(
-                        "flex items-start gap-3 p-3 rounded-xl transition-all duration-200",
-                        "hover:bg-accent/50 group",
-                        "animate-in slide-in-from-left-2",
-                      )}
-                      style={{ animationDelay: `${index * 50}ms` }}
+                      className="flex items-start gap-3 p-2.5 rounded-lg hover:bg-accent/40 transition-colors group"
                     >
                       <div className={cn(
-                        "relative flex items-center justify-center w-8 h-8 rounded-lg shrink-0",
-                        colorConfig.bg,
-                        "shadow-lg shadow-black/10"
+                        "flex items-center justify-center w-7 h-7 rounded-md shrink-0 mt-0.5",
+                        colorConfig.bg
                       )}>
-                        <div className="w-2 h-2 rounded-full bg-white/80" />
+                        <div className="w-1.5 h-1.5 rounded-full bg-white/80" />
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2">
-                          <Badge variant="outline" className={cn("text-xs", colorConfig.color)}>
+                          <Badge variant="outline" className={cn("text-[10px] px-1.5 py-0 h-5", colorConfig.color)}>
                             {colorConfig.label}
                           </Badge>
                         </div>
-                        <p className="font-medium text-sm mt-1 truncate group-hover:text-primary transition-colors">
+                        <p className="font-medium text-sm mt-0.5 truncate group-hover:text-primary transition-colors">
                           {activity.description}
                         </p>
-                        <p className="text-xs text-muted-foreground mt-0.5">
+                        <p className="text-[11px] text-muted-foreground/60 mt-0.5">
                           {formatDistanceToNow(new Date(activity.timestamp), { 
                             addSuffix: true,
                             locale: zhCN 
@@ -308,21 +276,15 @@ export default function DashboardPage() {
             </div>
           </CardContent>
         </Card>
-      </div>
 
-      {/* 最近机会 */}
-      <Card className="card-hover animate-in slide-in-from-bottom-4 duration-500">
-        <CardHeader className="relative">
-          <div className="absolute -left-4 top-0 bottom-0 w-1 bg-gradient-to-b from-orange-500 to-amber-500 rounded-full" />
-          <CardTitle className="flex items-center gap-2">
-            <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-gradient-to-br from-orange-500/10 to-amber-500/10">
-              <Briefcase className="h-4 w-4 text-orange-600 dark:text-orange-400" />
-            </div>
-            最近商机
-            <Badge variant="secondary" className="ml-auto">{opportunities.length}</Badge>
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
+        {/* 最近机会 + 逾期 */}
+        <Card className="card-elevated border-0">
+          <CardHeader className="pb-2">
+            <CardTitle className="section-title text-base">
+              最近商机
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
           {recentOpportunities.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-12 text-center">
               <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-muted to-muted/50 flex items-center justify-center mb-4">
@@ -396,41 +358,38 @@ export default function DashboardPage() {
           )}
         </CardContent>
       </Card>
+      </div>
 
       {/* 逾期提醒 & 数据导出 */}
-      <div className="grid gap-4 lg:gap-6 lg:grid-cols-2">
+      <div className="grid gap-4 lg:grid-cols-2">
         {/* 逾期提醒 */}
-        <Card className="card-hover animate-in slide-in-from-left-4 duration-500">
-          <CardHeader className="relative">
-            <div className="absolute -left-4 top-0 bottom-0 w-1 bg-gradient-to-b from-red-500 to-orange-500 rounded-full" />
-            <CardTitle className="flex items-center gap-2">
-              <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-gradient-to-br from-red-500/10 to-orange-500/10">
-                <AlertTriangle className="h-4 w-4 text-red-600 dark:text-red-400" />
-              </div>
+        <Card className="card-elevated border-0">
+          <CardHeader className="pb-2">
+            <CardTitle className="section-title text-base">
               逾期提醒
               {overdueOpportunities.length > 0 && (
-                <Badge variant="destructive" className="ml-2">{overdueOpportunities.length}</Badge>
+                <Badge variant="destructive" className="ml-2 text-[10px]">{overdueOpportunities.length}</Badge>
               )}
             </CardTitle>
           </CardHeader>
           <CardContent>
             {overdueOpportunities.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-8 text-center">
-                <div className="w-12 h-12 rounded-xl bg-emerald-500/10 flex items-center justify-center mb-3">
-                  <Sparkles className="h-6 w-6 text-emerald-500" />
+                <div className="w-10 h-10 rounded-lg bg-emerald-500/10 flex items-center justify-center mb-2">
+                  <Sparkles className="h-5 w-5 text-emerald-500" />
                 </div>
                 <p className="text-sm text-muted-foreground">暂无逾期机会</p>
-                <p className="text-xs text-muted-foreground/60 mt-1">所有机会都在预计时间内</p>
+                <p className="text-[11px] text-muted-foreground/50 mt-0.5">所有机会都在预计时间内</p>
               </div>
             ) : (
-              <div className="space-y-3">
+              <div className="space-y-2">
                 {overdueOpportunities.map((opp) => (
-                  <div key={opp.id} className="flex items-center justify-between p-3 rounded-lg border border-red-200 dark:border-red-900/50 bg-red-50/50 dark:bg-red-950/20">
+                  <div key={opp.id} className="flex items-center justify-between p-3 rounded-lg border border-red-200/60 dark:border-red-900/40 bg-red-50/40 dark:bg-red-950/10">
                     <div className="flex-1 min-w-0">
                       <p className="font-medium text-sm truncate">{opp.title}</p>
-                      <div className="flex items-center gap-2 mt-1">
-                        <span className="text-xs text-muted-foreground">{opp.customerName}</span>
-                        <Badge variant="outline" className="text-xs">
+                      <div className="flex items-center gap-2 mt-0.5">
+                        <span className="text-[11px] text-muted-foreground">{opp.customerName}</span>
+                        <Badge variant="outline" className="text-[10px] h-4">
                           ¥{(opp.value ?? 0).toLocaleString()}
                         </Badge>
                       </div>
@@ -442,7 +401,7 @@ export default function DashboardPage() {
                       <Button
                         variant="ghost"
                         size="sm"
-                        className="h-7 text-xs mt-1"
+                        className="h-6 text-[11px] mt-1"
                         onClick={() => setQuickFollowUp({ open: true, entityType: 'opportunity', entityId: opp.id, entityName: opp.title })}
                       >
                         立即跟进
@@ -456,34 +415,30 @@ export default function DashboardPage() {
         </Card>
 
         {/* 数据导出 */}
-        <Card className="card-hover animate-in slide-in-from-right-4 duration-500">
-          <CardHeader className="relative">
-            <div className="absolute -left-4 top-0 bottom-0 w-1 bg-gradient-to-b from-indigo-500 to-blue-500 rounded-full" />
-            <CardTitle className="flex items-center gap-2">
-              <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-gradient-to-br from-indigo-500/10 to-blue-500/10">
-                <Download className="h-4 w-4 text-indigo-600 dark:text-indigo-400" />
-              </div>
+        <Card className="card-elevated border-0">
+          <CardHeader className="pb-2">
+            <CardTitle className="section-title text-base">
               数据导出
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="grid gap-3">
+            <div className="grid gap-2">
               {[
                 { label: '客户数据', desc: '导出所有客户信息', type: 'customers' },
                 { label: '销售线索', desc: '导出所有线索数据', type: 'leads' },
                 { label: '商机', desc: '导出所有商机数据', type: 'opportunities' },
                 { label: '联系人', desc: '导出所有联系人信息', type: 'contacts' },
               ].map((item) => (
-                <div key={item.type} className="flex items-center justify-between p-3 rounded-lg border hover:border-primary/30 hover:bg-accent/30 transition-all cursor-pointer group"
+                <div key={item.type} className="flex items-center justify-between p-3 rounded-lg hover:bg-accent/40 transition-colors cursor-pointer group"
                   onClick={() => {
                     window.open(`/api/export?type=${item.type}`, '_blank');
                   }}
                 >
                   <div>
                     <p className="font-medium text-sm group-hover:text-primary transition-colors">{item.label}</p>
-                    <p className="text-xs text-muted-foreground">{item.desc}</p>
+                    <p className="text-[11px] text-muted-foreground/60">{item.desc}</p>
                   </div>
-                  <Button variant="outline" size="sm" className="h-8 gap-1">
+                  <Button variant="outline" size="sm" className="h-7 gap-1 text-[11px]">
                     <Download className="h-3 w-3" />
                     CSV
                   </Button>

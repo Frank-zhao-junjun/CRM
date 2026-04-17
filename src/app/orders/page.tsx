@@ -227,7 +227,7 @@ export default function OrdersPage() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight gradient-text">成交订单</h1>
+          <h1 className="section-title text-xl">成交订单</h1>
           <p className="text-muted-foreground mt-1">管理已成交的订单，订单状态: 草稿→已确认→待付款→已付款→已完成</p>
         </div>
         <div className="flex gap-2">

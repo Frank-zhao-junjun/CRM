@@ -149,85 +149,85 @@ export default function LeadsPage() {
   };
 
   return (
-    <div className="space-y-8">
+    <div className="page-section">
       {/* Header */}
-      <div className="relative">
-        <div className="absolute inset-0 bg-gradient-to-r from-yellow-500/5 via-transparent to-amber-500/5 rounded-3xl -z-10" />
-        <div className="flex flex-col sm:flex-row gap-4 justify-between">
-          <div>
-            <h1 className="text-3xl font-bold tracking-tight gradient-text">销售线索</h1>
-            <p className="text-muted-foreground mt-1">
-              共 {filteredLeads.length} 条线索，总预估价值 ¥{filteredLeads.reduce((sum, l) => sum + (l.estimatedValue ?? 0), 0).toLocaleString()}
-            </p>
-          </div>
-          <Button 
-            onClick={() => router.push('/leads/new')}
-            className="gap-2 bg-gradient-to-r from-yellow-500 to-amber-500 hover:from-yellow-600 hover:to-amber-600 shadow-lg shadow-yellow-500/25 transition-all duration-300"
-          >
-            <Plus className="h-4 w-4" />
-            新建线索
-          </Button>
+      <div className="page-header">
+        <div>
+          <h1 className="section-title text-xl">销售线索</h1>
+          <p className="text-muted-foreground/60 text-sm mt-1 ml-4">
+            共 {filteredLeads.length} 条线索，总预估价值 ¥{filteredLeads.reduce((sum, l) => sum + (l.estimatedValue ?? 0), 0).toLocaleString()}
+          </p>
+        </div>
+        <div className="flex items-center gap-2">
           <Link href="/leads/kanban">
-            <Button variant="outline" className="gap-2">
-              <LayoutGrid className="h-4 w-4" />
+            <Button variant="outline" size="sm" className="gap-1.5 h-8 text-xs">
+              <LayoutGrid className="h-3.5 w-3.5" />
               看板视图
             </Button>
           </Link>
+          <Button 
+            onClick={() => router.push('/leads/new')}
+            size="sm"
+            className="gap-1.5 h-8"
+          >
+            <Plus className="h-3.5 w-3.5" />
+            新建线索
+          </Button>
         </div>
       </div>
 
       {/* 状态统计卡片 */}
-      <div className="grid gap-4 md:grid-cols-4">
-        <Card className="card-hover">
+      <div className="grid gap-3 md:grid-cols-4 stagger-in">
+        <Card className="stat-card border-0">
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-muted-foreground">新建</p>
-                <p className="text-2xl font-bold">{statusCounts.new}</p>
+                <p className="text-xs text-muted-foreground/60 font-medium">新建</p>
+                <p className="text-2xl font-bold mt-0.5">{statusCounts.new}</p>
               </div>
-              <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-gray-400 to-slate-500 flex items-center justify-center">
-                <Lightbulb className="h-6 w-6 text-white" />
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-gray-400 to-slate-500 flex items-center justify-center shadow-sm">
+                <Lightbulb className="h-5 w-5 text-white" />
               </div>
             </div>
           </CardContent>
         </Card>
-        <Card className="card-hover">
+        <Card className="stat-card border-0">
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-muted-foreground">已联系</p>
-                <p className="text-2xl font-bold">{statusCounts.contacted}</p>
+                <p className="text-xs text-muted-foreground/60 font-medium">已联系</p>
+                <p className="text-2xl font-bold mt-0.5">{statusCounts.contacted}</p>
               </div>
-              <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-yellow-400 to-orange-500 flex items-center justify-center">
-                <Phone className="h-6 w-6 text-white" />
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-yellow-400 to-orange-500 flex items-center justify-center shadow-sm">
+                <Phone className="h-5 w-5 text-white" />
               </div>
             </div>
           </CardContent>
         </Card>
-        <Card className="card-hover">
+        <Card className="stat-card border-0">
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-muted-foreground">已Qualified</p>
-                <p className="text-2xl font-bold">{statusCounts.qualified}</p>
+                <p className="text-xs text-muted-foreground/60 font-medium">已Qualified</p>
+                <p className="text-2xl font-bold mt-0.5">{statusCounts.qualified}</p>
               </div>
-              <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-cyan-400 to-blue-500 flex items-center justify-center">
-                <Sparkles className="h-6 w-6 text-white" />
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-cyan-400 to-blue-500 flex items-center justify-center shadow-sm">
+                <Sparkles className="h-5 w-5 text-white" />
               </div>
             </div>
           </CardContent>
         </Card>
-        <Card className="card-hover bg-gradient-to-br from-yellow-500/10 to-amber-500/5">
+        <Card className="stat-card border-0">
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-muted-foreground">线索总额</p>
-                <p className="text-2xl font-bold text-yellow-600 dark:text-yellow-400">
+                <p className="text-xs text-muted-foreground/60 font-medium">线索总额</p>
+                <p className="text-2xl font-bold mt-0.5 text-yellow-600 dark:text-yellow-400">
                   ¥{activeLeads.reduce((sum, l) => sum + (l.estimatedValue ?? 0), 0).toLocaleString()}
                 </p>
               </div>
-              <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-yellow-400 to-amber-500 flex items-center justify-center">
-                <DollarSign className="h-6 w-6 text-white" />
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-yellow-400 to-amber-500 flex items-center justify-center shadow-sm">
+                <DollarSign className="h-5 w-5 text-white" />
               </div>
             </div>
           </CardContent>
@@ -235,16 +235,16 @@ export default function LeadsPage() {
       </div>
 
       {/* Filters */}
-      <Card className="card-hover">
+      <Card className="border-0 shadow-sm">
         <CardContent className="p-4">
-          <div className="flex flex-col sm:flex-row gap-4">
+          <div className="flex flex-col sm:flex-row gap-3">
             <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground/50" />
               <Input
                 placeholder="搜索线索名称或客户..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                className="pl-10 h-11 bg-background/50"
+                className="pl-9 h-9 bg-muted/30 border-0 focus-visible:bg-background focus-visible:ring-1 text-sm"
               />
             </div>
             <Select value={statusFilter} onValueChange={setStatusFilter}>

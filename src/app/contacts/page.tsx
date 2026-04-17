@@ -101,52 +101,50 @@ export default function ContactsPage() {
   };
 
   return (
-    <div className="space-y-8">
+    <div className="page-section">
       {/* Header */}
-      <div className="relative">
-        <div className="absolute inset-0 bg-gradient-to-r from-green-500/5 via-transparent to-emerald-500/5 rounded-3xl -z-10" />
-        <div className="flex flex-col sm:flex-row gap-4 justify-between">
-          <div>
-            <h1 className="text-3xl font-bold tracking-tight gradient-text">联系人</h1>
-            <p className="text-muted-foreground mt-1">
-              共 {filteredContacts.length} 个联系人
-            </p>
-          </div>
-          <div className="flex gap-2">
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="outline" className="gap-2">
-                  <Download className="h-4 w-4" />
-                  导出
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuItem onClick={() => handleExport('csv')} className="gap-2">
-                  <FileSpreadsheet className="h-4 w-4" />
-                  导出为 CSV
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => handleExport('xlsx')} className="gap-2">
-                  <FileSpreadsheet className="h-4 w-4" />
-                  导出为 Excel
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-            <Button 
-              onClick={() => router.push('/contacts/new')}
-              className="gap-2 bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 shadow-lg shadow-green-500/25 transition-all duration-300"
-            >
-              <Plus className="h-4 w-4" />
-              新建联系人
-            </Button>
-          </div>
+      <div className="page-header">
+        <div>
+          <h1 className="section-title text-xl">联系人</h1>
+          <p className="text-muted-foreground/60 text-sm mt-1 ml-4">
+            共 {filteredContacts.length} 个联系人
+          </p>
+        </div>
+        <div className="flex items-center gap-2">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" size="sm" className="gap-1.5 h-8 text-xs">
+                <Download className="h-3.5 w-3.5" />
+                导出
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={() => handleExport('csv')} className="gap-2">
+                <FileSpreadsheet className="h-4 w-4" />
+                导出为 CSV
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => handleExport('xlsx')} className="gap-2">
+                <FileSpreadsheet className="h-4 w-4" />
+                导出为 Excel
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+          <Button 
+            onClick={() => router.push('/contacts/new')}
+            size="sm"
+            className="gap-1.5 h-8"
+          >
+            <Plus className="h-3.5 w-3.5" />
+            新建联系人
+          </Button>
         </div>
       </div>
 
       {/* Filters */}
-      <Card className="card-hover">
+      <Card className="border-0 shadow-sm">
         <CardContent className="p-4">
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground/50" />
             <Input
               placeholder="搜索联系人姓名、邮箱或客户..."
               value={search}

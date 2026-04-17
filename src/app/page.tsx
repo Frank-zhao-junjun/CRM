@@ -19,8 +19,16 @@ import {
   AlertTriangle,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { format, formatDistanceToNow } from 'date-fns';
+import { format, formatDistanceToNow, isValid, parseISO } from 'date-fns';
 import { zhCN } from 'date-fns/locale';
+
+function safeFormat(dateValue: string | null | undefined, fmt: string): string {
+  if (!dateValue) return '-';
+  const date = parseISO(dateValue);
+  if (!isValid(date)) return '-';
+  try { return format(date, fmt, { locale: zhCN }); } catch { return '-'; }
+}
+
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { SalesFunnel } from '@/components/crm/sales-funnel';
@@ -377,7 +385,7 @@ export default function DashboardPage() {
                       </p>
                       {opp.expectedCloseDate && (
                         <p className="text-xs text-muted-foreground mt-1">
-                          预计 {format(new Date(opp.expectedCloseDate), 'MM/dd', { locale: zhCN })} 成交
+                          预计 {safeFormat(opp.expectedCloseDate, 'MM/dd')} 成交
                         </p>
                       )}
                     </div>

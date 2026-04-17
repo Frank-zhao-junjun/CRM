@@ -19,11 +19,18 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { useState, useEffect, useCallback } from 'react';
-import { format } from 'date-fns';
-import { ActivityTimeline } from '@/components/crm/activity-timeline';
+import { format, isValid, parseISO } from 'date-fns';
 import { zhCN } from 'date-fns/locale';
+import { ActivityTimeline } from '@/components/crm/activity-timeline';
 import { SendEmailDialog } from '@/components/email/send-email-dialog';
 import type { Tag as TagType } from '@/storage/database/shared/schema';
+
+function safeFormat(dateValue: string | null | undefined, fmt: string): string {
+  if (!dateValue) return '-';
+  const date = parseISO(dateValue);
+  if (!isValid(date)) return '-';
+  try { return format(date, fmt, { locale: zhCN }); } catch { return '-'; }
+}
 
 const statusLabels: Record<CustomerStatus, { label: string; className: string }> = {
   active: { label: '活跃', className: 'bg-green-500/10 text-green-500 border-green-500/20' },
@@ -360,7 +367,7 @@ export default function CustomerDetailPage() {
                   <div className="flex-1 min-w-0">
                     <p className="font-medium truncate">{opp.title}</p>
                     <p className="text-sm text-muted-foreground">
-                      预计 {format(new Date(opp.expectedCloseDate), 'yyyy/MM/dd', { locale: zhCN })} 截止
+                      预计 {safeFormat(opp.expectedCloseDate, 'yyyy/MM/dd')} 截止
                     </p>
                   </div>
                   <div className="text-right ml-4">
@@ -378,8 +385,8 @@ export default function CustomerDetailPage() {
       <Card>
         <CardContent className="py-4">
           <div className="flex justify-between text-sm text-muted-foreground">
-            <span>创建时间: {format(new Date(customer.createdAt), 'yyyy-MM-dd HH:mm', { locale: zhCN })}</span>
-            <span>更新时间: {format(new Date(customer.updatedAt), 'yyyy-MM-dd HH:mm', { locale: zhCN })}</span>
+            <span>创建时间: {safeFormat(customer.createdAt, 'yyyy-MM-dd HH:mm')}</span>
+            <span>更新时间: {safeFormat(customer.updatedAt, 'yyyy-MM-dd HH:mm')}</span>
           </div>
         </CardContent>
       </Card>

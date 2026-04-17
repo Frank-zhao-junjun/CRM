@@ -653,3 +653,60 @@ export type Tag = typeof tags.$inferSelect;
 export type InsertTag = typeof tags.$inferInsert;
 export type CustomerTag = typeof customerTags.$inferSelect;
 export type InsertCustomerTag = typeof customerTags.$inferInsert;
+
+// ============ 自动化规则引擎 ============
+
+// 自动化规则表
+export const automationRules = pgTable(
+  'automation_rules',
+  {
+    id: varchar('id', { length: 36 }).primaryKey().default(sql`gen_random_uuid()`),
+    name: varchar('name', { length: 128 }).notNull(),
+    description: text('description'),
+    trigger_type: varchar('trigger_type', { length: 50 }).notNull(), // field_change, status_change, time_condition
+    entity_type: varchar('entity_type', { length: 50 }).notNull(), // customer, opportunity, lead, order
+    conditions: text('conditions').notNull(), // JSON: field, operator, value
+    actions: text('actions').notNull(), // JSON: action_type, params
+    is_enabled: boolean('is_enabled').default(true).notNull(),
+    is_system: boolean('is_system').default(false).notNull(), // 是否系统预设规则
+    priority: integer('priority').default(0).notNull(),
+    trigger_count: integer('trigger_count').default(0).notNull(), // 触发次数统计
+    last_triggered_at: timestamp('last_triggered_at', { withTimezone: true }),
+    created_at: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+    updated_at: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => [
+    index('automation_rules_entity_type_idx').on(table.entity_type),
+    index('automation_rules_enabled_idx').on(table.is_enabled),
+    index('automation_rules_trigger_type_idx').on(table.trigger_type),
+  ]
+);
+
+// 自动化规则执行日志表
+export const automationLogs = pgTable(
+  'automation_logs',
+  {
+    id: varchar('id', { length: 36 }).primaryKey().default(sql`gen_random_uuid()`),
+    rule_id: varchar('rule_id', { length: 36 }).notNull().references(() => automationRules.id, { onDelete: 'cascade' }),
+    entity_type: varchar('entity_type', { length: 50 }).notNull(),
+    entity_id: varchar('entity_id', { length: 36 }).notNull(),
+    entity_name: varchar('entity_name', { length: 255 }),
+    action_type: varchar('action_type', { length: 50 }).notNull(),
+    status: varchar('status', { length: 20 }).notNull().default('success'), // success, failed, skipped
+    error_message: text('error_message'),
+    execution_data: text('execution_data'), // JSON: 执行的详细数据
+    created_at: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => [
+    index('automation_logs_rule_id_idx').on(table.rule_id),
+    index('automation_logs_entity_idx').on(table.entity_type, table.entity_id),
+    index('automation_logs_status_idx').on(table.status),
+    index('automation_logs_created_at_idx').on(table.created_at),
+  ]
+);
+
+// 自动化规则类型导出
+export type AutomationRule = typeof automationRules.$inferSelect;
+export type InsertAutomationRule = typeof automationRules.$inferInsert;
+export type AutomationLog = typeof automationLogs.$inferSelect;
+export type InsertAutomationLog = typeof automationLogs.$inferInsert;

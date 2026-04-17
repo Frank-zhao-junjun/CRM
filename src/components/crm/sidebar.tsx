@@ -10,6 +10,7 @@ import {
   Briefcase,
   Contact2, 
   Settings,
+  Settings2,
   ChevronLeft,
   Menu,
   Zap,
@@ -25,6 +26,7 @@ import {
   CheckSquare,
   Heart,
   AlertTriangle,
+  Cpu,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
@@ -165,6 +167,23 @@ const navigation: NavItemType[] = [
     icon: Zap,
     gradient: 'from-yellow-500 to-orange-500',
     badge: 'NEW',
+  },
+  // 设置子菜单
+  { 
+    name: '系统设置', 
+    href: '/settings', 
+    icon: Settings2,
+    gradient: 'from-gray-500 to-slate-500',
+    isSection: true,
+    subMenu: [
+      { name: '常规设置', href: '/settings' },
+      { name: '用户管理', href: '/settings/users' },
+      { name: '角色权限', href: '/settings/roles' },
+      { name: '邮件模板', href: '/settings/email' },
+      { name: '标签管理', href: '/settings/tags' },
+      { name: '规则模板', href: '/settings/templates' },
+      { name: '自动化规则', href: '/settings/automation' },
+    ],
   },
 ];
 
@@ -316,17 +335,6 @@ export function Sidebar() {
 
             {/* Footer */}
             <div className="px-3 py-4 border-t/50">
-
-              <NavItem
-                href="/settings"
-                icon={Settings}
-                label="系统设置"
-                isActive={pathname === '/settings'}
-                collapsed={false}
-                gradient="from-gray-500 to-slate-500"
-                onClick={close}
-              />
-              
               {/* Version info */}
               <div className="mt-4 px-3 text-xs text-muted-foreground/60">
                 <div className="flex items-center gap-2">
@@ -418,15 +426,6 @@ export function Sidebar() {
 
           {/* Footer */}
           <div className="px-3 py-4 border-t/50">
-            <NavItem
-              href="/settings"
-              icon={Settings}
-              label="系统设置"
-              isActive={pathname === '/settings'}
-              collapsed={collapsed}
-              gradient="from-gray-500 to-slate-500"
-            />
-            
             {/* Collapse Button */}
             <Button
               variant="ghost"
@@ -449,7 +448,7 @@ export function Sidebar() {
               <div className="mt-4 px-3 text-xs text-muted-foreground/60 animate-in fade-in slide-in-from-bottom-2 duration-300">
                 <div className="flex items-center gap-2">
                   <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
-                  <span>v3.2.0</span>
+                  <span>v4.7.0</span>
                 </div>
               </div>
             )}

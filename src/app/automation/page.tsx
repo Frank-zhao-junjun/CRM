@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Zap, Plus, Play, Pause, Trash2, Settings, 
   BarChart3, Clock, CheckCircle2, XCircle, AlertTriangle,
@@ -45,11 +45,7 @@ export default function AutomationPage() {
   const [activeTab, setActiveTab] = useState<'rules' | 'executions' | 'presets'>('rules');
   const [filterType, setFilterType] = useState<string>('all');
 
-  useEffect(() => {
-    fetchData();
-  }, []);
-
-  const fetchData = async () => {
+  const fetchData = React.useCallback(async () => {
     setLoading(true);
     try {
       const res = await fetch('/api/automation');
@@ -61,7 +57,11 @@ export default function AutomationPage() {
       console.error('获取数据失败:', error);
     }
     setLoading(false);
-  };
+  }, []);
+
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
 
   const toggleRule = async (ruleId: string, isActive: boolean) => {
     await fetch('/api/automation', {

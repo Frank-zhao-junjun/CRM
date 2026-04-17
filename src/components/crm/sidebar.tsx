@@ -27,6 +27,7 @@ import {
   Heart,
   AlertTriangle,
   Cpu,
+  Ticket,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
@@ -160,6 +161,13 @@ const navigation: NavItemType[] = [
     icon: AlertTriangle,
     gradient: 'from-orange-500 to-red-500',
     badge: 'AI',
+  },
+  { 
+    name: '服务工单', 
+    href: '/tickets', 
+    icon: Ticket,
+    gradient: 'from-teal-500 to-cyan-500',
+    badge: 'V5.2',
   },
   { 
     name: '流程自动化', 

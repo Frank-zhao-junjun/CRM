@@ -710,3 +710,61 @@ export type AutomationRule = typeof automationRules.$inferSelect;
 export type InsertAutomationRule = typeof automationRules.$inferInsert;
 export type AutomationLog = typeof automationLogs.$inferSelect;
 export type InsertAutomationLog = typeof automationLogs.$inferInsert;
+
+// ============ 服务工单模块 (V5.2) ============
+
+// 工单表
+export const tickets = pgTable(
+  'tickets',
+  {
+    id: varchar('id', { length: 36 }).primaryKey().default(sql`gen_random_uuid()`),
+    ticket_number: varchar('ticket_number', { length: 30 }).notNull().unique(), // TKT-YYYYMMDD-序号
+    title: varchar('title', { length: 255 }).notNull(),
+    description: text('description').notNull(),
+    customer_id: varchar('customer_id', { length: 36 }).notNull().references(() => customers.id, { onDelete: 'restrict' }),
+    type: varchar('type', { length: 30 }).notNull().default('inquiry'), // inquiry(问题咨询), technical(技术故障), complaint(投诉建议), other(其他)
+    priority: varchar('priority', { length: 20 }).notNull().default('medium'), // low(低), medium(中), high(高), urgent(紧急)
+    status: varchar('status', { length: 20 }).notNull().default('pending'), // pending(待处理), processing(处理中), resolved(已解决), closed(已关闭)
+    assignee_id: varchar('assignee_id', { length: 100 }), // 处理人ID
+    assignee_name: varchar('assignee_name', { length: 100 }), // 处理人名称
+    created_by: varchar('created_by', { length: 100 }).notNull(), // 创建人
+    resolved_at: timestamp('resolved_at', { withTimezone: true }), // 解决时间
+    closed_at: timestamp('closed_at', { withTimezone: true }), // 关闭时间
+    created_at: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+    updated_at: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => [
+    index('tickets_customer_id_idx').on(table.customer_id),
+    index('tickets_status_idx').on(table.status),
+    index('tickets_priority_idx').on(table.priority),
+    index('tickets_type_idx').on(table.type),
+    index('tickets_assignee_idx').on(table.assignee_id),
+    index('tickets_created_at_idx').on(table.created_at),
+    index('tickets_ticket_number_idx').on(table.ticket_number),
+  ]
+);
+
+// 工单评论表
+export const ticketComments = pgTable(
+  'ticket_comments',
+  {
+    id: varchar('id', { length: 36 }).primaryKey().default(sql`gen_random_uuid()`),
+    ticket_id: varchar('ticket_id', { length: 36 }).notNull().references(() => tickets.id, { onDelete: 'cascade' }),
+    content: text('content').notNull(),
+    author_id: varchar('author_id', { length: 100 }).notNull(), // 评论人ID
+    author_name: varchar('author_name', { length: 100 }).notNull(), // 评论人名称
+    author_type: varchar('author_type', { length: 20 }).notNull().default('staff'), // staff(员工), customer(客户)
+    is_internal: boolean('is_internal').default(false).notNull(), // 是否为内部备注
+    created_at: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => [
+    index('ticket_comments_ticket_id_idx').on(table.ticket_id),
+    index('ticket_comments_created_at_idx').on(table.created_at),
+  ]
+);
+
+// 工单类型导出
+export type Ticket = typeof tickets.$inferSelect;
+export type InsertTicket = typeof tickets.$inferInsert;
+export type TicketComment = typeof ticketComments.$inferSelect;
+export type InsertTicketComment = typeof ticketComments.$inferInsert;

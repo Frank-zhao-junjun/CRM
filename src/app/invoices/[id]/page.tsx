@@ -115,8 +115,8 @@ export default function InvoiceDetailPage() {
           <div>
             <div className="flex items-center gap-3">
               <h1 className="text-3xl font-bold">{invoice.invoiceNumber}</h1>
-              <Badge className={INVOICE_STATUS_CONFIG[invoice.status].className}>
-                {INVOICE_STATUS_CONFIG[invoice.status].label}
+              <Badge className={(INVOICE_STATUS_CONFIG[invoice.status] || INVOICE_STATUS_CONFIG.draft).className}>
+                {(INVOICE_STATUS_CONFIG[invoice.status] || INVOICE_STATUS_CONFIG.draft).label}
               </Badge>
             </div>
             <p className="text-muted-foreground">

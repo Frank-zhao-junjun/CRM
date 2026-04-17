@@ -139,7 +139,7 @@ function LeadCard({ lead, onClick }: LeadCardProps) {
     transition,
   };
 
-  const statusConfig = LEAD_STATUS_CONFIG[lead.status];
+  const statusConfig = LEAD_STATUS_CONFIG[lead.status] || LEAD_STATUS_CONFIG.new;
 
   return (
     <div
@@ -360,7 +360,7 @@ export default function LeadsKanbanPage() {
                       id={status}
                       title={config.label}
                       color={config.color}
-                      gradient={LEAD_STATUS_CONFIG[status].label.includes('新')
+                      gradient={(LEAD_STATUS_CONFIG[status] || LEAD_STATUS_CONFIG.new).label.includes('新')
                         ? 'from-blue-400 to-blue-500'
                         : config.label.includes('已联系')
                         ? 'from-purple-400 to-purple-500'

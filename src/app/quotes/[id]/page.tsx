@@ -146,7 +146,7 @@ export default function QuoteDetailPage() {
     return <div className="flex items-center justify-center h-64"><p className="text-muted-foreground">加载中...</p></div>;
   }
 
-  const statusConf = QUOTE_STATUS_CONFIG[quote.status];
+  const statusConf = QUOTE_STATUS_CONFIG[quote.status] || QUOTE_STATUS_CONFIG.draft;
   const isEditable = quote.status === 'draft';
 
   return (
@@ -352,7 +352,7 @@ export default function QuoteDetailPage() {
               <CardHeader><CardTitle className="flex items-center gap-2"><GitBranch className="h-4 w-4" /> 版本历史</CardTitle></CardHeader>
               <CardContent className="space-y-3">
                 {allQuotesForOpp.map((vq) => {
-                  const vqStatusConf = QUOTE_STATUS_CONFIG[vq.status];
+                  const vqStatusConf = QUOTE_STATUS_CONFIG[vq.status] || QUOTE_STATUS_CONFIG.draft;
                   const isCurrent = vq.id === quote.id;
                   return (
                     <div

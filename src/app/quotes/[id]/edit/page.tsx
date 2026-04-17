@@ -185,7 +185,7 @@ export default function EditQuotePage() {
           <CardContent className="py-12 text-center">
             <p className="text-muted-foreground">只有草稿状态的报价单才能编辑</p>
             <p className="text-sm text-muted-foreground mt-2">
-              当前状态: <Badge className={cn(QUOTE_STATUS_CONFIG[quote.status].className)}>{QUOTE_STATUS_CONFIG[quote.status].label}</Badge>
+              当前状态: <Badge className={cn((QUOTE_STATUS_CONFIG[quote.status] || QUOTE_STATUS_CONFIG.draft).className)}>{(QUOTE_STATUS_CONFIG[quote.status] || QUOTE_STATUS_CONFIG.draft).label}</Badge>
             </p>
             <Button variant="outline" className="mt-4" onClick={() => router.push(`/quotes/${id}`)}>
               返回详情

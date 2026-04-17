@@ -227,7 +227,7 @@ export default function ContractsPage() {
             </TableHeader>
             <TableBody>
               {filteredContracts.map((contract) => {
-                const statusConf = CONTRACT_STATUS_CONFIG[contract.status];
+                const statusConf = CONTRACT_STATUS_CONFIG[contract.status] || CONTRACT_STATUS_CONFIG.draft;
                 return (
                   <TableRow
                     key={contract.id}

@@ -49,8 +49,8 @@ export default function LeadDetailPage() {
 
   const isQualified = lead.status === 'qualified';
   const isDisqualified = lead.status === 'disqualified';
-  const statusConf = LEAD_STATUS_CONFIG[lead.status];
-  const sourceConf = LEAD_SOURCE_CONFIG[lead.source];
+  const statusConf = LEAD_STATUS_CONFIG[lead.status] || LEAD_STATUS_CONFIG.new;
+  const sourceConf = LEAD_SOURCE_CONFIG[lead.source] || LEAD_SOURCE_CONFIG.other;
 
   const handleDelete = () => {
     deleteLead(lead.id);

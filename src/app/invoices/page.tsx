@@ -240,8 +240,8 @@ export default function InvoicesPage() {
                       ¥{invoice.total.toLocaleString('zh-CN', { minimumFractionDigits: 2 })}
                     </TableCell>
                     <TableCell>
-                      <Badge className={INVOICE_STATUS_CONFIG[invoice.status].className}>
-                        {INVOICE_STATUS_CONFIG[invoice.status].label}
+                      <Badge className={(INVOICE_STATUS_CONFIG[invoice.status] || INVOICE_STATUS_CONFIG.draft).className}>
+                        {(INVOICE_STATUS_CONFIG[invoice.status] || INVOICE_STATUS_CONFIG.draft).label}
                       </Badge>
                     </TableCell>
                     <TableCell>{safeFormat(invoice.issueDate, 'yyyy-MM-dd')}</TableCell>

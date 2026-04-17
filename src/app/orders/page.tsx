@@ -330,7 +330,7 @@ export default function OrdersPage() {
               </TableHeader>
               <TableBody>
                 {filteredOrders.map((order) => {
-                  const statusConf = ORDER_STATUS_CONFIG[order.status];
+                  const statusConf = ORDER_STATUS_CONFIG[order.status] || ORDER_STATUS_CONFIG.draft;
                   return (
                     <TableRow key={order.id} className="group cursor-pointer" onClick={() => router.push(`/orders/${order.id}`)}>
                       <TableCell className="font-mono font-medium">{order.orderNumber}</TableCell>

@@ -185,7 +185,7 @@ export default function EditOrderPage() {
     return <div className="flex items-center justify-center h-64"><p className="text-muted-foreground">加载中...</p></div>;
   }
 
-  const statusConf = ORDER_STATUS_CONFIG[order.status];
+  const statusConf = ORDER_STATUS_CONFIG[order.status] || ORDER_STATUS_CONFIG.draft;
   const isEditable = ['draft', 'confirmed', 'awaiting_payment', 'paid'].includes(order.status);
 
   return (

@@ -152,7 +152,7 @@ export default function ContractDetailPage() {
     return <div className="flex items-center justify-center h-64"><p className="text-muted-foreground">合同不存在</p></div>;
   }
 
-  const statusConf = CONTRACT_STATUS_CONFIG[contract.status];
+  const statusConf = CONTRACT_STATUS_CONFIG[contract.status] || CONTRACT_STATUS_CONFIG.draft;
   const isEditable = contract.status === 'draft';
   const completedMilestones = milestones.filter(m => m.isCompleted).length;
   const progress = milestones.length > 0 ? (completedMilestones / milestones.length) * 100 : 0;

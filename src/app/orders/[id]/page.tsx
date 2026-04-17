@@ -114,7 +114,7 @@ export default function OrderDetailPage() {
     return <div className="flex items-center justify-center h-64"><p className="text-muted-foreground">加载中...</p></div>;
   }
 
-  const statusConf = ORDER_STATUS_CONFIG[order.status];
+  const statusConf = ORDER_STATUS_CONFIG[order.status] || ORDER_STATUS_CONFIG.draft;
   const isEditable = ['draft', 'confirmed', 'awaiting_payment', 'paid'].includes(order.status);
 
   // Payment method labels
@@ -190,9 +190,9 @@ export default function OrderDetailPage() {
         <CardContent className="p-4">
           <div className="flex items-center justify-between">
             {['draft', 'confirmed', 'awaiting_payment', 'paid', 'completed'].map((status, idx) => {
-              const conf = ORDER_STATUS_CONFIG[status as OrderStatus];
+              const conf = ORDER_STATUS_CONFIG[status as OrderStatus] || ORDER_STATUS_CONFIG.draft;
               const isActive = order.status === status;
-              const isPast = conf.step < ORDER_STATUS_CONFIG[order.status].step;
+              const isPast = conf.step < (ORDER_STATUS_CONFIG[order.status] || ORDER_STATUS_CONFIG.draft).step;
               return (
                 <div key={status} className="flex items-center">
                   <div className="flex flex-col items-center">

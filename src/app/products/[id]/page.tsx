@@ -42,7 +42,7 @@ export default function ProductDetailPage() {
     );
   }
 
-  const categoryConfig = PRODUCT_CATEGORY_CONFIG[product.category];
+  const categoryConfig = PRODUCT_CATEGORY_CONFIG[product.category] || PRODUCT_CATEGORY_CONFIG.other;
 
   return (
     <div className="container mx-auto py-6 space-y-6">

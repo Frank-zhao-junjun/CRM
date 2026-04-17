@@ -224,7 +224,7 @@ export default function QuotesPage() {
             </TableHeader>
             <TableBody>
               {filteredQuotes.map((quote) => {
-                const statusConf = QUOTE_STATUS_CONFIG[quote.status];
+                const statusConf = QUOTE_STATUS_CONFIG[quote.status] || QUOTE_STATUS_CONFIG.draft;
                 return (
                   <TableRow
                     key={quote.id}

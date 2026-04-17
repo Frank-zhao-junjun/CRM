@@ -253,7 +253,7 @@ export default function ChurnDashboardPage() {
 
   // 渲染客户列表项
   const renderAnalysisItem = (analysis: ChurnAnalysis, index: number) => {
-    const config = CHURN_RISK_CONFIG[analysis.riskLevel];
+    const config = CHURN_RISK_CONFIG[analysis.riskLevel] || CHURN_RISK_CONFIG.low;
     const isTopRisk = analysis.riskLevel === 'critical' || analysis.riskLevel === 'high';
     
     return (

@@ -154,7 +154,7 @@ export default function HealthDashboardPage() {
 
   // 渲染客户列表项
   const renderCustomerItem = (customer: CustomerHealthScore, index: number) => {
-    const levelCfg = LEVEL_CONFIG[customer.level];
+    const levelCfg = LEVEL_CONFIG[customer.level] || LEVEL_CONFIG.fair;
     const LevelIcon = levelCfg.icon;
     const isTopThree = index < 3;
     

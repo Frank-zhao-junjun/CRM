@@ -8,6 +8,7 @@ import { GlobalSearch } from './global-search';
 
 const pageTitles: Record<string, string> = {
   '/': '仪表盘',
+  '/dashboard/analytics': '销售数据驾驶舱',
   '/customers': '客户管理',
   '/customers/new': '新建客户',
   '/opportunities': '商机',

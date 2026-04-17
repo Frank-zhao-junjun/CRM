@@ -59,6 +59,13 @@ const navigation: NavItemType[] = [
     gradient: 'from-blue-500 to-cyan-500',
   },
   { 
+    name: '销售驾驶舱', 
+    href: '/dashboard/analytics', 
+    icon: BarChart3,
+    gradient: 'from-blue-500 to-indigo-500',
+    badge: 'PRO',
+  },
+  { 
     name: '客户管理', 
     href: '/customers', 
     icon: Users,

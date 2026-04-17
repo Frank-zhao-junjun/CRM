@@ -80,6 +80,7 @@ export async function POST(request: NextRequest) {
             terms: data.terms || null,
             custom_terms: data.customTerms || null,
             notes: data.notes || null,
+            due_date: data.dueDate ? new Date(data.dueDate) : null,
           },
           (data.milestones || []).map((m: { name: string; description?: string; expectedDate?: string; sortOrder?: number }, idx: number) => ({
             id: `milestone_${Date.now()}_${Math.random().toString(36).substring(2, 9)}_${idx}`,
@@ -125,6 +126,7 @@ export async function POST(request: NextRequest) {
           terms: data.terms,
           custom_terms: data.customTerms,
           notes: data.notes,
+          due_date: data.dueDate ? new Date(data.dueDate) : undefined,
         });
         return NextResponse.json(contract);
       }

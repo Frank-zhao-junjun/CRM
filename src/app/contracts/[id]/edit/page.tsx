@@ -22,7 +22,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { ArrowLeft, Plus, X, BarChart3, Building2, Briefcase, FileText, AlertCircle } from 'lucide-react';
+import { ArrowLeft, Plus, X, BarChart3, Building2, Briefcase, FileText, AlertCircle, DollarSign } from 'lucide-react';
 import Link from 'next/link';
 import { type Contract, type ContractStatus, type ContractMilestone } from '@/lib/crm-types';
 
@@ -34,6 +34,12 @@ interface MilestoneForm {
   isCompleted: boolean;
 }
 
+interface Customer {
+  id: string;
+  name: string;
+  company: string;
+}
+
 export default function EditContractPage() {
   const router = useRouter();
   const params = useParams();
@@ -42,6 +48,7 @@ export default function EditContractPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [customers, setCustomers] = useState<Customer[]>([]);
 
   const [form, setForm] = useState({
     customerId: '',
@@ -54,6 +61,7 @@ export default function EditContractPage() {
     signingDate: '',
     effectiveDate: '',
     expirationDate: '',
+    dueDate: '',
     terms: '',
     customTerms: '',
     notes: '',
@@ -63,7 +71,22 @@ export default function EditContractPage() {
 
   useEffect(() => {
     if (id) fetchContract();
+    fetchCustomers();
   }, [id]);
+
+  const fetchCustomers = async () => {
+    try {
+      const res = await fetch('/api/crm?type=customers');
+      if (res.ok) {
+        const data = await res.json();
+        setCustomers(data.map((c: Record<string, unknown>) => ({
+          id: c.id as string,
+          name: c.name as string,
+          company: c.company as string,
+        })));
+      }
+    } catch { /* silent */ }
+  };
 
   const fetchContract = async () => {
     setLoading(true);
@@ -114,6 +137,7 @@ export default function EditContractPage() {
           terms: data.terms || '',
           customTerms: data.custom_terms || '',
           notes: data.notes || '',
+          dueDate: data.due_date ? (data.due_date as string).split('T')[0] : '',
         });
 
         setMilestones((data.milestones || []).map((m: Record<string, unknown>) => ({
@@ -168,6 +192,7 @@ export default function EditContractPage() {
             terms: form.terms,
             customTerms: form.customTerms || null,
             notes: form.notes || null,
+            dueDate: form.dueDate || null,
           },
         }),
       });
@@ -244,18 +269,43 @@ export default function EditContractPage() {
       <div className="grid gap-6 lg:grid-cols-3">
         <div className="lg:col-span-2 space-y-6">
           {/* Basic Info */}
-          <Card>
+          <Card className="card-elevated border-0">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <BarChart3 className="h-5 w-5" /> 基本信息
+                <BarChart3 className="h-5 w-5 text-indigo-500" /> 基本信息
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
+              {/* Customer Selection */}
+              <div className="space-y-2">
+                <Label>客户</Label>
+                <Select value={form.customerId} onValueChange={(val) => {
+                  const customer = customers.find(c => c.id === val);
+                  if (customer) {
+                    setForm(prev => ({ ...prev, customerId: val, customerName: customer.company || customer.name }));
+                  }
+                }}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="选择客户" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {customers.map(c => (
+                      <SelectItem key={c.id} value={c.id}>
+                        <span className="flex items-center gap-2">
+                          <Building2 className="h-3.5 w-3.5 text-muted-foreground" />
+                          {c.company || c.name}
+                        </span>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
               {/* Customer Info Display */}
               {form.customerName && (
-                <div className="flex items-center gap-4 p-3 rounded-lg bg-muted/50 text-sm">
+                <div className="flex items-center gap-4 p-3 rounded-lg bg-gradient-to-r from-indigo-500/5 to-purple-500/5 text-sm">
                   <div className="flex items-center gap-2">
-                    <Building2 className="h-4 w-4 text-muted-foreground" />
+                    <Building2 className="h-4 w-4 text-indigo-500" />
                     <span className="text-muted-foreground">客户:</span>
                     <span className="text-foreground font-medium">{form.customerName}</span>
                   </div>
@@ -269,16 +319,8 @@ export default function EditContractPage() {
                 </div>
               )}
 
-              {/* Dates */}
+              {/* Dates & Amount */}
               <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label>签约日期</Label>
-                  <Input
-                    type="date"
-                    value={form.signingDate}
-                    onChange={e => setForm(prev => ({ ...prev, signingDate: e.target.value }))}
-                  />
-                </div>
                 <div className="space-y-2">
                   <Label>合同金额</Label>
                   <Input
@@ -288,8 +330,16 @@ export default function EditContractPage() {
                     placeholder="输入合同金额"
                   />
                 </div>
+                <div className="space-y-2">
+                  <Label>签约日期</Label>
+                  <Input
+                    type="date"
+                    value={form.signingDate}
+                    onChange={e => setForm(prev => ({ ...prev, signingDate: e.target.value }))}
+                  />
+                </div>
               </div>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-3 gap-4">
                 <div className="space-y-2">
                   <Label>生效日期</Label>
                   <Input
@@ -306,16 +356,24 @@ export default function EditContractPage() {
                     onChange={e => setForm(prev => ({ ...prev, expirationDate: e.target.value }))}
                   />
                 </div>
+                <div className="space-y-2">
+                  <Label>预计回款日期</Label>
+                  <Input
+                    type="date"
+                    value={form.dueDate}
+                    onChange={e => setForm(prev => ({ ...prev, dueDate: e.target.value }))}
+                  />
+                </div>
               </div>
             </CardContent>
           </Card>
 
           {/* Milestones */}
-          <Card>
+          <Card className="card-elevated border-0">
             <CardHeader>
               <div className="flex items-center justify-between">
                 <CardTitle className="flex items-center gap-2">
-                  <Briefcase className="h-5 w-5" /> 履约节点配置
+                  <Briefcase className="h-5 w-5 text-blue-500" /> 履约节点配置
                 </CardTitle>
                 <Button variant="outline" size="sm" className="gap-1" onClick={addMilestone}>
                   <Plus className="h-3 w-3" /> 添加节点
@@ -376,7 +434,7 @@ export default function EditContractPage() {
           </Card>
 
           {/* Terms */}
-          <Card>
+          <Card className="card-elevated border-0">
             <CardHeader>
               <CardTitle>合同条款</CardTitle>
             </CardHeader>
@@ -414,9 +472,10 @@ export default function EditContractPage() {
         {/* Sidebar */}
         <div className="space-y-6">
           {/* Summary */}
-          <Card>
-            <CardHeader><CardTitle>合同摘要</CardTitle></CardHeader>
-            <CardContent className="space-y-4 text-sm">
+          <Card className="card-elevated border-0 relative overflow-hidden">
+            <div className="absolute inset-0 bg-gradient-to-br from-indigo-500/5 to-purple-500/5" />
+            <CardHeader className="relative"><CardTitle>合同摘要</CardTitle></CardHeader>
+            <CardContent className="relative space-y-4 text-sm">
               <div className="flex justify-between">
                 <span className="text-muted-foreground">合同编号</span>
                 <span className="font-medium">{contract.contractNumber}</span>
@@ -436,17 +495,17 @@ export default function EditContractPage() {
               <div className="border-t pt-4">
                 <div className="flex justify-between font-bold text-lg">
                   <span>合同金额</span>
-                  <span className="text-primary">¥{(form.amount ?? 0).toLocaleString()}</span>
+                  <span className="text-indigo-600">¥{(form.amount ?? 0).toLocaleString()}</span>
                 </div>
               </div>
             </CardContent>
           </Card>
 
           {/* Actions */}
-          <Card>
+          <Card className="card-elevated border-0">
             <CardContent className="pt-6">
               <Button 
-                className="w-full" 
+                className="w-full bg-gradient-to-r from-indigo-500 to-purple-500 text-white shadow-lg shadow-indigo-500/20" 
                 size="lg" 
                 onClick={handleSubmit}
                 disabled={saving}

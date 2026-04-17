@@ -296,6 +296,25 @@ export const ORDER_STATUS_CONFIG: Record<OrderStatus, { label: string; className
 
 // ============ 合同管理 ============
 export type ContractStatus = 'draft' | 'executing' | 'completed' | 'terminated';
+export type PaymentStatus = 'unpaid' | 'pending' | 'partial' | 'paid' | 'completed' | 'overdue';
+export type PaymentMethod = 'bank_transfer' | 'cash' | 'check' | 'credit_card' | 'other';
+
+export const PAYMENT_METHOD_CONFIG: Record<PaymentMethod, { label: string; icon: string }> = {
+  bank_transfer: { label: '银行转账', icon: '🏦' },
+  cash: { label: '现金', icon: '💵' },
+  check: { label: '支票', icon: '📝' },
+  credit_card: { label: '信用卡', icon: '💳' },
+  other: { label: '其他', icon: '💰' },
+};
+
+export const PAYMENT_STATUS_CONFIG: Record<PaymentStatus, { label: string; className: string; color: string }> = {
+  unpaid: { label: '未回款', className: 'bg-gray-500/10 text-gray-600 dark:text-gray-400 border-gray-500/20', color: 'text-gray-600' },
+  pending: { label: '待回款', className: 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20', color: 'text-amber-600' },
+  partial: { label: '部分回款', className: 'bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20', color: 'text-blue-600' },
+  paid: { label: '已回款', className: 'bg-green-500/10 text-green-600 dark:text-green-400 border-green-500/20', color: 'text-green-600' },
+  completed: { label: '已完成', className: 'bg-green-500/10 text-green-600 dark:text-green-400 border-green-500/20', color: 'text-green-600' },
+  overdue: { label: '逾期', className: 'bg-red-500/10 text-red-600 dark:text-red-400 border-red-500/20', color: 'text-red-600' },
+};
 
 export interface ContractMilestone {
   id: string;
@@ -325,7 +344,22 @@ export interface Contract {
   terms?: string;
   customTerms?: string;
   milestones?: ContractMilestone[];
+  paymentStatus?: PaymentStatus;
+  receivedAmount?: number;
+  dueDate?: string;
   notes?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface PaymentReceipt {
+  id: string;
+  contractId: string;
+  amount: number;
+  paymentDate: string;
+  paymentMethod: PaymentMethod;
+  receiptNumber?: string;
+  remark?: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -605,9 +639,8 @@ export const TASK_STATUS_CONFIG: Record<TaskStatus, { label: string; className: 
   cancelled: { label: '已取消', className: 'bg-stone-500/10 text-stone-600 dark:text-stone-400 border-stone-500/20', color: 'text-stone-600' },
 };
 
-// ============ 回款管理类型 ============
-export type PaymentStatus = 'pending' | 'partial' | 'completed' | 'overdue';
-export type PaymentMethod = 'bank_transfer' | 'cash' | 'check' | 'credit_card' | 'other';
+// ============ 回款管理类型 (复用合同管理类型) ============
+// PaymentStatus, PaymentMethod, PAYMENT_STATUS_CONFIG, PAYMENT_METHOD_CONFIG 已在合同管理部分定义
 
 export interface PaymentPlan {
   id: string;
@@ -631,19 +664,4 @@ export interface PaymentStats {
   overdueAmount: number;
   completionRate: number;
 }
-
-export const PAYMENT_STATUS_CONFIG: Record<PaymentStatus, { label: string; color: string; textColor: string; bgColor: string }> = {
-  pending: { label: '待回款', color: 'text-yellow-600', textColor: 'text-yellow-600', bgColor: 'bg-yellow-50' },
-  partial: { label: '部分回款', color: 'text-blue-600', textColor: 'text-blue-600', bgColor: 'bg-blue-50' },
-  completed: { label: '已回款', color: 'text-green-600', textColor: 'text-green-600', bgColor: 'bg-green-50' },
-  overdue: { label: '逾期', color: 'text-red-600', textColor: 'text-red-600', bgColor: 'bg-red-50' },
-};
-
-export const PAYMENT_METHOD_CONFIG: Record<PaymentMethod, { label: string }> = {
-  bank_transfer: { label: '银行转账' },
-  cash: { label: '现金' },
-  check: { label: '支票' },
-  credit_card: { label: '信用卡' },
-  other: { label: '其他' },
-};
 

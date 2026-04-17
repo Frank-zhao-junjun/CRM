@@ -309,6 +309,9 @@ export const contracts = pgTable(
     terms: text("terms"),
     custom_terms: text("custom_terms"),
     notes: text("notes"),
+    payment_status: varchar("payment_status", { length: 20 }).default("unpaid"), // unpaid, partial, paid, overdue
+    received_amount: numeric("received_amount", { precision: 15, scale: 2 }).default("0"),
+    due_date: timestamp("due_date"),
     created_at: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
     updated_at: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
   },
@@ -335,6 +338,26 @@ export const contractMilestones = pgTable(
   },
   (table) => [
     index("contract_milestones_contract_id_idx").on(table.contract_id),
+  ]
+);
+
+// 合同回款记录表
+export const paymentReceipts = pgTable(
+  "payment_receipts",
+  {
+    id: varchar("id", { length: 36 }).primaryKey().default(sql`gen_random_uuid()`),
+    contract_id: varchar("contract_id", { length: 36 }).notNull().references(() => contracts.id, { onDelete: "cascade" }),
+    amount: numeric("amount", { precision: 15, scale: 2 }).notNull(),
+    payment_date: timestamp("payment_date").notNull(),
+    payment_method: varchar("payment_method", { length: 50 }).notNull().default("bank_transfer"), // bank_transfer, cash, check, other
+    receipt_number: varchar("receipt_number", { length: 100 }),
+    remark: text("remark"),
+    created_at: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+    updated_at: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => [
+    index("payment_receipts_contract_id_idx").on(table.contract_id),
+    index("payment_receipts_payment_date_idx").on(table.payment_date),
   ]
 );
 
@@ -367,6 +390,8 @@ export type Contract = typeof contracts.$inferSelect;
 export type InsertContract = typeof contracts.$inferInsert;
 export type ContractMilestone = typeof contractMilestones.$inferSelect;
 export type InsertContractMilestone = typeof contractMilestones.$inferInsert;
+export type PaymentReceipt = typeof paymentReceipts.$inferSelect;
+export type InsertPaymentReceipt = typeof paymentReceipts.$inferInsert;
 
 // ============ 工作流自动化 ============
 

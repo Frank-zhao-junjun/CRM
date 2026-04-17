@@ -1,6 +1,6 @@
 import 'server-only';
 import { getSupabaseClient } from '@/storage/database/supabase-client';
-import type { Customer, InsertCustomer, Contact, InsertContact, Opportunity, InsertOpportunity, Activity, InsertActivity, FollowUp, InsertFollowUp, Notification, InsertNotification, Quote, InsertQuote, QuoteItem, InsertQuoteItem, Order, InsertOrder, OrderItem, InsertOrderItem, Contract, InsertContract, ContractMilestone, InsertContractMilestone, Reminder, InsertReminder } from '@/storage/database/shared/schema';
+import type { Customer, InsertCustomer, Contact, InsertContact, Opportunity, InsertOpportunity, Activity, InsertActivity, FollowUp, InsertFollowUp, Notification, InsertNotification, Quote, InsertQuote, QuoteItem, InsertQuoteItem, Order, InsertOrder, OrderItem, InsertOrderItem, Contract, InsertContract, ContractMilestone, InsertContractMilestone, PaymentReceipt, InsertPaymentReceipt, Reminder, InsertReminder } from '@/storage/database/shared/schema';
 
 // CRM 数据库服务 - 支持线索管理
 
@@ -624,6 +624,185 @@ export async function generateOverdueNotifications(): Promise<number> {
     created++;
   }
   return created;
+}
+
+// ============ Payment Receipt 操作 (合同回款记录) ============
+
+export async function getPaymentReceiptsByContract(contractId: string): Promise<PaymentReceipt[]> {
+  const client = await getSupabaseClient();
+  const { data, error } = await client
+    .from('payment_receipts')
+    .select('*')
+    .eq('contract_id', contractId)
+    .order('payment_date', { ascending: false });
+
+  if (error) throw new Error(`获取回款记录失败: ${error.message}`);
+  return data as PaymentReceipt[];
+}
+
+export async function getPaymentReceiptById(id: string): Promise<PaymentReceipt | null> {
+  const client = await getSupabaseClient();
+  const { data, error } = await client
+    .from('payment_receipts')
+    .select('*')
+    .eq('id', id)
+    .single();
+
+  if (error) return null;
+  return data as PaymentReceipt;
+}
+
+export async function createPaymentReceipt(receipt: InsertPaymentReceipt): Promise<PaymentReceipt> {
+  const client = await getSupabaseClient();
+  const { data, error } = await client
+    .from('payment_receipts')
+    .insert(receipt)
+    .select()
+    .single();
+
+  if (error) throw new Error(`创建回款记录失败: ${error.message}`);
+
+  // Update contract payment status
+  await updateContractPaymentStatus(data.contract_id);
+
+  return data as PaymentReceipt;
+}
+
+export async function updatePaymentReceipt(id: string, updates: Partial<InsertPaymentReceipt>): Promise<PaymentReceipt> {
+  const client = await getSupabaseClient();
+  const { data, error } = await client
+    .from('payment_receipts')
+    .update({ ...updates, updated_at: new Date().toISOString() })
+    .eq('id', id)
+    .select()
+    .single();
+
+  if (error) throw new Error(`更新回款记录失败: ${error.message}`);
+
+  // Update contract payment status
+  if (data) {
+    await updateContractPaymentStatus(data.contract_id);
+  }
+
+  return data as PaymentReceipt;
+}
+
+export async function deletePaymentReceipt(id: string): Promise<void> {
+  const client = await getSupabaseClient();
+  
+  // Get contract_id before deleting
+  const { data: receipt } = await client
+    .from('payment_receipts')
+    .select('contract_id')
+    .eq('id', id)
+    .single();
+
+  const { error } = await client
+    .from('payment_receipts')
+    .delete()
+    .eq('id', id);
+
+  if (error) throw new Error(`删除回款记录失败: ${error.message}`);
+
+  // Update contract payment status
+  if (receipt) {
+    await updateContractPaymentStatus(receipt.contract_id);
+  }
+}
+
+async function updateContractPaymentStatus(contractId: string): Promise<void> {
+  const client = await getSupabaseClient();
+  
+  // Calculate total received amount
+  const { data: receipts } = await client
+    .from('payment_receipts')
+    .select('amount')
+    .eq('contract_id', contractId);
+
+  const receivedAmount = (receipts || []).reduce((sum: number, r: { amount: string | number }) => sum + Number(r.amount), 0);
+
+  // Get contract amount
+  const { data: contract } = await client
+    .from('contracts')
+    .select('amount, due_date')
+    .eq('id', contractId)
+    .single();
+
+  if (!contract) return;
+
+  const contractAmount = Number(contract.amount);
+  const now = new Date();
+  const dueDate = contract.due_date ? new Date(contract.due_date) : null;
+  const isOverdue = dueDate && dueDate < now && receivedAmount < contractAmount;
+
+  let paymentStatus: string;
+  if (receivedAmount >= contractAmount && contractAmount > 0) {
+    paymentStatus = 'paid';
+  } else if (isOverdue) {
+    paymentStatus = 'overdue';
+  } else if (receivedAmount > 0) {
+    paymentStatus = 'partial';
+  } else {
+    paymentStatus = 'unpaid';
+  }
+
+  await client
+    .from('contracts')
+    .update({
+      received_amount: String(receivedAmount),
+      payment_status: paymentStatus,
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', contractId);
+}
+
+export async function getPaymentSummary(): Promise<{
+  totalPending: number;
+  totalReceived: number;
+  overdueAmount: number;
+  monthlyPending: number;
+}> {
+  const client = await getSupabaseClient();
+  
+  const { data: contracts } = await client
+    .from('contracts')
+    .select('amount, received_amount, payment_status, due_date')
+    .in('status', ['executing', 'completed']);
+
+  if (!contracts) return { totalPending: 0, totalReceived: 0, overdueAmount: 0, monthlyPending: 0 };
+
+  const now = new Date();
+  const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+
+  let totalPending = 0;
+  let totalReceived = 0;
+  let overdueAmount = 0;
+  let monthlyPending = 0;
+
+  for (const c of contracts) {
+    const amount = Number(c.amount);
+    const received = Number(c.received_amount || 0);
+    const pending = amount - received;
+    
+    totalReceived += received;
+    
+    if (pending > 0) {
+      totalPending += pending;
+      
+      if (c.payment_status === 'overdue') {
+        overdueAmount += pending;
+      }
+      
+      if (c.due_date) {
+        const dueDate = new Date(c.due_date);
+        if (dueDate <= monthEnd) {
+          monthlyPending += pending;
+        }
+      }
+    }
+  }
+
+  return { totalPending, totalReceived, overdueAmount, monthlyPending };
 }
 
 // ============ Quote 操作 ============

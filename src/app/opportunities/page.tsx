@@ -352,7 +352,7 @@ export default function OpportunitiesPage() {
       {/* Mobile Cards */}
       <div className="grid gap-4 md:hidden">
         {filteredOpportunities.length === 0 ? (
-          <Card className="card-hover">
+          <Card className="card-elevated border-0">
             <CardContent className="flex flex-col items-center justify-center py-12">
               <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-orange-500/10 to-amber-500/10 flex items-center justify-center mb-4">
                 <Briefcase className="h-8 w-8 text-muted-foreground/50" />

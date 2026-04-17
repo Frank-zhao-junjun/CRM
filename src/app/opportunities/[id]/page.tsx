@@ -262,44 +262,44 @@ export default function OpportunityDetailPage() {
       {/* Header with action buttons */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
-          <Button variant="ghost" size="icon" asChild>
+          <Button variant="ghost" size="icon" asChild className="h-8 w-8">
             <Link href="/opportunities">
-              <ArrowLeft className="h-5 w-5" />
+              <ArrowLeft className="h-4 w-4" />
             </Link>
           </Button>
           <div>
-            <h2 className="text-2xl font-bold">{opportunity.title}</h2>
-            <p className="text-muted-foreground">{opportunity.customerName}</p>
+            <h2 className="section-title text-xl">{opportunity.title}</h2>
+            <p className="text-muted-foreground/60 text-sm mt-0.5 ml-4">{opportunity.customerName}</p>
           </div>
         </div>
-        <div className="flex gap-2">
-          <Button onClick={() => setShowCreateQuote(true)} className="gap-2">
-            <FileText className="h-4 w-4" />
+        <div className="flex items-center gap-2">
+          <Button onClick={() => setShowCreateQuote(true)} size="sm" className="gap-1.5 h-8">
+            <FileText className="h-3.5 w-3.5" />
             {quotes.length > 0 ? '新建报价版本' : '新建报价单'}
           </Button>
-          <Button variant="outline" onClick={() => setShowEmailDialog(true)}>
-            <Send className="h-4 w-4 mr-2" />
+          <Button variant="outline" size="sm" className="gap-1.5 h-8 text-xs" onClick={() => setShowEmailDialog(true)}>
+            <Send className="h-3.5 w-3.5" />
             发送邮件
           </Button>
-          <Button variant="outline" asChild>
+          <Button variant="outline" size="sm" className="gap-1.5 h-8 text-xs" asChild>
             <Link href={`/opportunities/${opportunity.id}/edit`}>
-              <Edit className="h-4 w-4 mr-2" />
+              <Edit className="h-3.5 w-3.5" />
               编辑
             </Link>
           </Button>
-          <Button variant="destructive" onClick={() => setShowDeleteDialog(true)}>
-            <Trash2 className="h-4 w-4 mr-2" />
+          <Button variant="destructive" size="sm" className="gap-1.5 h-8 text-xs" onClick={() => setShowDeleteDialog(true)}>
+            <Trash2 className="h-3.5 w-3.5" />
             删除
           </Button>
         </div>
       </div>
 
       {/* ====== 机会详情 ====== */}
-      <div className="grid gap-6 lg:grid-cols-3">
+      <div className="grid gap-4 lg:grid-cols-3">
         {/* 机会详情 */}
-        <Card className="lg:col-span-2">
+        <Card className="lg:col-span-2 card-elevated border-0">
           <CardHeader>
-            <CardTitle>机会详情</CardTitle>
+            <CardTitle className="section-title text-base">机会详情</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="grid gap-4 sm:grid-cols-2">
@@ -391,7 +391,7 @@ export default function OpportunityDetailPage() {
         </Card>
 
         {/* 销售漏斗进度 */}
-        <Card>
+        <Card className="card-elevated border-0">
           <CardHeader>
             <CardTitle>销售漏斗</CardTitle>
           </CardHeader>
@@ -431,7 +431,7 @@ export default function OpportunityDetailPage() {
       </div>
 
       {/* 进度摘要 */}
-      <Card>
+      <Card className="card-elevated border-0">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Activity className="h-4 w-4" />
@@ -490,7 +490,7 @@ export default function OpportunityDetailPage() {
       </Card>
 
       {/* 元信息 */}
-      <Card>
+      <Card className="card-elevated border-0">
         <CardContent className="py-4">
           <div className="flex justify-between text-sm text-muted-foreground">
             <span>创建时间: {safeFormat(opportunity.createdAt, 'yyyy-MM-dd HH:mm', { locale: zhCN })}</span>
@@ -526,7 +526,7 @@ export default function OpportunityDetailPage() {
             <div className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent" />
           </div>
         ) : quotes.length === 0 ? (
-          <Card>
+          <Card className="card-elevated border-0">
             <CardContent className="flex flex-col items-center justify-center py-12">
               <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-primary/10 to-purple-500/10 flex items-center justify-center mb-4">
                 <FileText className="h-8 w-8 text-muted-foreground/50" />

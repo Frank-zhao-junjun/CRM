@@ -202,7 +202,7 @@ export default function QuoteDetailPage() {
         {/* Main Content */}
         <div className="lg:col-span-2 space-y-6">
           {/* Quote Items */}
-          <Card>
+          <Card className="card-elevated border-0">
             <CardHeader><CardTitle className="flex items-center gap-2"><FileText className="h-5 w-5" /> 报价明细</CardTitle></CardHeader>
             <CardContent>
               <Table>
@@ -244,14 +244,14 @@ export default function QuoteDetailPage() {
 
           {/* Terms */}
           {quote.terms && (
-            <Card>
+            <Card className="card-elevated border-0">
               <CardHeader><CardTitle>条款说明</CardTitle></CardHeader>
               <CardContent><p className="text-sm whitespace-pre-wrap">{quote.terms}</p></CardContent>
             </Card>
           )}
 
           {quote.notes && (
-            <Card>
+            <Card className="card-elevated border-0">
               <CardHeader><CardTitle>备注</CardTitle></CardHeader>
               <CardContent><p className="text-sm whitespace-pre-wrap">{quote.notes}</p></CardContent>
             </Card>
@@ -261,7 +261,7 @@ export default function QuoteDetailPage() {
         {/* Sidebar */}
         <div className="space-y-6">
           {/* Summary */}
-          <Card>
+          <Card className="card-elevated border-0">
             <CardHeader><CardTitle>金额汇总</CardTitle></CardHeader>
             <CardContent className="space-y-3">
               <div className="flex justify-between text-sm"><span className="text-muted-foreground">小计</span><span>¥{(quote.subtotal ?? 0).toLocaleString()}</span></div>
@@ -273,7 +273,7 @@ export default function QuoteDetailPage() {
           </Card>
 
           {/* Details */}
-          <Card>
+          <Card className="card-elevated border-0">
             <CardHeader><CardTitle>详细信息</CardTitle></CardHeader>
             <CardContent className="space-y-4 text-sm">
               <div>
@@ -336,7 +336,7 @@ export default function QuoteDetailPage() {
 
           {/* Revision Reason */}
           {quote.revisionReason && (
-            <Card>
+            <Card className="card-elevated border-0">
               <CardHeader><CardTitle className="flex items-center gap-2"><MessageSquare className="h-4 w-4 text-purple-500" /> 修订原因</CardTitle></CardHeader>
               <CardContent>
                 <div className="text-sm bg-purple-50/50 border border-purple-100 rounded-md p-3 text-purple-700 whitespace-pre-wrap">
@@ -348,7 +348,7 @@ export default function QuoteDetailPage() {
 
           {/* Version History */}
           {allQuotesForOpp.length > 1 && (
-            <Card>
+            <Card className="card-elevated border-0">
               <CardHeader><CardTitle className="flex items-center gap-2"><GitBranch className="h-4 w-4" /> 版本历史</CardTitle></CardHeader>
               <CardContent className="space-y-3">
                 {allQuotesForOpp.map((vq) => {

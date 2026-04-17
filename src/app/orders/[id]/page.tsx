@@ -186,7 +186,7 @@ export default function OrderDetailPage() {
       </div>
 
       {/* Status Progress */}
-      <Card>
+      <Card className="card-elevated border-0">
         <CardContent className="p-4">
           <div className="flex items-center justify-between">
             {['draft', 'confirmed', 'awaiting_payment', 'paid', 'completed'].map((status, idx) => {
@@ -224,7 +224,7 @@ export default function OrderDetailPage() {
         {/* Main Content */}
         <div className="lg:col-span-2 space-y-6">
           {/* Order Items */}
-          <Card>
+          <Card className="card-elevated border-0">
             <CardHeader><CardTitle className="flex items-center gap-2"><Package className="h-5 w-5" /> 订单明细</CardTitle></CardHeader>
             <CardContent>
               <Table>
@@ -259,7 +259,7 @@ export default function OrderDetailPage() {
 
           {/* Notes */}
           {order.notes && (
-            <Card>
+            <Card className="card-elevated border-0">
               <CardHeader><CardTitle>备注</CardTitle></CardHeader>
               <CardContent>
                 <p className="text-muted-foreground whitespace-pre-wrap">{order.notes}</p>
@@ -271,7 +271,7 @@ export default function OrderDetailPage() {
         {/* Sidebar */}
         <div className="space-y-6">
           {/* Amount Summary */}
-          <Card>
+          <Card className="card-elevated border-0">
             <CardHeader><CardTitle>金额汇总</CardTitle></CardHeader>
             <CardContent className="space-y-3">
               <div className="flex justify-between text-sm">
@@ -295,7 +295,7 @@ export default function OrderDetailPage() {
           </Card>
 
           {/* Order Info */}
-          <Card>
+          <Card className="card-elevated border-0">
             <CardHeader><CardTitle>订单信息</CardTitle></CardHeader>
             <CardContent className="space-y-4">
               {order.customerName && (

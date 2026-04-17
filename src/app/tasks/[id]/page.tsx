@@ -185,7 +185,7 @@ export default function TaskDetailPage({ params }: PageProps) {
         {/* Task Details */}
         <div className="grid gap-6">
           {/* Basic Info */}
-          <Card>
+          <Card className="card-elevated border-0">
             <CardHeader>
               <CardTitle>任务信息</CardTitle>
             </CardHeader>
@@ -258,7 +258,7 @@ export default function TaskDetailPage({ params }: PageProps) {
 
           {/* Related Entity */}
           {task.relatedName && task.relatedType && (
-            <Card>
+            <Card className="card-elevated border-0">
               <CardHeader>
                 <CardTitle>关联对象</CardTitle>
                 <CardDescription>此任务关联的业务对象</CardDescription>

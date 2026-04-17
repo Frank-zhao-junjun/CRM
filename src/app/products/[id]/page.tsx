@@ -78,7 +78,7 @@ export default function ProductDetailPage() {
         {/* 左侧：主要信息 */}
         <div className="lg:col-span-2 space-y-6">
           {/* 基本信息 */}
-          <Card>
+          <Card className="card-elevated border-0">
             <CardHeader>
               <CardTitle className="text-lg">基本信息</CardTitle>
             </CardHeader>
@@ -123,7 +123,7 @@ export default function ProductDetailPage() {
           </Card>
 
           {/* 价格信息 */}
-          <Card>
+          <Card className="card-elevated border-0">
             <CardHeader>
               <CardTitle className="text-lg">价格与库存</CardTitle>
             </CardHeader>
@@ -160,7 +160,7 @@ export default function ProductDetailPage() {
         {/* 右侧：辅助信息 */}
         <div className="space-y-6">
           {/* 操作卡片 */}
-          <Card>
+          <Card className="card-elevated border-0">
             <CardHeader>
               <CardTitle className="text-lg">快捷操作</CardTitle>
             </CardHeader>
@@ -181,7 +181,7 @@ export default function ProductDetailPage() {
           </Card>
 
           {/* 统计信息 */}
-          <Card>
+          <Card className="card-elevated border-0">
             <CardHeader>
               <CardTitle className="text-lg">产品统计</CardTitle>
             </CardHeader>
@@ -208,7 +208,7 @@ export default function ProductDetailPage() {
           </Card>
 
           {/* 时间信息 */}
-          <Card>
+          <Card className="card-elevated border-0">
             <CardHeader>
               <CardTitle className="text-lg">时间信息</CardTitle>
             </CardHeader>

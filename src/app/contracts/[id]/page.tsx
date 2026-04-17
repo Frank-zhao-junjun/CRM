@@ -209,7 +209,7 @@ export default function ContractDetailPage() {
         <div className="lg:col-span-2 space-y-6">
           {/* Milestones */}
           {milestones.length > 0 && (
-            <Card>
+            <Card className="card-elevated border-0">
               <CardHeader>
                 <div className="flex items-center justify-between">
                   <CardTitle className="flex items-center gap-2">
@@ -283,7 +283,7 @@ export default function ContractDetailPage() {
 
           {/* Terms */}
           {contract.terms && (
-            <Card>
+            <Card className="card-elevated border-0">
               <CardHeader><CardTitle>合同条款</CardTitle></CardHeader>
               <CardContent>
                 <p className="text-sm whitespace-pre-wrap">{contract.terms}</p>
@@ -292,7 +292,7 @@ export default function ContractDetailPage() {
           )}
 
           {contract.customTerms && (
-            <Card>
+            <Card className="card-elevated border-0">
               <CardHeader><CardTitle>自定义条款</CardTitle></CardHeader>
               <CardContent>
                 <p className="text-sm whitespace-pre-wrap">{contract.customTerms}</p>
@@ -301,7 +301,7 @@ export default function ContractDetailPage() {
           )}
 
           {contract.notes && (
-            <Card>
+            <Card className="card-elevated border-0">
               <CardHeader><CardTitle>备注</CardTitle></CardHeader>
               <CardContent>
                 <p className="text-sm whitespace-pre-wrap">{contract.notes}</p>
@@ -313,7 +313,7 @@ export default function ContractDetailPage() {
         {/* Sidebar */}
         <div className="space-y-6">
           {/* Amount Summary */}
-          <Card>
+          <Card className="card-elevated border-0">
             <CardHeader><CardTitle>金额信息</CardTitle></CardHeader>
             <CardContent>
               <div className="flex justify-between items-center font-bold text-2xl">
@@ -324,7 +324,7 @@ export default function ContractDetailPage() {
           </Card>
 
           {/* Details */}
-          <Card>
+          <Card className="card-elevated border-0">
             <CardHeader><CardTitle>详细信息</CardTitle></CardHeader>
             <CardContent className="space-y-4 text-sm">
               <div>

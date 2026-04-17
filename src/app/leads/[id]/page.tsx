@@ -77,45 +77,45 @@ export default function LeadDetailPage() {
     <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <Button variant="ghost" size="icon" asChild>
+        <div className="flex items-center gap-3">
+          <Button variant="ghost" size="icon" asChild className="h-8 w-8">
             <Link href="/leads">
-              <ArrowLeft className="h-5 w-5" />
+              <ArrowLeft className="h-4 w-4" />
             </Link>
           </Button>
           <div>
-            <h2 className="text-2xl font-bold">{lead.title}</h2>
-            <p className="text-muted-foreground">{lead.customerName}</p>
+            <h2 className="section-title text-xl">{lead.title}</h2>
+            <p className="text-muted-foreground/60 text-sm mt-0.5 ml-4">{lead.customerName}</p>
           </div>
         </div>
-        <div className="flex gap-2">
+        <div className="flex items-center gap-2">
           {!isQualified && !isDisqualified && (
             <>
-              <Button onClick={handleQualify} className="gap-2 bg-gradient-to-r from-cyan-500 to-blue-500">
-                <ArrowRightLeft className="h-4 w-4" />
+              <Button onClick={handleQualify} size="sm" className="gap-1.5 h-8">
+                <ArrowRightLeft className="h-3.5 w-3.5" />
                 转为商机
               </Button>
-              <Button variant="outline" onClick={() => setShowDisqualifyDialog(true)} className="gap-2 text-yellow-600 border-yellow-300 hover:bg-yellow-50">
-                <XCircle className="h-4 w-4" />
+              <Button variant="outline" size="sm" className="gap-1.5 h-8 text-xs text-yellow-600 border-yellow-300 hover:bg-yellow-50" onClick={() => setShowDisqualifyDialog(true)}>
+                <XCircle className="h-3.5 w-3.5" />
                 标记放弃
               </Button>
             </>
           )}
           {isQualified && (
-            <Badge className="bg-cyan-500/10 text-cyan-600 border-cyan-500/20 text-sm px-3 py-1">
-              <Sparkles className="h-4 w-4 mr-1" /> 已转为商机
+            <Badge className="bg-cyan-500/10 text-cyan-600 border-cyan-500/20 text-xs px-2.5 py-0.5">
+              <Sparkles className="h-3 w-3 mr-1" /> 已转为商机
             </Badge>
           )}
           {!isQualified && (
-            <Button variant="destructive" onClick={() => setShowDeleteDialog(true)}>
-              <Trash2 className="h-4 w-4 mr-2" />
+            <Button variant="destructive" size="sm" className="gap-1.5 h-8 text-xs" onClick={() => setShowDeleteDialog(true)}>
+              <Trash2 className="h-3.5 w-3.5" />
               删除
             </Button>
           )}
         </div>
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-3">
+      <div className="grid gap-4 lg:grid-cols-3">
         {/* 线索详情 */}
         <Card className="lg:col-span-2">
           <CardHeader>
@@ -213,7 +213,7 @@ export default function LeadDetailPage() {
         </Card>
 
         {/* 状态流程 */}
-        <Card>
+        <Card className="card-elevated border-0">
           <CardHeader>
             <CardTitle>线索状态流程</CardTitle>
           </CardHeader>
@@ -277,7 +277,7 @@ export default function LeadDetailPage() {
       )}
 
       {/* 元信息 */}
-      <Card>
+      <Card className="card-elevated border-0">
         <CardContent className="py-4">
           <div className="flex justify-between text-sm text-muted-foreground">
             <span>创建时间: {safeFormat(lead.createdAt, 'yyyy-MM-dd HH:mm')}</span>

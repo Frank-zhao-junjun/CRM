@@ -307,7 +307,7 @@ export default function CustomerDetailPage() {
         </Card>
 
         {/* 客户联系人 */}
-        <Card>
+        <Card className="card-elevated border-0">
           <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle>联系人</CardTitle>
             <Button variant="ghost" size="sm" asChild>
@@ -347,7 +347,7 @@ export default function CustomerDetailPage() {
       </div>
 
       {/* 商机 */}
-      <Card>
+      <Card className="card-elevated border-0">
         <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle>商机</CardTitle>
           <Button variant="ghost" size="sm" asChild>
@@ -381,7 +381,7 @@ export default function CustomerDetailPage() {
       </Card>
 
       {/* 元信息 */}
-      <Card>
+      <Card className="card-elevated border-0">
         <CardContent className="py-4">
           <div className="flex justify-between text-sm text-muted-foreground">
             <span>创建时间: {safeFormat(customer.createdAt, 'yyyy-MM-dd HH:mm')}</span>

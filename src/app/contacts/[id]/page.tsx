@@ -137,7 +137,7 @@ export default function ContactDetailPage() {
         </Card>
 
         {/* 商机 */}
-        <Card>
+        <Card className="card-elevated border-0">
           <CardHeader>
             <CardTitle>相关机会</CardTitle>
           </CardHeader>
@@ -161,7 +161,7 @@ export default function ContactDetailPage() {
       </div>
 
       {/* 元信息 */}
-      <Card>
+      <Card className="card-elevated border-0">
         <CardContent className="py-4">
           <div className="flex justify-between text-sm text-muted-foreground">
             <span>创建时间: {safeFormat(contact.createdAt, 'yyyy-MM-dd HH:mm')}</span>

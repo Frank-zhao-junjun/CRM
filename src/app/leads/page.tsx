@@ -263,7 +263,7 @@ export default function LeadsPage() {
       </Card>
 
       {/* Table */}
-      <Card className="card-hover">
+      <Card className="card-elevated border-0">
         <CardContent className="p-0">
           <Table>
             <TableHeader>

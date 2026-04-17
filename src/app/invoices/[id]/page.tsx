@@ -178,7 +178,7 @@ export default function InvoiceDetailPage() {
       {/* Invoice Content for Print */}
       <div className="invoice-content">
         {/* Company & Customer Info */}
-        <Card>
+        <Card className="card-elevated border-0">
           <CardContent className="pt-6">
             <div className="grid grid-cols-2 gap-8">
               <div>
@@ -203,7 +203,7 @@ export default function InvoiceDetailPage() {
         </Card>
 
         {/* Invoice Details */}
-        <Card>
+        <Card className="card-elevated border-0">
           <CardHeader>
             <CardTitle className="flex items-center justify-between">
               <span>发票明细</span>
@@ -276,7 +276,7 @@ export default function InvoiceDetailPage() {
         </Card>
 
         {/* Additional Info */}
-        <Card>
+        <Card className="card-elevated border-0">
           <CardContent className="pt-6">
             <div className="grid grid-cols-2 gap-4 text-sm">
               <div>

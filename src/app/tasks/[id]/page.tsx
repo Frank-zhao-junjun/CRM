@@ -67,9 +67,9 @@ export default function TaskDetailPage({ params }: PageProps) {
   const dueDate = parseISO(task.dueDate);
   const isOverdue = task.status !== 'completed' && task.status !== 'cancelled' && isAfter(today, dueDate);
   
-  const statusConfig = TASK_STATUS_CONFIG[task.status];
-  const priorityConfig = TASK_PRIORITY_CONFIG[task.priority];
-  const typeConfig = TASK_TYPE_CONFIG[task.type];
+  const statusConfig = TASK_STATUS_CONFIG[task.status] || TASK_STATUS_CONFIG.pending;
+  const priorityConfig = TASK_PRIORITY_CONFIG[task.priority] || TASK_PRIORITY_CONFIG.medium;
+  const typeConfig = TASK_TYPE_CONFIG[task.type] || TASK_TYPE_CONFIG.other;
 
   const getRelatedIcon = () => {
     switch (task.relatedType) {

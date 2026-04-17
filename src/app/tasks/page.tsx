@@ -229,8 +229,8 @@ export default function TasksPage() {
                 ) : (
                   filteredTasks.map((task) => {
                     const overdue = isOverdue(task);
-                    const typeConfig = TASK_TYPE_CONFIG[task.type];
-                    const priorityConfig = TASK_PRIORITY_CONFIG[task.priority];
+                    const typeConfig = TASK_TYPE_CONFIG[task.type] || TASK_TYPE_CONFIG.other;
+                    const priorityConfig = TASK_PRIORITY_CONFIG[task.priority] || TASK_PRIORITY_CONFIG.medium;
                     
                     return (
                       <TableRow 

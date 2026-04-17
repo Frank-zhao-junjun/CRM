@@ -289,7 +289,7 @@ export default function EditQuotePage() {
                         <TableCell><Input type="number" value={item.quantity} onChange={e => updateItem(idx, 'quantity', Number(e.target.value))} className="h-8" min={1} /></TableCell>
                         <TableCell><Input type="number" value={item.unitPrice} onChange={e => updateItem(idx, 'unitPrice', Number(e.target.value))} className="h-8" min={0} /></TableCell>
                         <TableCell><Input type="number" value={item.discount} onChange={e => updateItem(idx, 'discount', Number(e.target.value))} className="h-8" min={0} /></TableCell>
-                        <TableCell className="font-medium">¥{item.subtotal.toLocaleString()}</TableCell>
+                        <TableCell className="font-medium">¥{(item.subtotal ?? 0).toLocaleString()}</TableCell>
                         <TableCell>
                           {items.length > 1 && (
                             <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setItems(prev => prev.filter((_, i) => i !== idx))}>
@@ -326,8 +326,8 @@ export default function EditQuotePage() {
           <Card>
             <CardHeader><CardTitle>金额汇总</CardTitle></CardHeader>
             <CardContent className="space-y-3">
-              <div className="flex justify-between text-sm"><span className="text-muted-foreground">小计</span><span>¥{subtotal.toLocaleString()}</span></div>
-              <div className="flex justify-between text-sm"><span className="text-muted-foreground">折扣</span><span>-¥{totalDiscount.toLocaleString()}</span></div>
+              <div className="flex justify-between text-sm"><span className="text-muted-foreground">小计</span><span>¥{(subtotal ?? 0).toLocaleString()}</span></div>
+              <div className="flex justify-between text-sm"><span className="text-muted-foreground">折扣</span><span>-¥{(totalDiscount ?? 0).toLocaleString()}</span></div>
               <div className="flex justify-between text-sm"><span className="text-muted-foreground">税额 (6%)</span><span>¥{tax.toFixed(2)}</span></div>
               <div className="border-t pt-3 flex justify-between font-bold text-lg"><span>总计</span><span className="text-primary">¥{total.toFixed(2)}</span></div>
             </CardContent>

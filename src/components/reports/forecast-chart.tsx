@@ -56,7 +56,7 @@ const CustomTooltip = ({ active, payload, label }: any) => {
           {payload.map((entry: any, index: number) => (
             <p key={index} style={{ color: entry.color }} className="flex justify-between gap-4">
               <span>{entry.name}:</span>
-              <span className="font-medium">¥{entry.value.toLocaleString()}</span>
+              <span className="font-medium">¥{(entry.value ?? 0).toLocaleString()}</span>
             </p>
           ))}
         </div>

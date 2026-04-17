@@ -248,7 +248,7 @@ export default function InvoiceDetailPage() {
               <div className="w-64 space-y-2">
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">小计</span>
-                  <span>¥{invoice.subtotal.toLocaleString('zh-CN', { minimumFractionDigits: 2 })}</span>
+                  <span>¥{(invoice.subtotal ?? 0).toLocaleString('zh-CN', { minimumFractionDigits: 2 })}</span>
                 </div>
                 <div className="flex justify-between text-destructive">
                   <span>折扣</span>
@@ -256,12 +256,12 @@ export default function InvoiceDetailPage() {
                 </div>
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">税率 ({invoice.taxRate * 100}%)</span>
-                  <span>¥{invoice.tax.toLocaleString('zh-CN', { minimumFractionDigits: 2 })}</span>
+                  <span>¥{(invoice.tax ?? 0).toLocaleString('zh-CN', { minimumFractionDigits: 2 })}</span>
                 </div>
                 <Separator />
                 <div className="flex justify-between text-lg font-bold">
                   <span>价税合计</span>
-                  <span className="text-primary">¥{invoice.total.toLocaleString('zh-CN', { minimumFractionDigits: 2 })}</span>
+                  <span className="text-primary">¥{(invoice.total ?? 0).toLocaleString('zh-CN', { minimumFractionDigits: 2 })}</span>
                 </div>
               </div>
             </div>

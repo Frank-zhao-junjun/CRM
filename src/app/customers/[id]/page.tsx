@@ -371,7 +371,7 @@ export default function CustomerDetailPage() {
                     </p>
                   </div>
                   <div className="text-right ml-4">
-                    <p className="font-medium">¥{opp.value.toLocaleString()}</p>
+                    <p className="font-medium">¥{(opp.value ?? 0).toLocaleString()}</p>
                     <p className="text-xs text-muted-foreground">{opp.probability}% 概率</p>
                   </div>
                 </div>

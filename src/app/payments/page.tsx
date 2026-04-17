@@ -111,7 +111,7 @@ export default function PaymentsPage() {
             <DollarSign className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">¥{stats.totalReceivable.toLocaleString()}</div>
+            <div className="text-2xl font-bold">¥{(stats.totalReceivable ?? 0).toLocaleString()}</div>
           </CardContent>
         </Card>
         
@@ -121,7 +121,7 @@ export default function PaymentsPage() {
             <CheckCircle className="h-4 w-4 text-green-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-green-600">¥{stats.totalReceived.toLocaleString()}</div>
+            <div className="text-2xl font-bold text-green-600">¥{(stats.totalReceived ?? 0).toLocaleString()}</div>
             <p className="text-xs text-muted-foreground">{stats.collectionRate.toFixed(1)}% 回款率</p>
           </CardContent>
         </Card>
@@ -132,7 +132,7 @@ export default function PaymentsPage() {
             <AlertTriangle className="h-4 w-4 text-red-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-red-600">¥{stats.totalOverdue.toLocaleString()}</div>
+            <div className="text-2xl font-bold text-red-600">¥{(stats.totalOverdue ?? 0).toLocaleString()}</div>
             <p className="text-xs text-muted-foreground">{stats.overdueCount} 笔逾期</p>
           </CardContent>
         </Card>

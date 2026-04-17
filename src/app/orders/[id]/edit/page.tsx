@@ -330,7 +330,7 @@ export default function EditOrderPage() {
                             />
                           </TableCell>
                           <TableCell className="font-medium">
-                            ¥{item.subtotal.toLocaleString()}
+                            ¥{(item.subtotal ?? 0).toLocaleString()}
                           </TableCell>
                           <TableCell>
                             {items.length > 1 && (
@@ -350,11 +350,11 @@ export default function EditOrderPage() {
                   <div className="text-right space-y-1 w-64">
                     <div className="flex justify-between text-sm">
                       <span className="text-muted-foreground">小计:</span>
-                      <span>¥{subtotal.toLocaleString()}</span>
+                      <span>¥{(subtotal ?? 0).toLocaleString()}</span>
                     </div>
                     <div className="flex justify-between text-sm">
                       <span className="text-muted-foreground">折扣:</span>
-                      <span className="text-red-500">-¥{totalDiscount.toLocaleString()}</span>
+                      <span className="text-red-500">-¥{(totalDiscount ?? 0).toLocaleString()}</span>
                     </div>
                     <div className="flex justify-between text-sm">
                       <span className="text-muted-foreground">税额(6%):</span>

@@ -274,7 +274,7 @@ export default function OrdersPage() {
           <div className="absolute inset-0 bg-primary/5" />
           <CardContent className="relative p-4">
             <p className="text-xs text-muted-foreground">完成总额</p>
-            <p className="text-lg font-bold text-primary">¥{stats.totalRevenue.toLocaleString()}</p>
+            <p className="text-lg font-bold text-primary">¥{(stats.totalRevenue ?? 0).toLocaleString()}</p>
           </CardContent>
         </Card>
       </div>
@@ -336,7 +336,7 @@ export default function OrdersPage() {
                       <TableCell className="font-mono font-medium">{order.orderNumber}</TableCell>
                       <TableCell><Badge className={statusConf.className}>{statusConf.label}</Badge></TableCell>
                       <TableCell className="text-muted-foreground">{order.customerName || '-'}</TableCell>
-                      <TableCell className="font-medium">¥{order.total.toLocaleString()}</TableCell>
+                      <TableCell className="font-medium">¥{(order.total ?? 0).toLocaleString()}</TableCell>
                       <TableCell className="text-muted-foreground text-sm">{order.orderDate ? safeFormat(order.orderDate, 'yyyy/MM/dd') : '-'}</TableCell>
                       <TableCell className="text-muted-foreground text-sm">{order.deliveryDate ? safeFormat(order.deliveryDate, 'yyyy/MM/dd') : '-'}</TableCell>
                       <TableCell onClick={e => e.stopPropagation()}>

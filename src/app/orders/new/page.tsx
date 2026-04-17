@@ -297,7 +297,7 @@ function NewOrderContent() {
                               <div className="flex items-center gap-2">
                                 <FileText className="h-4 w-4" />
                                 <span>{quote.title || quote.quoteNumber}</span>
-                                <span className="text-muted-foreground">¥{quote.total.toLocaleString()}</span>
+                                <span className="text-muted-foreground">¥{(quote.total ?? 0).toLocaleString()}</span>
                               </div>
                             </SelectItem>
                           ))}
@@ -443,11 +443,11 @@ function NewOrderContent() {
                   <div className="text-right space-y-1 w-64">
                     <div className="flex justify-between text-sm">
                       <span className="text-muted-foreground">小计:</span>
-                      <span>¥{subtotal.toLocaleString()}</span>
+                      <span>¥{(subtotal ?? 0).toLocaleString()}</span>
                     </div>
                     <div className="flex justify-between text-sm">
                       <span className="text-muted-foreground">折扣:</span>
-                      <span className="text-red-500">-¥{totalDiscount.toLocaleString()}</span>
+                      <span className="text-red-500">-¥{(totalDiscount ?? 0).toLocaleString()}</span>
                     </div>
                     <div className="flex justify-between text-sm">
                       <span className="text-muted-foreground">税额(6%):</span>

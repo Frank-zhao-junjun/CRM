@@ -158,7 +158,7 @@ export default function QuotesPage() {
           <div className="absolute inset-0 bg-primary/5" />
           <CardContent className="relative p-4">
             <p className="text-xs text-muted-foreground">已接受总额</p>
-            <p className="text-lg font-bold text-primary">¥{stats.totalValue.toLocaleString()}</p>
+            <p className="text-lg font-bold text-primary">¥{(stats.totalValue ?? 0).toLocaleString()}</p>
           </CardContent>
         </Card>
       </div>
@@ -273,7 +273,7 @@ export default function QuotesPage() {
                       </Badge>
                     </TableCell>
                     <TableCell className="text-right font-medium">
-                      ¥{quote.total.toLocaleString()}
+                      ¥{(quote.total ?? 0).toLocaleString()}
                     </TableCell>
                     <TableCell className="text-sm text-muted-foreground">
                       {safeFormat(quote.createdAt, 'yyyy-MM-dd')}

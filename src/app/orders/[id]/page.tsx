@@ -247,9 +247,9 @@ export default function OrderDetailPage() {
                         </div>
                       </TableCell>
                       <TableCell className="text-right">{item.quantity}</TableCell>
-                      <TableCell className="text-right">¥{item.unitPrice.toLocaleString()}</TableCell>
+                      <TableCell className="text-right">¥{(item.unitPrice ?? 0).toLocaleString()}</TableCell>
                       <TableCell className="text-right text-red-500">{item.discount > 0 ? `-¥${item.discount}` : '-'}</TableCell>
-                      <TableCell className="text-right font-medium">¥{item.subtotal.toLocaleString()}</TableCell>
+                      <TableCell className="text-right font-medium">¥{(item.subtotal ?? 0).toLocaleString()}</TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
@@ -276,11 +276,11 @@ export default function OrderDetailPage() {
             <CardContent className="space-y-3">
               <div className="flex justify-between text-sm">
                 <span className="text-muted-foreground">小计</span>
-                <span>¥{order.subtotal.toLocaleString()}</span>
+                <span>¥{(order.subtotal ?? 0).toLocaleString()}</span>
               </div>
               <div className="flex justify-between text-sm">
                 <span className="text-muted-foreground">折扣</span>
-                <span className="text-red-500">-¥{order.discount.toLocaleString()}</span>
+                <span className="text-red-500">-¥{(order.discount ?? 0).toLocaleString()}</span>
               </div>
               <div className="flex justify-between text-sm">
                 <span className="text-muted-foreground">税额(6%)</span>

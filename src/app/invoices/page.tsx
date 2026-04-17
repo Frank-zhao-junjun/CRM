@@ -237,7 +237,7 @@ export default function InvoicesPage() {
                     <TableCell>{invoice.customerName}</TableCell>
                     <TableCell>{invoice.orderNumber || '-'}</TableCell>
                     <TableCell className="font-semibold">
-                      ¥{invoice.total.toLocaleString('zh-CN', { minimumFractionDigits: 2 })}
+                      ¥{(invoice.total ?? 0).toLocaleString('zh-CN', { minimumFractionDigits: 2 })}
                     </TableCell>
                     <TableCell>
                       <Badge className={(INVOICE_STATUS_CONFIG[invoice.status] || INVOICE_STATUS_CONFIG.draft).className}>

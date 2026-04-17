@@ -145,7 +145,7 @@ export default function LeadDetailPage() {
                 <DollarSign className="h-5 w-5 text-muted-foreground" />
                 <div>
                   <p className="text-sm text-muted-foreground">预估价值</p>
-                  <p className="font-medium">¥{lead.estimatedValue.toLocaleString()}</p>
+                  <p className="font-medium">¥{(lead.estimatedValue ?? 0).toLocaleString()}</p>
                 </div>
               </div>
               <div className="flex items-center gap-3">

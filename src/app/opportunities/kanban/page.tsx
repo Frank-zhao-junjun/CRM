@@ -134,13 +134,13 @@ export default function OpportunitiesKanbanPage() {
             <div className="flex items-center gap-2">
               <span className="text-muted-foreground">进行中总额</span>
               <span className="font-semibold text-emerald-600 dark:text-emerald-400">
-                ¥{stats.totalValue.toLocaleString()}
+                ¥{(stats.totalValue ?? 0).toLocaleString()}
               </span>
             </div>
             <div className="flex items-center gap-2">
               <span className="text-muted-foreground">已成交</span>
               <span className="font-semibold text-green-600 dark:text-green-400">
-                ¥{stats.wonValue.toLocaleString()}
+                ¥{(stats.wonValue ?? 0).toLocaleString()}
               </span>
             </div>
           </div>

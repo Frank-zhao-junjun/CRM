@@ -258,7 +258,7 @@ export default function NewContractPage() {
                     <SelectContent>
                       {quotes.map(quote => (
                         <SelectItem key={quote.id} value={quote.id}>
-                          {quote.title} - ¥{quote.total.toLocaleString()}
+                          {quote.title} - ¥{(quote.total ?? 0).toLocaleString()}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -462,7 +462,7 @@ export default function NewContractPage() {
               <div className="border-t pt-4">
                 <div className="flex justify-between font-bold text-lg">
                   <span>合同金额</span>
-                  <span className="text-primary">¥{form.amount.toLocaleString()}</span>
+                  <span className="text-primary">¥{(form.amount ?? 0).toLocaleString()}</span>
                 </div>
               </div>
             </CardContent>

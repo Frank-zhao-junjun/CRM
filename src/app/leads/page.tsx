@@ -157,7 +157,7 @@ export default function LeadsPage() {
           <div>
             <h1 className="text-3xl font-bold tracking-tight gradient-text">销售线索</h1>
             <p className="text-muted-foreground mt-1">
-              共 {filteredLeads.length} 条线索，总预估价值 ¥{filteredLeads.reduce((sum, l) => sum + l.estimatedValue, 0).toLocaleString()}
+              共 {filteredLeads.length} 条线索，总预估价值 ¥{filteredLeads.reduce((sum, l) => sum + (l.estimatedValue ?? 0), 0).toLocaleString()}
             </p>
           </div>
           <Button 
@@ -223,7 +223,7 @@ export default function LeadsPage() {
               <div>
                 <p className="text-sm text-muted-foreground">线索总额</p>
                 <p className="text-2xl font-bold text-yellow-600 dark:text-yellow-400">
-                  ¥{activeLeads.reduce((sum, l) => sum + l.estimatedValue, 0).toLocaleString()}
+                  ¥{activeLeads.reduce((sum, l) => sum + (l.estimatedValue ?? 0), 0).toLocaleString()}
                 </p>
               </div>
               <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-yellow-400 to-amber-500 flex items-center justify-center">
@@ -324,7 +324,7 @@ export default function LeadsPage() {
                     <TableCell>
                       <div className="flex items-center gap-1 font-medium text-yellow-600 dark:text-yellow-400">
                         <DollarSign className="h-4 w-4" />
-                        {lead.estimatedValue.toLocaleString()}
+                        {(lead.estimatedValue ?? 0).toLocaleString()}
                       </div>
                     </TableCell>
                     <TableCell>

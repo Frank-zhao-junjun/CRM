@@ -309,7 +309,7 @@ export default function NewQuotePage() {
                           />
                         </TableCell>
                         <TableCell className="font-medium">
-                          ¥{item.subtotal.toLocaleString()}
+                          ¥{(item.subtotal ?? 0).toLocaleString()}
                         </TableCell>
                         <TableCell>
                           {items.length > 1 && (
@@ -363,11 +363,11 @@ export default function NewQuotePage() {
             <CardContent className="space-y-3">
               <div className="flex justify-between text-sm">
                 <span className="text-muted-foreground">小计</span>
-                <span>¥{subtotal.toLocaleString()}</span>
+                <span>¥{(subtotal ?? 0).toLocaleString()}</span>
               </div>
               <div className="flex justify-between text-sm">
                 <span className="text-muted-foreground">折扣</span>
-                <span>-¥{totalDiscount.toLocaleString()}</span>
+                <span>-¥{(totalDiscount ?? 0).toLocaleString()}</span>
               </div>
               <div className="flex justify-between text-sm">
                 <span className="text-muted-foreground">税额 (6%)</span>

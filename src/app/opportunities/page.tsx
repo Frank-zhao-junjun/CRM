@@ -274,7 +274,7 @@ export default function OpportunitiesPage() {
                         <div className="flex items-center gap-1.5">
                           <DollarSign className="h-4 w-4 text-orange-500" />
                           <span className="font-semibold bg-gradient-to-r from-orange-500 to-amber-500 bg-clip-text text-transparent">
-                            ¥{opp.value.toLocaleString()}
+                            ¥{(opp.value ?? 0).toLocaleString()}
                           </span>
                         </div>
                       </TableCell>
@@ -400,7 +400,7 @@ export default function OpportunitiesPage() {
                     <div className="flex items-center justify-between text-sm">
                       <div className="flex items-center gap-1.5 text-muted-foreground">
                         <DollarSign className="h-4 w-4" />
-                        <span className="font-semibold text-foreground">¥{opp.value.toLocaleString()}</span>
+                        <span className="font-semibold text-foreground">¥{(opp.value ?? 0).toLocaleString()}</span>
                       </div>
                       <div className="flex items-center gap-1.5 text-muted-foreground">
                         <Calendar className="h-3.5 w-3.5" />

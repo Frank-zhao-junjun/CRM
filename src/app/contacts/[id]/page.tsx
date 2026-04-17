@@ -150,7 +150,7 @@ export default function ContactDetailPage() {
                   <div key={opp.id} className="p-3 rounded-lg border">
                     <p className="font-medium truncate">{opp.title}</p>
                     <p className="text-sm text-muted-foreground">
-                      ¥{opp.value.toLocaleString()}
+                      ¥{(opp.value ?? 0).toLocaleString()}
                     </p>
                   </div>
                 ))}

@@ -318,7 +318,7 @@ export default function ContractDetailPage() {
             <CardContent>
               <div className="flex justify-between items-center font-bold text-2xl">
                 <span>合同金额</span>
-                <span className="text-primary">¥{contract.amount.toLocaleString()}</span>
+                <span className="text-primary">¥{(contract.amount ?? 0).toLocaleString()}</span>
               </div>
             </CardContent>
           </Card>

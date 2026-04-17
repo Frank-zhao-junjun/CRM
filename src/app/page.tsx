@@ -381,7 +381,7 @@ export default function DashboardPage() {
                     </Button>
                     <div className="text-right">
                       <p className="text-lg font-bold bg-gradient-to-r from-orange-500 to-amber-500 bg-clip-text text-transparent">
-                        ¥{opp.value.toLocaleString()}
+                        ¥{(opp.value ?? 0).toLocaleString()}
                       </p>
                       {opp.expectedCloseDate && (
                         <p className="text-xs text-muted-foreground mt-1">
@@ -431,7 +431,7 @@ export default function DashboardPage() {
                       <div className="flex items-center gap-2 mt-1">
                         <span className="text-xs text-muted-foreground">{opp.customerName}</span>
                         <Badge variant="outline" className="text-xs">
-                          ¥{opp.value.toLocaleString()}
+                          ¥{(opp.value ?? 0).toLocaleString()}
                         </Badge>
                       </div>
                     </div>

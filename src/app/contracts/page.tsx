@@ -279,7 +279,7 @@ export default function ContractsPage() {
                       </Badge>
                     </TableCell>
                     <TableCell className="text-right font-medium">
-                      ¥{contract.amount.toLocaleString()}
+                      ¥{(contract.amount ?? 0).toLocaleString()}
                     </TableCell>
                     <TableCell className="text-sm text-muted-foreground">
                       {contract.expirationDate ? safeFormat(contract.expirationDate, 'yyyy-MM-dd') : '-'}

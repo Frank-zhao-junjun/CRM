@@ -177,7 +177,7 @@ function LeadCard({ lead, onClick }: LeadCardProps) {
             <div className="flex items-center gap-1 text-sm">
               <DollarSign className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
               <span className="font-semibold text-emerald-600 dark:text-emerald-400">
-                ¥{lead.estimatedValue.toLocaleString()}
+                ¥{(lead.estimatedValue ?? 0).toLocaleString()}
               </span>
             </div>
             <Badge variant="outline" className={cn('text-xs', statusConfig.className)}>

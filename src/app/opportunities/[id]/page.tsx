@@ -322,7 +322,7 @@ export default function OpportunityDetailPage() {
                 <DollarSign className="h-5 w-5 text-muted-foreground" />
                 <div>
                   <p className="text-sm text-muted-foreground">金额</p>
-                  <p className="font-medium">¥{opportunity.value.toLocaleString()}</p>
+                  <p className="font-medium">¥{(opportunity.value ?? 0).toLocaleString()}</p>
                 </div>
               </div>
               <div className="flex items-center gap-3">
@@ -575,7 +575,7 @@ export default function OpportunityDetailPage() {
                         </div>
                       </div>
                       <div className="flex items-center gap-3">
-                        <span className="text-lg font-bold text-primary">¥{quote.total.toLocaleString()}</span>
+                        <span className="text-lg font-bold text-primary">¥{(quote.total ?? 0).toLocaleString()}</span>
                         <Badge className={statusConf.className}>{statusConf.label}</Badge>
                         <div className="flex gap-1">
                           {quote.status === 'draft' && (
@@ -627,17 +627,17 @@ export default function OpportunityDetailPage() {
                                   </div>
                                 </TableCell>
                                 <TableCell className="text-right text-sm">{item.quantity}</TableCell>
-                                <TableCell className="text-right text-sm">¥{item.unitPrice.toLocaleString()}</TableCell>
-                                <TableCell className="text-right text-sm font-medium">¥{item.subtotal.toLocaleString()}</TableCell>
+                                <TableCell className="text-right text-sm">¥{(item.unitPrice ?? 0).toLocaleString()}</TableCell>
+                                <TableCell className="text-right text-sm font-medium">¥{(item.subtotal ?? 0).toLocaleString()}</TableCell>
                               </TableRow>
                             ))}
                           </TableBody>
                         </Table>
                         <div className="flex justify-end p-3 border-t bg-muted/30 text-sm space-x-6">
-                          <span>小计: ¥{quote.subtotal.toLocaleString()}</span>
-                          <span>折扣: -¥{quote.discount.toLocaleString()}</span>
-                          <span>税额: ¥{quote.tax.toLocaleString()}</span>
-                          <span className="font-bold text-primary">总计: ¥{quote.total.toLocaleString()}</span>
+                          <span>小计: ¥{(quote.subtotal ?? 0).toLocaleString()}</span>
+                          <span>折扣: -¥{(quote.discount ?? 0).toLocaleString()}</span>
+                          <span>税额: ¥{(quote.tax ?? 0).toLocaleString()}</span>
+                          <span className="font-bold text-primary">总计: ¥{(quote.total ?? 0).toLocaleString()}</span>
                         </div>
                       </div>
                     )}
@@ -770,7 +770,7 @@ export default function OpportunityDetailPage() {
                         <TableCell><Input type="number" value={item.quantity} onChange={e => updateItem(idx, 'quantity', Number(e.target.value))} className="h-8" min={1} /></TableCell>
                         <TableCell><Input type="number" value={item.unitPrice} onChange={e => updateItem(idx, 'unitPrice', Number(e.target.value))} className="h-8" min={0} /></TableCell>
                         <TableCell><Input type="number" value={item.discount} onChange={e => updateItem(idx, 'discount', Number(e.target.value))} className="h-8" min={0} /></TableCell>
-                        <TableCell className="font-medium">¥{item.subtotal.toLocaleString()}</TableCell>
+                        <TableCell className="font-medium">¥{(item.subtotal ?? 0).toLocaleString()}</TableCell>
                         <TableCell>
                           {createQuoteItems.length > 1 && (
                             <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setCreateQuoteItems(prev => prev.filter((_, i) => i !== idx))}>
@@ -784,10 +784,10 @@ export default function OpportunityDetailPage() {
                 </Table>
               </div>
               <div className="text-right text-sm space-y-1">
-                <p>小计: ¥{createQuoteItems.reduce((s, i) => s + i.subtotal, 0).toLocaleString()}</p>
-                <p>折扣: -¥{createQuoteItems.reduce((s, i) => s + i.discount, 0).toLocaleString()}</p>
-                <p>税额(6%): ¥{((createQuoteItems.reduce((s, i) => s + i.subtotal, 0) - createQuoteItems.reduce((s, i) => s + i.discount, 0)) * 0.06).toFixed(2)}</p>
-                <p className="text-lg font-bold">总计: ¥{((createQuoteItems.reduce((s, i) => s + i.subtotal, 0) - createQuoteItems.reduce((s, i) => s + i.discount, 0)) * 1.06).toFixed(2)}</p>
+                <p>小计: ¥{createQuoteItems.reduce((s, i) => s + (i.subtotal ?? 0), 0).toLocaleString()}</p>
+                <p>折扣: -¥{createQuoteItems.reduce((s, i) => s + (i.discount ?? 0), 0).toLocaleString()}</p>
+                <p>税额(6%): ¥{((createQuoteItems.reduce((s, i) => s + (i.subtotal ?? 0), 0) - createQuoteItems.reduce((s, i) => s + (i.discount ?? 0), 0)) * 0.06).toFixed(2)}</p>
+                <p className="text-lg font-bold">总计: ¥{((createQuoteItems.reduce((s, i) => s + (i.subtotal ?? 0), 0) - createQuoteItems.reduce((s, i) => s + (i.discount ?? 0), 0)) * 1.06).toFixed(2)}</p>
               </div>
             </div>
 

@@ -436,7 +436,7 @@ export default function EditContractPage() {
               <div className="border-t pt-4">
                 <div className="flex justify-between font-bold text-lg">
                   <span>合同金额</span>
-                  <span className="text-primary">¥{form.amount.toLocaleString()}</span>
+                  <span className="text-primary">¥{(form.amount ?? 0).toLocaleString()}</span>
                 </div>
               </div>
             </CardContent>

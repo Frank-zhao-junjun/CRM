@@ -225,19 +225,19 @@ export default function QuoteDetailPage() {
                         </div>
                       </TableCell>
                       <TableCell className="text-right">{item.quantity}</TableCell>
-                      <TableCell className="text-right">¥{item.unitPrice.toLocaleString()}</TableCell>
-                      <TableCell className="text-right">{item.discount > 0 ? `-¥${item.discount.toLocaleString()}` : '-'}</TableCell>
-                      <TableCell className="text-right font-medium">¥{item.subtotal.toLocaleString()}</TableCell>
+                      <TableCell className="text-right">¥{(item.unitPrice ?? 0).toLocaleString()}</TableCell>
+                      <TableCell className="text-right">{item.discount > 0 ? `-¥${(item.discount ?? 0).toLocaleString()}` : '-'}</TableCell>
+                      <TableCell className="text-right font-medium">¥{(item.subtotal ?? 0).toLocaleString()}</TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
               </Table>
               {/* Summary row */}
               <div className="flex justify-end p-4 border-t bg-muted/30 text-sm space-x-6">
-                <span>小计: ¥{quote.subtotal.toLocaleString()}</span>
-                <span>折扣: -¥{quote.discount.toLocaleString()}</span>
-                <span>税额: ¥{quote.tax.toLocaleString()}</span>
-                <span className="font-bold text-primary">总计: ¥{quote.total.toLocaleString()}</span>
+                <span>小计: ¥{(quote.subtotal ?? 0).toLocaleString()}</span>
+                <span>折扣: -¥{(quote.discount ?? 0).toLocaleString()}</span>
+                <span>税额: ¥{(quote.tax ?? 0).toLocaleString()}</span>
+                <span className="font-bold text-primary">总计: ¥{(quote.total ?? 0).toLocaleString()}</span>
               </div>
             </CardContent>
           </Card>
@@ -264,11 +264,11 @@ export default function QuoteDetailPage() {
           <Card>
             <CardHeader><CardTitle>金额汇总</CardTitle></CardHeader>
             <CardContent className="space-y-3">
-              <div className="flex justify-between text-sm"><span className="text-muted-foreground">小计</span><span>¥{quote.subtotal.toLocaleString()}</span></div>
-              <div className="flex justify-between text-sm"><span className="text-muted-foreground">折扣</span><span>-¥{quote.discount.toLocaleString()}</span></div>
-              <div className="flex justify-between text-sm"><span className="text-muted-foreground">税额</span><span>¥{quote.tax.toLocaleString()}</span></div>
+              <div className="flex justify-between text-sm"><span className="text-muted-foreground">小计</span><span>¥{(quote.subtotal ?? 0).toLocaleString()}</span></div>
+              <div className="flex justify-between text-sm"><span className="text-muted-foreground">折扣</span><span>-¥{(quote.discount ?? 0).toLocaleString()}</span></div>
+              <div className="flex justify-between text-sm"><span className="text-muted-foreground">税额</span><span>¥{(quote.tax ?? 0).toLocaleString()}</span></div>
               <Separator />
-              <div className="flex justify-between font-bold text-lg"><span>总计</span><span className="text-primary">¥{quote.total.toLocaleString()}</span></div>
+              <div className="flex justify-between font-bold text-lg"><span>总计</span><span className="text-primary">¥{(quote.total ?? 0).toLocaleString()}</span></div>
             </CardContent>
           </Card>
 
@@ -377,7 +377,7 @@ export default function QuoteDetailPage() {
                           <Badge className={cn(vqStatusConf.className, "text-xs shrink-0")}>{vqStatusConf.label}</Badge>
                         </div>
                         <div className="text-xs text-muted-foreground flex items-center gap-2 mt-0.5">
-                          <span>¥{vq.total.toLocaleString()}</span>
+                          <span>¥{(vq.total ?? 0).toLocaleString()}</span>
                           <span>{safeFormat(vq.createdAt, 'yyyy-MM-dd')}</span>
                         </div>
                         {vq.revisionReason && (

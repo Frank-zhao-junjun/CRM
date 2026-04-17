@@ -22,6 +22,7 @@ const pageTitles: Record<string, string> = {
   '/workflows': '工作流自动化',
   '/settings': '系统设置',
   '/leads': '销售线索',
+  '/reminders': '智能提醒',
   '/leads/new': '新建线索',
 };
 

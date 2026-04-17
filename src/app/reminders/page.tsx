@@ -38,13 +38,6 @@ import {
 import { cn } from '@/lib/utils';
 import { format, formatDistanceToNow, isValid, parseISO } from 'date-fns';
 import { zhCN } from 'date-fns/locale';
-
-function safeFormat(dateValue: string | null | undefined, fmt: string): string {
-  if (!dateValue) return '-';
-  const date = parseISO(dateValue);
-  if (!isValid(date)) return '-';
-  try { return format(date, fmt, { locale: zhCN }); } catch { return '-'; }
-}
 import { toast } from 'sonner';
 import {
   REMINDER_TYPE_CONFIG,
@@ -53,6 +46,13 @@ import {
   type ReminderStatus,
 } from '@/lib/crm-types';
 import { ReminderCreateDialog } from '@/components/crm/reminder-create-dialog';
+
+function safeFormat(dateValue: string | null | undefined, fmt: string): string {
+  if (!dateValue) return '-';
+  const date = parseISO(dateValue);
+  if (!isValid(date)) return '-';
+  try { return format(date, fmt, { locale: zhCN }); } catch { return '-'; }
+}
 
 // ============ Type Config for Icons ============
 

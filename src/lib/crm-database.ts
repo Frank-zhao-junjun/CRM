@@ -1,6 +1,6 @@
 import 'server-only';
 import { getSupabaseClient } from '@/storage/database/supabase-client';
-import type { Customer, InsertCustomer, Contact, InsertContact, Opportunity, InsertOpportunity, Activity, InsertActivity, FollowUp, InsertFollowUp, Notification, InsertNotification, Quote, InsertQuote, QuoteItem, InsertQuoteItem, Order, InsertOrder, OrderItem, InsertOrderItem, Contract, InsertContract, ContractMilestone, InsertContractMilestone } from '@/storage/database/shared/schema';
+import type { Customer, InsertCustomer, Contact, InsertContact, Opportunity, InsertOpportunity, Activity, InsertActivity, FollowUp, InsertFollowUp, Notification, InsertNotification, Quote, InsertQuote, QuoteItem, InsertQuoteItem, Order, InsertOrder, OrderItem, InsertOrderItem, Contract, InsertContract, ContractMilestone, InsertContractMilestone, Reminder, InsertReminder } from '@/storage/database/shared/schema';
 
 // CRM 数据库服务 - 支持线索管理
 
@@ -1930,4 +1930,195 @@ export async function getHealthStats(): Promise<{
     topCustomers: scores.slice(0, 10),
     riskCustomers: scores.filter(s => s.level === 'risk').slice(0, 10),
   };
+}
+
+// ============ 智能提醒 (V5.1) ============
+
+export async function getAllReminders(filter?: { status?: string; type?: string }): Promise<Reminder[]> {
+  const client = await getSupabaseClient();
+  let query = client.from('reminders').select('*').order('remind_at', { ascending: true });
+  if (filter?.status) query = query.eq('status', filter.status);
+  if (filter?.type) query = query.eq('type', filter.type);
+  const { data, error } = await query;
+  if (error) throw new Error(`获取提醒列表失败: ${error.message}`);
+  return data as Reminder[];
+}
+
+export async function getPendingReminders(): Promise<Reminder[]> {
+  const client = await getSupabaseClient();
+  const { data, error } = await client.from('reminders').select('*').eq('status', 'pending').order('remind_at', { ascending: true });
+  if (error) throw new Error(`获取待处理提醒失败: ${error.message}`);
+  return data as Reminder[];
+}
+
+export async function getTriggeredReminders(): Promise<Reminder[]> {
+  const client = await getSupabaseClient();
+  const { data, error } = await client.from('reminders').select('*').eq('status', 'triggered').eq('is_read', false).order('triggered_at', { ascending: false });
+  if (error) throw new Error(`获取已触发提醒失败: ${error.message}`);
+  return data as Reminder[];
+}
+
+export async function getTodayReminders(): Promise<Reminder[]> {
+  const client = await getSupabaseClient();
+  const now = new Date();
+  const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString();
+  const endOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1).toISOString();
+  const { data, error } = await client.from('reminders').select('*').gte('remind_at', startOfDay).lt('remind_at', endOfDay).neq('status', 'dismissed').order('remind_at', { ascending: true });
+  if (error) throw new Error(`获取今日提醒失败: ${error.message}`);
+  return data as Reminder[];
+}
+
+export async function getOverdueReminders(): Promise<Reminder[]> {
+  const client = await getSupabaseClient();
+  const now = new Date().toISOString();
+  const { data, error } = await client.from('reminders').select('*').lt('remind_at', now).eq('status', 'pending').order('remind_at', { ascending: true });
+  if (error) throw new Error(`获取逾期提醒失败: ${error.message}`);
+  return data as Reminder[];
+}
+
+export async function getReminderById(id: string): Promise<Reminder | null> {
+  const client = await getSupabaseClient();
+  const { data, error } = await client.from('reminders').select('*').eq('id', id).single();
+  if (error) return null;
+  return data as Reminder;
+}
+
+export async function createReminder(reminder: InsertReminder): Promise<Reminder> {
+  const client = await getSupabaseClient();
+  const { data, error } = await client.from('reminders').insert(reminder).select().single();
+  if (error) throw new Error(`创建提醒失败: ${error.message}`);
+  return data as Reminder;
+}
+
+export async function updateReminder(id: string, updates: Partial<InsertReminder>): Promise<Reminder> {
+  const client = await getSupabaseClient();
+  const { data, error } = await client.from('reminders').update({ ...updates, updated_at: new Date().toISOString() }).eq('id', id).select().single();
+  if (error) throw new Error(`更新提醒失败: ${error.message}`);
+  return data as Reminder;
+}
+
+export async function completeReminder(id: string): Promise<Reminder> {
+  const client = await getSupabaseClient();
+  const { data, error } = await client.from('reminders').update({ status: 'completed', completed_at: new Date().toISOString(), is_read: true, updated_at: new Date().toISOString() }).eq('id', id).select().single();
+  if (error) throw new Error(`完成提醒失败: ${error.message}`);
+  return data as Reminder;
+}
+
+export async function dismissReminder(id: string): Promise<Reminder> {
+  const client = await getSupabaseClient();
+  const { data, error } = await client.from('reminders').update({ status: 'dismissed', is_read: true, updated_at: new Date().toISOString() }).eq('id', id).select().single();
+  if (error) throw new Error(`忽略提醒失败: ${error.message}`);
+  return data as Reminder;
+}
+
+export async function deleteReminder(id: string): Promise<void> {
+  const client = await getSupabaseClient();
+  const { error } = await client.from('reminders').delete().eq('id', id);
+  if (error) throw new Error(`删除提醒失败: ${error.message}`);
+}
+
+export async function markReminderRead(id: string): Promise<void> {
+  const client = await getSupabaseClient();
+  const { error } = await client.from('reminders').update({ is_read: true, updated_at: new Date().toISOString() }).eq('id', id);
+  if (error) throw new Error(`标记提醒已读失败: ${error.message}`);
+}
+
+export async function getReminderStats(): Promise<{ total: number; pending: number; triggered: number; completed: number; overdue: number; today: number }> {
+  const client = await getSupabaseClient();
+  const { count: total } = await client.from('reminders').select('*', { count: 'exact', head: true });
+  const { count: pending } = await client.from('reminders').select('*', { count: 'exact', head: true }).eq('status', 'pending');
+  const { count: triggered } = await client.from('reminders').select('*', { count: 'exact', head: true }).eq('status', 'triggered');
+  const { count: completed } = await client.from('reminders').select('*', { count: 'exact', head: true }).eq('status', 'completed');
+  const now = new Date().toISOString();
+  const { count: overdue } = await client.from('reminders').select('*', { count: 'exact', head: true }).lt('remind_at', now).eq('status', 'pending');
+  const startOfDay = new Date(new Date().getFullYear(), new Date().getMonth(), new Date().getDate()).toISOString();
+  const endOfDay = new Date(new Date().getFullYear(), new Date().getMonth(), new Date().getDate() + 1).toISOString();
+  const { count: today } = await client.from('reminders').select('*', { count: 'exact', head: true }).gte('remind_at', startOfDay).lt('remind_at', endOfDay).neq('status', 'dismissed');
+  return { total: total || 0, pending: pending || 0, triggered: triggered || 0, completed: completed || 0, overdue: overdue || 0, today: today || 0 };
+}
+
+export async function triggerDueReminders(): Promise<number> {
+  const client = await getSupabaseClient();
+  const now = new Date().toISOString();
+  const { data: due } = await client.from('reminders').select('*').lt('remind_at', now).eq('status', 'pending') as { data: Reminder[] | null };
+  if (!due || due.length === 0) return 0;
+  let triggered = 0;
+  for (const reminder of due) {
+    await client.from('reminders').update({ status: 'triggered', triggered_at: now, is_read: false, updated_at: now }).eq('id', reminder.id);
+    await client.from('notifications').insert({ id: `notif_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`, type: reminder.type, title: reminder.title, message: reminder.message || '', entity_type: reminder.entity_type, entity_id: reminder.entity_id, is_read: false });
+    triggered++;
+  }
+  return triggered;
+}
+
+export async function generateSmartReminders(): Promise<number> {
+  let created = 0;
+  const client = await getSupabaseClient();
+  const now = new Date();
+
+  // 1. 商机阶段超时 (>14 天)
+  const { data: opps } = await client.from('opportunities').select('*').not('stage', 'in', '("closed_won","closed_lost")') as { data: Record<string, unknown>[] | null };
+  if (opps) {
+    for (const opp of opps) {
+      const updatedAt = new Date((opp.updated_at as string) || (opp.created_at as string));
+      const daysSinceUpdate = Math.floor((now.getTime() - updatedAt.getTime()) / (1000 * 60 * 60 * 24));
+      if (daysSinceUpdate >= 14) {
+        const { data: existing } = await client.from('reminders').select('id').eq('entity_type', 'opportunity').eq('entity_id', opp.id as string).eq('type', 'opp_stage_timeout').eq('status', 'pending').limit(1);
+        if (!existing || existing.length === 0) {
+          await client.from('reminders').insert({ type: 'opp_stage_timeout', title: `商机超时: ${opp.title}`, message: `商机「${opp.title}」已在「${opp.stage}」阶段停留${daysSinceUpdate}天`, entity_type: 'opportunity', entity_id: opp.id as string, entity_name: opp.title as string, remind_at: now.toISOString(), advance_minutes: 0, frequency: 'once', status: 'triggered', triggered_at: now.toISOString(), is_read: false });
+          created++;
+        }
+      }
+    }
+  }
+
+  // 2. 线索超时 (new >7 天)
+  const { data: leads } = await client.from('leads').select('*').eq('status', 'new') as { data: Record<string, unknown>[] | null };
+  if (leads) {
+    for (const lead of leads) {
+      const createdAt = new Date(lead.created_at as string);
+      const daysSinceCreated = Math.floor((now.getTime() - createdAt.getTime()) / (1000 * 60 * 60 * 24));
+      if (daysSinceCreated >= 7) {
+        const { data: existing } = await client.from('reminders').select('id').eq('entity_type', 'lead').eq('entity_id', lead.id as string).eq('type', 'lead_timeout').eq('status', 'pending').limit(1);
+        if (!existing || existing.length === 0) {
+          await client.from('reminders').insert({ type: 'lead_timeout', title: `线索超时: ${lead.title}`, message: `线索「${lead.title}」已创建${daysSinceCreated}天仍未联系`, entity_type: 'lead', entity_id: lead.id as string, entity_name: lead.title as string, remind_at: now.toISOString(), advance_minutes: 0, frequency: 'once', status: 'triggered', triggered_at: now.toISOString(), is_read: false });
+          created++;
+        }
+      }
+    }
+  }
+
+  // 3. 回款到期
+  const { data: payments } = await client.from('payment_plans').select('*').eq('status', 'pending') as { data: Record<string, unknown>[] | null };
+  if (payments) {
+    for (const payment of payments) {
+      const dueDate = new Date(payment.due_date as string);
+      const daysUntilDue = Math.floor((dueDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+      if (daysUntilDue <= 3 && daysUntilDue >= -7) {
+        const { data: existing } = await client.from('reminders').select('id').eq('entity_type', 'payment_plan').eq('entity_id', payment.id as string).eq('type', 'payment_due').in('status', ['pending', 'triggered']).limit(1);
+        if (!existing || existing.length === 0) {
+          await client.from('reminders').insert({ type: 'payment_due', title: `回款到期: ${payment.plan_name || '回款计划'}`, message: `回款计划${daysUntilDue <= 0 ? '已到期' : `将于${daysUntilDue}天后到期`}，金额: ¥${Number(payment.amount || 0).toLocaleString()}`, entity_type: 'payment_plan', entity_id: payment.id as string, entity_name: (payment.plan_name as string) || '回款计划', remind_at: now.toISOString(), advance_minutes: 4320, frequency: 'once', status: daysUntilDue <= 0 ? 'triggered' : 'pending', triggered_at: daysUntilDue <= 0 ? now.toISOString() : undefined, is_read: false });
+          created++;
+        }
+      }
+    }
+  }
+
+  // 4. 合同里程碑
+  const { data: milestones } = await client.from('contract_milestones').select('*').eq('status', 'pending') as { data: Record<string, unknown>[] | null };
+  if (milestones) {
+    for (const ms of milestones) {
+      const dueDate = new Date(ms.due_date as string);
+      const daysUntilDue = Math.floor((dueDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+      if (daysUntilDue <= 7 && daysUntilDue >= -14) {
+        const { data: existing } = await client.from('reminders').select('id').eq('entity_type', 'contract_milestone').eq('entity_id', ms.id as string).eq('type', 'contract_milestone').in('status', ['pending', 'triggered']).limit(1);
+        if (!existing || existing.length === 0) {
+          await client.from('reminders').insert({ type: 'contract_milestone', title: `合同节点: ${ms.name || '里程碑'}`, message: `合同里程碑「${ms.name || ''}」${daysUntilDue <= 0 ? '已到期' : `将于${daysUntilDue}天后到期`}`, entity_type: 'contract_milestone', entity_id: ms.id as string, entity_name: (ms.name as string) || '里程碑', remind_at: now.toISOString(), advance_minutes: 10080, frequency: 'once', status: daysUntilDue <= 0 ? 'triggered' : 'pending', triggered_at: daysUntilDue <= 0 ? now.toISOString() : undefined, is_read: false });
+          created++;
+        }
+      }
+    }
+  }
+
+  return created;
 }

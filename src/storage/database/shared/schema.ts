@@ -162,6 +162,35 @@ export const notifications = pgTable(
   ]
 );
 
+// 智能提醒表 (V5.1)
+export const reminders = pgTable(
+  "reminders",
+  {
+    id: varchar("id", { length: 36 }).primaryKey().default(sql`gen_random_uuid()`),
+    type: varchar("type", { length: 30 }).notNull(),
+    title: varchar("title", { length: 255 }).notNull(),
+    message: text("message"),
+    entity_type: varchar("entity_type", { length: 30 }),
+    entity_id: varchar("entity_id", { length: 36 }),
+    entity_name: varchar("entity_name", { length: 255 }),
+    remind_at: timestamp("remind_at", { withTimezone: true }).notNull(),
+    advance_minutes: integer("advance_minutes").notNull().default(60),
+    frequency: varchar("frequency", { length: 20 }).notNull().default("once"),
+    status: varchar("status", { length: 20 }).notNull().default("pending"),
+    is_read: boolean("is_read").default(false).notNull(),
+    triggered_at: timestamp("triggered_at", { withTimezone: true }),
+    completed_at: timestamp("completed_at", { withTimezone: true }),
+    created_by: varchar("created_by", { length: 100 }).default("sales_a"),
+    created_at: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+    updated_at: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => [
+    index("reminders_status_idx").on(table.status),
+    index("reminders_remind_at_idx").on(table.remind_at),
+    index("reminders_entity_idx").on(table.entity_type, table.entity_id),
+  ]
+);
+
 // 报价单表
 export const quotes = pgTable(
   "quotes",
@@ -324,6 +353,8 @@ export type FollowUp = typeof followUps.$inferSelect;
 export type InsertFollowUp = typeof followUps.$inferInsert;
 export type Notification = typeof notifications.$inferSelect;
 export type InsertNotification = typeof notifications.$inferInsert;
+export type Reminder = typeof reminders.$inferSelect;
+export type InsertReminder = typeof reminders.$inferInsert;
 export type Quote = typeof quotes.$inferSelect;
 export type InsertQuote = typeof quotes.$inferInsert;
 export type QuoteItem = typeof quoteItems.$inferSelect;

@@ -29,6 +29,7 @@ import {
   Cpu,
   Ticket,
   GitBranch,
+  BellRing,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
@@ -136,6 +137,13 @@ const navigation: NavItemType[] = [
     icon: CheckSquare,
     gradient: 'from-emerald-500 to-teal-500',
     badge: 'NEW',
+  },
+  { 
+    name: '智能提醒', 
+    href: '/reminders', 
+    icon: BellRing,
+    gradient: 'from-orange-500 to-red-500',
+    badge: 'V5.1',
   },
   { 
     name: '报表中心', 

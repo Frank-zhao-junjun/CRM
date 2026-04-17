@@ -145,17 +145,60 @@ export interface FollowUp {
 }
 
 // ============ 通知 ============
-export type NotificationType = 'overdue' | 'reminder' | 'stage_change' | 'info';
+export type NotificationType = 'overdue' | 'reminder' | 'stage_change' | 'info' | 'task_due' | 'opp_stage_timeout' | 'lead_timeout' | 'contract_milestone' | 'payment_due' | 'custom';
 
 export interface CRMNotification {
   id: string;
   type: NotificationType;
   title: string;
   message: string;
-  entityType?: 'lead' | 'opportunity';
+  entityType?: string;
   entityId?: string;
   isRead: boolean;
   createdAt: string;
+}
+
+// ============ 智能提醒 (V5.1) ============
+export type ReminderType = 'task_due' | 'opp_stage_timeout' | 'lead_timeout' | 'contract_milestone' | 'payment_due' | 'custom';
+export type ReminderFrequency = 'once' | 'daily' | 'weekly';
+export type ReminderStatus = 'pending' | 'triggered' | 'completed' | 'dismissed';
+
+export const REMINDER_TYPE_CONFIG: Record<ReminderType, { label: string; icon: string; color: string; description: string }> = {
+  task_due: { label: '任务到期', icon: 'Clock', color: 'text-orange-600', description: '任务即将到期时提醒' },
+  opp_stage_timeout: { label: '商机超时', icon: 'AlertTriangle', color: 'text-red-600', description: '商机在某一阶段停留过久' },
+  lead_timeout: { label: '线索超时', icon: 'Lightbulb', color: 'text-yellow-600', description: '线索未及时转化' },
+  contract_milestone: { label: '合同节点', icon: 'FileCheck', color: 'text-blue-600', description: '合同履约里程碑到期' },
+  payment_due: { label: '回款到期', icon: 'DollarSign', color: 'text-green-600', description: '回款计划到期提醒' },
+  custom: { label: '自定义', icon: 'Bell', color: 'text-purple-600', description: '自定义提醒' },
+};
+
+export const REMINDER_ADVANCE_OPTIONS: { value: number; label: string }[] = [
+  { value: 15, label: '15分钟前' },
+  { value: 30, label: '30分钟前' },
+  { value: 60, label: '1小时前' },
+  { value: 1440, label: '1天前' },
+  { value: 2880, label: '2天前' },
+  { value: 10080, label: '1周前' },
+];
+
+export interface CRMReminder {
+  id: string;
+  type: ReminderType;
+  title: string;
+  message: string | null;
+  entityType: string | null;
+  entityId: string | null;
+  entityName: string | null;
+  remindAt: string;
+  advanceMinutes: number;
+  frequency: ReminderFrequency;
+  status: ReminderStatus;
+  isRead: boolean;
+  triggeredAt: string | null;
+  completedAt: string | null;
+  createdBy: string | null;
+  createdAt: string;
+  updatedAt: string;
 }
 
 // ============ 报价单 ============

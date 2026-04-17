@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -62,7 +62,7 @@ interface Workflow {
   name: string;
 }
 
-export default function ExecutionsPage() {
+function ExecutionsPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const workflowIdFromUrl = searchParams.get('workflowId');
@@ -462,5 +462,13 @@ function Label({ children, className }: { children: React.ReactNode; className?:
     <div className={`text-sm ${className}`}>
       {children}
     </div>
+  );
+}
+
+export default function ExecutionsPage() {
+  return (
+    <Suspense fallback={<div className="flex items-center justify-center h-64"><div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full" /></div>}>
+      <ExecutionsPageContent />
+    </Suspense>
   );
 }

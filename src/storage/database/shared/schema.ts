@@ -210,6 +210,33 @@ export const quoteItems = pgTable(
   ]
 );
 
+// 产品表
+export const products = pgTable(
+  "products",
+  {
+    id: varchar("id", { length: 36 }).primaryKey().default(sql`gen_random_uuid()`),
+    name: varchar("name", { length: 255 }).notNull(),
+    sku: varchar("sku", { length: 100 }),
+    category: varchar("category", { length: 100 }),
+    description: text("description"),
+    unit_price: numeric("unit_price", { precision: 15, scale: 2 }).notNull().default("0"),
+    unit: varchar("unit", { length: 50 }),
+    cost: numeric("cost", { precision: 15, scale: 2 }).notNull().default("0"),
+    stock: integer("stock").notNull().default(0),
+    is_active: boolean("is_active").default(true).notNull(),
+    image_url: varchar("image_url", { length: 500 }),
+    specifications: jsonb("specifications").default({}),
+    created_by: varchar("created_by", { length: 100 }),
+    created_at: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+    updated_at: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => [
+    index("products_category_idx").on(table.category),
+    index("products_sku_idx").on(table.sku),
+    index("products_is_active_idx").on(table.is_active),
+  ]
+);
+
 // 成交订单表
 // 订单状态: draft | confirmed | awaiting_payment | paid | completed | cancelled
 export const orders = pgTable(

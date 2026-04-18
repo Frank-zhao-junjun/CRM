@@ -126,308 +126,12 @@ async function apiDelete(action: string, id: string): Promise<void> {
 // Initial sample data
 const generateId = () => Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
 
-const INITIAL_CUSTOMERS: Customer[] = [
-  {
-    id: 'cust_1',
-    name: '北京科技有限公司',
-    email: 'contact@bjkj.com',
-    phone: '010-88888888',
-    company: '北京科技有限公司',
-    status: 'active',
-    industry: '科技',
-    website: 'https://bjkj.com',
-    address: '北京市朝阳区科技园区',
-    createdAt: '2024-01-15T08:00:00Z',
-    updatedAt: '2024-01-15T08:00:00Z',
-  },
-  {
-    id: 'cust_2',
-    name: '上海贸易集团',
-    email: 'info@shmy.com',
-    phone: '021-66666666',
-    company: '上海贸易集团',
-    status: 'active',
-    industry: '贸易',
-    website: 'https://shmy.com',
-    address: '上海市浦东新区陆家嘴',
-    createdAt: '2024-02-20T09:00:00Z',
-    updatedAt: '2024-02-20T09:00:00Z',
-  },
-  {
-    id: 'cust_3',
-    name: '深圳创新科技',
-    email: 'hello@szcx.com',
-    phone: '0755-88888888',
-    company: '深圳创新科技',
-    status: 'active',
-    industry: '科技',
-    website: 'https://szcx.com',
-    address: '深圳市南山区科技园',
-    createdAt: '2024-03-10T10:00:00Z',
-    updatedAt: '2024-03-10T10:00:00Z',
-  },
-];
 
-const INITIAL_CONTACTS: Contact[] = [
-  {
-    id: 'cont_1',
-    firstName: '张',
-    lastName: '伟',
-    email: 'zhangwei@bjkj.com',
-    phone: '13800138001',
-    position: '技术总监',
-    customerId: 'cust_1',
-    customerName: '北京科技有限公司',
-    isPrimary: true,
-    createdAt: '2024-01-15T08:30:00Z',
-    updatedAt: '2024-01-15T08:30:00Z',
-  },
-  {
-    id: 'cont_2',
-    firstName: '李',
-    lastName: '娜',
-    email: 'lina@shmy.com',
-    phone: '13900139002',
-    position: '采购经理',
-    customerId: 'cust_2',
-    customerName: '上海贸易集团',
-    isPrimary: true,
-    createdAt: '2024-02-20T09:30:00Z',
-    updatedAt: '2024-02-20T09:30:00Z',
-  },
-  {
-    id: 'cont_3',
-    firstName: '王',
-    lastName: '强',
-    email: 'wangqiang@szcx.com',
-    phone: '13700137003',
-    position: 'CEO',
-    customerId: 'cust_3',
-    customerName: '深圳创新科技',
-    isPrimary: true,
-    createdAt: '2024-03-10T10:30:00Z',
-    updatedAt: '2024-03-10T10:30:00Z',
-  },
-];
 
-const INITIAL_OPPORTUNITIES: SalesOpportunity[] = [
-  {
-    id: 'opp_1',
-    title: '企业CRM系统采购项目',
-    customerId: 'cust_1',
-    customerName: '北京科技有限公司',
-    contactId: 'cont_1',
-    contactName: '张伟',
-    value: 150000,
-    stage: 'proposal',
-    probability: 50,
-    expectedCloseDate: '2024-06-30',
-    description: '北京科技计划采购一套完整的企业CRM系统，包含客户管理、销售自动化和数据分析模块',
-    createdAt: '2024-04-01T10:00:00Z',
-    updatedAt: '2024-04-15T14:00:00Z',
-  },
-  {
-    id: 'opp_2',
-    title: '供应链管理系统实施',
-    customerId: 'cust_2',
-    customerName: '上海贸易集团',
-    contactId: 'cont_2',
-    contactName: '李娜',
-    value: 280000,
-    stage: 'negotiation',
-    probability: 75,
-    expectedCloseDate: '2024-05-15',
-    description: '上海贸易集团的供应链管理系统升级项目，涉及采购、库存和物流模块',
-    createdAt: '2024-03-15T11:00:00Z',
-    updatedAt: '2024-04-20T16:00:00Z',
-  },
-  {
-    id: 'opp_3',
-    title: '智能营销平台搭建',
-    customerId: 'cust_3',
-    customerName: '深圳创新科技',
-    contactId: 'cont_3',
-    contactName: '王强',
-    value: 200000,
-    stage: 'discovery',
-    probability: 25,
-    expectedCloseDate: '2024-07-31',
-    description: '深圳创新科技需要建设一套智能营销平台，整合多渠道获客和精准营销能力',
-    createdAt: '2024-04-10T09:00:00Z',
-    updatedAt: '2024-04-10T09:00:00Z',
-  },
-  {
-    id: 'opp_4',
-    title: '数据中台建设项目',
-    customerId: 'cust_1',
-    customerName: '北京科技有限公司',
-    contactId: 'cont_1',
-    contactName: '张伟',
-    value: 350000,
-    stage: 'qualified',
-    probability: 10,
-    expectedCloseDate: '2024-09-30',
-    description: '数据中台整体规划与建设',
-    createdAt: '2024-04-18T08:00:00Z',
-    updatedAt: '2024-04-18T08:00:00Z',
-  },
-  {
-    id: 'opp_5',
-    title: '客服系统升级项目',
-    customerId: 'cust_2',
-    customerName: '上海贸易集团',
-    contactId: 'cont_2',
-    contactName: '李娜',
-    value: 80000,
-    stage: 'closed_won',
-    probability: 100,
-    expectedCloseDate: '2024-04-01',
-    description: '客服系统升级，支持多渠道接入',
-    createdAt: '2024-02-01T10:00:00Z',
-    updatedAt: '2024-04-01T17:00:00Z',
-  },
-];
 
-const INITIAL_LEADS: SalesLead[] = [
-  {
-    id: 'lead_1',
-    title: '广州制造业客户',
-    source: 'website',
-    customerId: '',
-    customerName: '广州智造科技',
-    estimatedValue: 120000,
-    probability: 20,
-    status: 'new',
-    notes: '官网表单留资，对制造业CRM感兴趣',
-    createdAt: '2024-04-19T10:00:00Z',
-    updatedAt: '2024-04-19T10:00:00Z',
-  },
-  {
-    id: 'lead_2',
-    title: '成都软件公司',
-    source: 'referral',
-    customerId: '',
-    customerName: '成都云软件',
-    estimatedValue: 200000,
-    probability: 40,
-    status: 'contacted',
-    notes: '老客户推荐，有CRM采购意向',
-    createdAt: '2024-04-18T14:00:00Z',
-    updatedAt: '2024-04-19T09:00:00Z',
-  },
-  {
-    id: 'lead_3',
-    title: '杭州电商企业',
-    source: 'event',
-    customerId: '',
-    customerName: '杭州电商云',
-    estimatedValue: 180000,
-    probability: 30,
-    status: 'qualified',
-    notes: '展会获取名片，已确认需求',
-    createdAt: '2024-04-15T16:00:00Z',
-    updatedAt: '2024-04-20T11:00:00Z',
-  },
-];
 
-const INITIAL_ACTIVITIES: Activity[] = [
-  {
-    id: 'act_1',
-    type: 'created',
-    entityType: 'opportunity',
-    entityId: 'opp_1',
-    entityName: '企业CRM系统采购项目',
-    description: '创建销售商机',
-    timestamp: '2024-04-01T10:00:00Z',
-  },
-  {
-    id: 'act_2',
-    type: 'stage_change',
-    entityType: 'opportunity',
-    entityId: 'opp_2',
-    entityName: '供应链管理系统实施',
-    description: '阶段变更: 需求确认 → 方案报价',
-    timestamp: '2024-04-20T16:00:00Z',
-  },
-  {
-    id: 'act_3',
-    type: 'closed_won',
-    entityType: 'opportunity',
-    entityId: 'opp_5',
-    entityName: '客服系统升级项目',
-    description: '商机成交！',
-    timestamp: '2024-04-01T17:00:00Z',
-  },
-];
 
 // Initial products (V3.2 新增)
-const INITIAL_PRODUCTS: Product[] = [
-  {
-    id: 'prod_1',
-    name: 'CRM标准版',
-    sku: 'SW-CRM-STD',
-    category: 'software',
-    description: '包含客户管理、销售自动化、报表分析等核心功能',
-    unitPrice: 29999,
-    unit: '套/年',
-    cost: 15000,
-    isActive: true,
-    createdAt: '2024-01-01T00:00:00Z',
-    updatedAt: '2024-01-01T00:00:00Z',
-  },
-  {
-    id: 'prod_2',
-    name: 'CRM专业版',
-    sku: 'SW-CRM-PRO',
-    category: 'software',
-    description: '包含标准版全部功能及营销自动化、高级分析等进阶功能',
-    unitPrice: 59999,
-    unit: '套/年',
-    cost: 30000,
-    isActive: true,
-    createdAt: '2024-01-01T00:00:00Z',
-    updatedAt: '2024-01-01T00:00:00Z',
-  },
-  {
-    id: 'prod_3',
-    name: '实施服务',
-    sku: 'SV-IMP-001',
-    category: 'service',
-    description: '标准实施服务，包含系统部署、数据迁移、培训等',
-    unitPrice: 15000,
-    unit: '人天',
-    cost: 8000,
-    isActive: true,
-    createdAt: '2024-01-01T00:00:00Z',
-    updatedAt: '2024-01-01T00:00:00Z',
-  },
-  {
-    id: 'prod_4',
-    name: '定制开发服务',
-    sku: 'SV-CUS-001',
-    category: 'consulting',
-    description: '按需定制开发服务，个性化功能扩展',
-    unitPrice: 2000,
-    unit: '人天',
-    cost: 1000,
-    isActive: true,
-    createdAt: '2024-01-01T00:00:00Z',
-    updatedAt: '2024-01-01T00:00:00Z',
-  },
-  {
-    id: 'prod_5',
-    name: '智能客服机器人',
-    sku: 'SW-AI-BOT',
-    category: 'software',
-    description: '基于大模型的智能客服系统，支持多轮对话和知识库',
-    unitPrice: 39999,
-    unit: '套/年',
-    cost: 20000,
-    isActive: true,
-    createdAt: '2024-01-01T00:00:00Z',
-    updatedAt: '2024-01-01T00:00:00Z',
-  },
-];
 
 const CRMContext = createContext<CRMContextType | null>(null);
 
@@ -461,6 +165,22 @@ export function CRMProvider({ children }: { children: ReactNode }) {
     return dueDate.getTime() === today.getTime();
   });
 
+  // 今日到期回款
+  const todayPayments = paymentPlans.filter(p => {
+    if (p.status === 'paid' || p.status === 'cancelled') return false;
+    const dueDate = new Date(p.dueDate);
+    dueDate.setHours(0, 0, 0, 0);
+    return dueDate.getTime() === today.getTime();
+  });
+
+  // 逾期回款
+  const overduePayments = paymentPlans.filter(p => {
+    if (p.status === 'paid' || p.status === 'cancelled') return false;
+    const dueDate = new Date(p.dueDate);
+    dueDate.setHours(0, 0, 0, 0);
+    return dueDate < today;
+  });
+
   const stats: DashboardStats = {
     totalCustomers: customers.length,
     totalContacts: contacts.length,
@@ -479,13 +199,13 @@ export function CRMProvider({ children }: { children: ReactNode }) {
       setError(null);
       
       const [dbCustomers, dbContacts, dbOpportunities, dbLeads, dbActivities, dbProducts, dbTasks] = await Promise.all([
-        apiGet<Customer[]>('customers').catch(() => INITIAL_CUSTOMERS),
-        apiGet<Contact[]>('contacts').catch(() => INITIAL_CONTACTS),
-        apiGet<SalesOpportunity[]>('opportunities').catch(() => INITIAL_OPPORTUNITIES),
-        apiGet<SalesLead[]>('leads').catch(() => INITIAL_LEADS),
-        apiGet<Activity[]>('activities').catch(() => INITIAL_ACTIVITIES),
-        apiGet<Product[]>('products').catch(() => INITIAL_PRODUCTS),
-        apiGet<Task[]>('tasks').catch(() => []),
+        apiGet<Customer[]>('customers'),
+        apiGet<Contact[]>('contacts'),
+        apiGet<SalesOpportunity[]>('opportunities'),
+        apiGet<SalesLead[]>('leads'),
+        apiGet<Activity[]>('activities'),
+        apiGet<Product[]>('products'),
+        apiGet<Task[]>('tasks'),
       ]);
       
       setCustomers(dbCustomers);
@@ -497,13 +217,9 @@ export function CRMProvider({ children }: { children: ReactNode }) {
       setTasks(dbTasks);
     } catch (err) {
       console.error('Failed to load CRM data:', err);
-      // Use initial data as fallback
-      setCustomers(INITIAL_CUSTOMERS);
-      setContacts(INITIAL_CONTACTS);
-      setOpportunities(INITIAL_OPPORTUNITIES);
-      setLeads(INITIAL_LEADS);
-      setActivities(INITIAL_ACTIVITIES);
-      setProducts(INITIAL_PRODUCTS);
+      // 不再使用 mock 数据回退，明确设置错误状态
+      // 错误将由 error 状态统一管理，UI 负责展示
+      setError('加载数据失败，请刷新重试');
     } finally {
       setLoading(false);
     }
@@ -627,32 +343,11 @@ export function CRMProvider({ children }: { children: ReactNode }) {
     expectedCloseDate: string;
     notes?: string;
   }) => {
-    const lead = leads.find(l => l.id === leadId);
-    if (!lead) return;
-
-    const newOpportunity: SalesOpportunity = {
-      id: generateId(),
-      title: opportunityData.opportunityTitle,
-      customerId: lead.customerId,
-      customerName: lead.customerName,
-      contactId: opportunityData.contactId,
-      contactName: opportunityData.contactName,
-      value: opportunityData.value,
-      stage: 'qualified',
-      probability: 10,
-      expectedCloseDate: opportunityData.expectedCloseDate,
-      description: opportunityData.notes,
-      sourceLeadId: leadId,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    };
-
-    await apiPost('addOpportunity', newOpportunity);
-    setOpportunities(prev => [...prev, newOpportunity]);
-    
-    await updateLead(leadId, { status: 'qualified' });
-    addActivity('qualified', 'opportunity', newOpportunity.id, newOpportunity.title, `线索 "${lead.title}" 已转化为商机`);
-  }, [leads, updateLead, addActivity]);
+    const result = await apiPost<{ error?: string }>('qualifyLead', { leadId, ...opportunityData });
+    if (!result.error) {
+      await loadData();
+    }
+  }, [loadData]);
 
   const disqualifyLead = useCallback(async (leadId: string, reason?: string) => {
     const lead = leads.find(l => l.id === leadId);
@@ -829,45 +524,11 @@ export function CRMProvider({ children }: { children: ReactNode }) {
   }, [opportunities, addActivity]);
 
   const changeOpportunityStage = useCallback(async (id: string, newStage: OpportunityStage, reason?: string) => {
-    const opportunity = opportunities.find(o => o.id === id);
-    if (!opportunity) return;
-
-    const stageConfig = {
-      qualified: '线索',
-      discovery: '需求确认',
-      proposal: '方案报价',
-      negotiation: '商务谈判',
-      contract: '合同签署',
-      closed_won: '已成交',
-      closed_lost: '已输单',
-    };
-
-    const oldStage = opportunity.stage;
-    const probabilityMap: Record<OpportunityStage, number> = {
-      qualified: 10,
-      discovery: 25,
-      proposal: 50,
-      negotiation: 75,
-      contract: 90,
-      closed_won: 100,
-      closed_lost: 0,
-    };
-
-    await updateOpportunity(id, { 
-      stage: newStage, 
-      probability: probabilityMap[newStage],
-      notes: reason || opportunity.notes 
-    });
-
-    const activityType = newStage === 'closed_won' ? 'closed_won' : newStage === 'closed_lost' ? 'closed_lost' : 'stage_change';
-    const description = activityType === 'closed_won' 
-      ? `商机成交！金额：¥${opportunity.value.toLocaleString()}`
-      : activityType === 'closed_lost'
-      ? `商机输单${reason ? `，原因：${reason}` : ''}`
-      : `阶段变更: ${stageConfig[oldStage]} → ${stageConfig[newStage]}`;
-
-    addActivity(activityType, 'opportunity', id, opportunity.title, description);
-  }, [opportunities, updateOpportunity, addActivity]);
+    const result = await apiPut<{ error?: string }>('changeStage', id, { stage: newStage, reason });
+    if (!result.error) {
+      await loadData();
+    }
+  }, [loadData]);
 
   const value: CRMContextType = {
     customers,

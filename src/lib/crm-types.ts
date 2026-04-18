@@ -372,43 +372,6 @@ export const WORKFLOW_ACTION_CONFIG: Record<WorkflowActionType, { label: string;
 };
 
 // ============ 任务管理 ============
-export type TaskPriority = 'low' | 'medium' | 'high' | 'urgent';
-export type TaskStatus = 'pending' | 'in_progress' | 'completed' | 'cancelled';
-export type TaskSource = 'manual' | 'workflow';
-
-export interface CRMTask {
-  id: string;
-  title: string;
-  description?: string;
-  entityType?: 'lead' | 'opportunity' | 'customer' | 'quote';
-  entityId?: string;
-  entityName?: string;
-  priority: TaskPriority;
-  status: TaskStatus;
-  dueDate?: string;
-  source: TaskSource;
-  workflowId?: string;
-  assignedTo: string;
-  completedAt?: string;
-  createdAt: string;
-  updatedAt: string;
-}
-
-export const TASK_PRIORITY_CONFIG: Record<TaskPriority, { label: string; className: string; color: string; icon: string }> = {
-  low: { label: '低', className: 'bg-slate-500/10 text-slate-600 dark:text-slate-400 border-slate-500/20', color: 'text-slate-600 dark:text-slate-400', icon: '↓' },
-  medium: { label: '中', className: 'bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20', color: 'text-blue-600 dark:text-blue-400', icon: '→' },
-  high: { label: '高', className: 'bg-orange-500/10 text-orange-600 dark:text-orange-400 border-orange-500/20', color: 'text-orange-600 dark:text-orange-400', icon: '↑' },
-  urgent: { label: '紧急', className: 'bg-red-500/10 text-red-600 dark:text-red-400 border-red-500/20', color: 'text-red-600 dark:text-red-400', icon: '!!' },
-};
-
-export const TASK_STATUS_CONFIG: Record<TaskStatus, { label: string; className: string; color: string }> = {
-  pending: { label: '待处理', className: 'bg-gray-500/10 text-gray-600 dark:text-gray-400 border-gray-500/20', color: 'text-gray-600 dark:text-gray-400' },
-  in_progress: { label: '进行中', className: 'bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20', color: 'text-blue-600 dark:text-blue-400' },
-  completed: { label: '已完成', className: 'bg-green-500/10 text-green-600 dark:text-green-400 border-green-500/20', color: 'text-green-600 dark:text-green-400' },
-  cancelled: { label: '已取消', className: 'bg-stone-500/10 text-stone-600 dark:text-stone-400 border-stone-500/20', color: 'text-stone-600 dark:text-stone-400' },
-};
-
-// ============ 统计数据 ============
 export interface DashboardStats {
   totalCustomers: number;
   totalContacts: number;

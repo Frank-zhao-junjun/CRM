@@ -1642,6 +1642,97 @@ export async function deleteInvoice(id: string): Promise<void> {
   if (error) throw new Error(`删除发票失败: ${error.message}`);
 }
 
+// ============ Product CRUD ============
+
+export interface InsertProduct {
+  id?: string;
+  name: string;
+  sku?: string;
+  category?: string;
+  description?: string;
+  unit_price: number;
+  unit?: string;
+  cost?: number;
+  stock?: number;
+  is_active?: boolean;
+  image_url?: string;
+  specifications?: Record<string, unknown>;
+  created_by?: string;
+}
+
+export interface Product {
+  id: string;
+  name: string;
+  sku: string | null;
+  category: string | null;
+  description: string | null;
+  unit_price: string;
+  unit: string | null;
+  cost: string;
+  stock: number;
+  is_active: boolean;
+  image_url: string | null;
+  specifications: Record<string, unknown>;
+  created_by: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export async function getAllProducts(): Promise<Product[]> {
+  const client = getSupabaseClient();
+  const { data, error } = await client
+    .from('products')
+    .select('*')
+    .order('created_at', { ascending: false });
+  if (error) throw new Error(`获取产品列表失败: ${error.message}`);
+  return data || [];
+}
+
+export async function getProductById(id: string): Promise<Product | null> {
+  const client = getSupabaseClient();
+  const { data, error } = await client
+    .from('products')
+    .select('*')
+    .eq('id', id)
+    .single();
+  if (error && error.code !== 'PGRST116') {
+    throw new Error(`获取产品详情失败: ${error.message}`);
+  }
+  return data || null;
+}
+
+export async function createProduct(product: InsertProduct): Promise<Product> {
+  const client = getSupabaseClient();
+  const { data, error } = await client
+    .from('products')
+    .insert(product)
+    .select()
+    .single();
+  if (error) throw new Error(`创建产品失败: ${error.message}`);
+  return data;
+}
+
+export async function updateProduct(id: string, updates: Partial<InsertProduct>): Promise<Product> {
+  const client = getSupabaseClient();
+  const { data, error } = await client
+    .from('products')
+    .update({ ...updates, updated_at: new Date().toISOString() })
+    .eq('id', id)
+    .select()
+    .single();
+  if (error) throw new Error(`更新产品失败: ${error.message}`);
+  return data;
+}
+
+export async function deleteProduct(id: string): Promise<void> {
+  const client = getSupabaseClient();
+  const { error } = await client
+    .from('products')
+    .delete()
+    .eq('id', id);
+  if (error) throw new Error(`删除产品失败: ${error.message}`);
+}
+
 // ============ Workflow Automation ============
 
 export interface WorkflowTrigger {

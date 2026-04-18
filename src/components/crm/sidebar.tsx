@@ -19,7 +19,7 @@ import {
   Package2,
   Clock,
   Calendar as CalendarIcon,
-  FileBarGraph,
+  FileBarChart,
   Receipt,
   Activity as ActivityIcon,
   CheckSquare,
@@ -91,7 +91,7 @@ const navigation: NavItemType[] = [
   { 
     name: '合同', 
     href: '/contracts', 
-    icon: FileBarGraph,
+    icon: FileBarChart,
     gradient: 'from-violet-500 to-purple-500',
   },
   { 
@@ -141,7 +141,7 @@ const navigation: NavItemType[] = [
   { 
     name: '报表中心', 
     href: '/reports', 
-    icon: FileBarGraph,
+    icon: FileBarChart,
     gradient: 'from-violet-500 to-purple-500',
     isSection: true,
     subMenu: [

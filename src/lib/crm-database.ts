@@ -1,6 +1,6 @@
 import 'server-only';
 import { getSupabaseClient } from '@/storage/database/supabase-client';
-import type { Customer, InsertCustomer, Contact, InsertContact, Opportunity, InsertOpportunity, Activity, InsertActivity, FollowUp, InsertFollowUp, Notification, InsertNotification, Quote, InsertQuote, QuoteItem, InsertQuoteItem, Order, InsertOrder, OrderItem, InsertOrderItem, Contract, InsertContract, ContractMilestone, InsertContractMilestone } from '@/storage/database/shared/schema';
+import type { Customer, InsertCustomer, Contact, InsertContact, Opportunity, InsertOpportunity, Activity, InsertActivity, FollowUp, InsertFollowUp, Notification, InsertNotification, Quote, InsertQuote, QuoteItem, InsertQuoteItem, Order, InsertOrder, OrderItem, InsertOrderItem, Contract, InsertContract, ContractMilestone, InsertContractMilestone, Invoice, InsertInvoice } from '@/storage/database/shared/schema';
 
 // CRM 数据库服务 - 支持线索管理
 
@@ -1532,4 +1532,333 @@ function rowToTask(row: TaskRow): any {
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
+}
+
+// ============ Invoice 操作 ============
+
+export async function getAllInvoices(): Promise<Invoice[]> {
+  const client = getSupabaseClient();
+  const { data, error } = await client
+    .from('invoices')
+    .select('*')
+    .order('created_at', { ascending: false });
+  if (error) throw new Error(`获取发票列表失败: ${error.message}`);
+  return data as Invoice[];
+}
+
+export async function getInvoiceById(id: string): Promise<Invoice | null> {
+  const client = getSupabaseClient();
+  const { data, error } = await client
+    .from('invoices')
+    .select('*')
+    .eq('id', id)
+    .maybeSingle();
+  if (error) throw new Error(`获取发票失败: ${error.message}`);
+  return data as Invoice | null;
+}
+
+export async function createInvoice(invoice: InsertInvoice): Promise<Invoice> {
+  const client = getSupabaseClient();
+  const { data, error } = await client
+    .from('invoices')
+    .insert(invoice)
+    .select()
+    .single();
+  if (error) throw new Error(`创建发票失败: ${error.message}`);
+  return data as Invoice;
+}
+
+export async function updateInvoice(id: string, updates: Partial<InsertInvoice>): Promise<Invoice> {
+  const client = getSupabaseClient();
+  const { data, error } = await client
+    .from('invoices')
+    .update({ ...updates, updated_at: new Date().toISOString() })
+    .eq('id', id)
+    .select()
+    .single();
+  if (error) throw new Error(`更新发票失败: ${error.message}`);
+  return data as Invoice;
+}
+
+export async function deleteInvoice(id: string): Promise<void> {
+  const client = getSupabaseClient();
+  const { error } = await client
+    .from('invoices')
+    .delete()
+    .eq('id', id);
+  if (error) throw new Error(`删除发票失败: ${error.message}`);
+}
+
+// ============ Workflow Automation ============
+
+export interface WorkflowTrigger {
+  triggerType: string;
+  entityType: string;
+  entityId: string;
+  entityName: string;
+  data?: Record<string, unknown>;
+}
+
+export interface Workflow {
+  id: string;
+  name: string;
+  description: string | null;
+  trigger_type: string;
+  trigger_entity: string;
+  conditions: string;
+  actions: string;
+  is_active: boolean;
+  is_template: boolean;
+  run_count: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface WorkflowLog {
+  id: string;
+  workflow_id: string;
+  workflow_name: string;
+  trigger_type: string;
+  entity_type: string;
+  entity_id: string;
+  entity_name: string;
+  status: string;
+  executed_actions: number;
+  error_message: string | null;
+  started_at: string;
+  completed_at: string | null;
+}
+
+export async function getAllWorkflows(): Promise<Workflow[]> {
+  const client = getSupabaseClient();
+  const { data, error } = await client
+    .from('workflows')
+    .select('*')
+    .order('created_at', { ascending: false });
+  if (error) throw new Error(`获取工作流列表失败: ${error.message}`);
+  return data as Workflow[];
+}
+
+export async function getWorkflowById(id: string): Promise<Workflow | null> {
+  const client = getSupabaseClient();
+  const { data, error } = await client
+    .from('workflows')
+    .select('*')
+    .eq('id', id)
+    .maybeSingle();
+  if (error) throw new Error(`获取工作流失败: ${error.message}`);
+  return data as Workflow | null;
+}
+
+export async function getActiveWorkflowsByTrigger(triggerType: string): Promise<Workflow[]> {
+  const client = getSupabaseClient();
+  const { data, error } = await client
+    .from('workflows')
+    .select('*')
+    .eq('trigger_type', triggerType)
+    .eq('is_active', true)
+    .order('created_at', { ascending: false });
+  if (error) throw new Error(`获取工作流列表失败: ${error.message}`);
+  return data as Workflow[];
+}
+
+export async function createWorkflow(workflow: Omit<Workflow, 'created_at' | 'updated_at'>): Promise<Workflow> {
+  const client = getSupabaseClient();
+  const { data, error } = await client
+    .from('workflows')
+    .insert(workflow)
+    .select()
+    .single();
+  if (error) throw new Error(`创建工作流失败: ${error.message}`);
+  return data as Workflow;
+}
+
+export async function updateWorkflow(id: string, updates: Partial<Workflow>): Promise<Workflow> {
+  const client = getSupabaseClient();
+  const { data, error } = await client
+    .from('workflows')
+    .update({ ...updates, updated_at: new Date().toISOString() })
+    .eq('id', id)
+    .select()
+    .single();
+  if (error) throw new Error(`更新工作流失败: ${error.message}`);
+  return data as Workflow;
+}
+
+export async function deleteWorkflow(id: string): Promise<void> {
+  const client = getSupabaseClient();
+  const { error } = await client
+    .from('workflows')
+    .delete()
+    .eq('id', id);
+  if (error) throw new Error(`删除工作流失败: ${error.message}`);
+}
+
+export async function getWorkflowLogs(workflowId?: string, limit: number = 20): Promise<WorkflowLog[]> {
+  const client = getSupabaseClient();
+  let query = client
+    .from('workflow_logs')
+    .select('*')
+    .order('started_at', { ascending: false })
+    .limit(limit);
+  
+  if (workflowId) {
+    query = query.eq('workflow_id', workflowId);
+  }
+  
+  const { data, error } = await query;
+  if (error) throw new Error(`获取工作流日志失败: ${error.message}`);
+  return data as WorkflowLog[];
+}
+
+export async function seedWorkflowTemplates(): Promise<void> {
+  const client = getSupabaseClient();
+  
+  // Check if templates already exist
+  const { data: existing } = await client
+    .from('workflows')
+    .select('id')
+    .eq('is_template', true)
+    .limit(1);
+  
+  if (existing && existing.length > 0) {
+    return; // Templates already seeded
+  }
+  
+  const templates = [
+    {
+      id: `wf_tpl_${Date.now()}_1`,
+      name: '线索创建通知',
+      description: '当创建新的销售线索时，自动发送邮件通知销售负责人',
+      trigger_type: 'lead_created',
+      trigger_entity: 'lead',
+      conditions: JSON.stringify({}),
+      actions: JSON.stringify([
+        { type: 'send_email', config: { subject: '新线索通知', template: 'lead_notification' } }
+      ]),
+      is_active: true,
+      is_template: true,
+      run_count: 0,
+    },
+    {
+      id: `wf_tpl_${Date.now()}_2`,
+      name: '商机阶段变更通知',
+      description: '当商机阶段变更时，通知相关人员',
+      trigger_type: 'opportunity_stage_changed',
+      trigger_entity: 'opportunity',
+      conditions: JSON.stringify({}),
+      actions: JSON.stringify([
+        { type: 'send_notification', config: { message: '商机阶段已更新' } }
+      ]),
+      is_active: true,
+      is_template: true,
+      run_count: 0,
+    },
+  ];
+  
+  const { error } = await client
+    .from('workflows')
+    .insert(templates);
+  
+  if (error) throw new Error(`初始化工作流模板失败: ${error.message}`);
+}
+
+export async function executeWorkflowEngine(trigger: WorkflowTrigger): Promise<number> {
+  const client = getSupabaseClient();
+  
+  try {
+    // Get active workflows for this trigger type
+    const workflows = await getActiveWorkflowsByTrigger(trigger.triggerType);
+    
+    let executedCount = 0;
+    
+    for (const workflow of workflows) {
+      try {
+        const actions = JSON.parse(workflow.actions);
+        
+        // Execute each action
+        for (const action of actions) {
+          await executeWorkflowAction(client, action, trigger);
+        }
+        
+        // Update run count
+        await client
+          .from('workflows')
+          .update({ run_count: workflow.run_count + 1 })
+          .eq('id', workflow.id);
+        
+        // Log execution
+        await client
+          .from('workflow_logs')
+          .insert({
+            id: `wflog_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
+            workflow_id: workflow.id,
+            workflow_name: workflow.name,
+            trigger_type: trigger.triggerType,
+            entity_type: trigger.entityType,
+            entity_id: trigger.entityId,
+            entity_name: trigger.entityName,
+            status: 'completed',
+            executed_actions: actions.length,
+            error_message: null,
+            started_at: new Date().toISOString(),
+            completed_at: new Date().toISOString(),
+          });
+        
+        executedCount++;
+      } catch (actionError) {
+        console.error(`Workflow ${workflow.id} execution failed:`, actionError);
+        
+        // Log failed execution
+        await client
+          .from('workflow_logs')
+          .insert({
+            id: `wflog_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
+            workflow_id: workflow.id,
+            workflow_name: workflow.name,
+            trigger_type: trigger.triggerType,
+            entity_type: trigger.entityType,
+            entity_id: trigger.entityId,
+            entity_name: trigger.entityName,
+            status: 'failed',
+            executed_actions: 0,
+            error_message: (actionError as Error).message,
+            started_at: new Date().toISOString(),
+            completed_at: new Date().toISOString(),
+          });
+      }
+    }
+    
+    return executedCount;
+  } catch (error) {
+    console.error('Workflow engine error:', error);
+    return 0;
+  }
+}
+
+async function executeWorkflowAction(
+  client: ReturnType<typeof getSupabaseClient>,
+  action: { type: string; config: Record<string, unknown> },
+  trigger: WorkflowTrigger
+): Promise<void> {
+  switch (action.type) {
+    case 'send_email':
+      // Email sending would be implemented here
+      console.log(`[Workflow] Sending email:`, action.config);
+      break;
+    case 'send_notification':
+      // Notification would be implemented here
+      console.log(`[Workflow] Sending notification:`, action.config);
+      break;
+    case 'update_field':
+      // Field update would be implemented here
+      console.log(`[Workflow] Updating field:`, action.config);
+      break;
+    case 'create_task':
+      // Task creation would be implemented here
+      console.log(`[Workflow] Creating task:`, action.config);
+      break;
+    default:
+      console.warn(`[Workflow] Unknown action type: ${action.type}`);
+  }
 }

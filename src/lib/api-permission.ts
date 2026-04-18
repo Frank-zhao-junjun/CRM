@@ -39,12 +39,11 @@ export function getUserIdFromRequest(request: NextRequest): string | null {
     return userIdCookie.value;
   }
   
-  // 方式 3：从 URL 参数获取（仅用于演示）
-  const searchParams = request.nextUrl.searchParams;
-  const userIdParam = searchParams.get('user_id');
-  if (userIdParam) {
-    return userIdParam;
-  }
+  // ⚠️ 安全说明：已禁用从 URL 参数获取用户身份的功能
+  // URL 参数容易被篡改和伪造，仅允许通过以下安全方式获取身份：
+  // 1. Authorization Header (Bearer Token)
+  // 2. HttpOnly Cookie
+  // 如需添加新的身份验证方式，请先进行安全评估
   
   return null;
 }

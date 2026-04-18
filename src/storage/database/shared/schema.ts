@@ -653,3 +653,41 @@ export type Tag = typeof tags.$inferSelect;
 export type InsertTag = typeof tags.$inferInsert;
 export type CustomerTag = typeof customerTags.$inferSelect;
 export type InsertCustomerTag = typeof customerTags.$inferInsert;
+
+// ============ 发票表 ============
+
+export const invoices = pgTable(
+  'invoices',
+  {
+    id: varchar('id', { length: 36 }).primaryKey().default(sql`gen_random_uuid()`),
+    invoice_number: varchar('invoice_number', { length: 50 }).notNull().unique(),
+    order_id: varchar('order_id', { length: 36 }),
+    order_number: varchar('order_number', { length: 50 }),
+    customer_id: varchar('customer_id', { length: 36 }).notNull().references(() => customers.id, { onDelete: 'cascade' }),
+    customer_name: varchar('customer_name', { length: 255 }).notNull(),
+    tax_id: varchar('tax_id', { length: 50 }),
+    billing_address: text('billing_address'),
+    status: varchar('status', { length: 20 }).notNull().default('draft'),
+    issue_date: varchar('issue_date', { length: 10 }),
+    due_date: varchar('due_date', { length: 10 }),
+    subtotal: numeric('subtotal', { precision: 15, scale: 2 }).notNull().default('0'),
+    tax_rate: numeric('tax_rate', { precision: 5, scale: 4 }).notNull().default('0.06'),
+    tax: numeric('tax', { precision: 15, scale: 2 }).notNull().default('0'),
+    total: numeric('total', { precision: 15, scale: 2 }).notNull().default('0'),
+    paid_date: varchar('paid_date', { length: 10 }),
+    payment_method: varchar('payment_method', { length: 50 }),
+    notes: text('notes'),
+    created_at: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+    updated_at: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => [
+    index('invoices_customer_id_idx').on(table.customer_id),
+    index('invoices_status_idx').on(table.status),
+    index('invoices_issue_date_idx').on(table.issue_date),
+    index('invoices_created_at_idx').on(table.created_at),
+  ]
+);
+
+// 发票类型导出
+export type Invoice = typeof invoices.$inferSelect;
+export type InsertInvoice = typeof invoices.$inferInsert;

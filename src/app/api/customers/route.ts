@@ -1,6 +1,34 @@
 // Customers API 路由
 import { NextRequest, NextResponse } from 'next/server';
+import { z } from 'zod';
 import * as db from '@/lib/crm-database';
+
+// 创建客户验证 schema
+const createCustomerSchema = z.object({
+  name: z.string().min(1, '客户名称不能为空').max(128),
+  email: z.string().email('邮箱格式不正确').optional().or(z.string().optional()),
+  phone: z.string().max(50).optional(),
+  company: z.string().min(1, '公司名称不能为空').max(255),
+  status: z.enum(['active', 'inactive', 'prospect']).optional(),
+  industry: z.string().max(100).optional(),
+  website: z.string().url('网站URL格式不正确').optional().or(z.string().optional()),
+  address: z.string().optional(),
+  notes: z.string().optional(),
+});
+
+// 更新客户验证 schema
+const updateCustomerSchema = z.object({
+  id: z.string().min(1, '客户ID不能为空'),
+  name: z.string().min(1).max(128).optional(),
+  email: z.string().email().optional().or(z.string().optional()),
+  phone: z.string().max(50).optional(),
+  company: z.string().min(1).max(255).optional(),
+  status: z.enum(['active', 'inactive', 'prospect']).optional(),
+  industry: z.string().max(100).optional(),
+  website: z.string().url().optional().or(z.string().optional()),
+  address: z.string().optional(),
+  notes: z.string().optional(),
+});
 
 export async function GET(request: NextRequest) {
   try {
@@ -32,7 +60,20 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const customer = await db.createCustomer(body);
+    
+    // 验证输入数据
+    const validation = createCustomerSchema.safeParse(body);
+    if (!validation.success) {
+      return NextResponse.json(
+        { error: '输入验证失败', details: validation.error.flatten() },
+        { status: 400 }
+      );
+    }
+    
+    const customer = await db.createCustomer({
+      ...validation.data,
+      status: validation.data.status || 'prospect',
+    });
     
     // 记录活动
     await db.createActivity({
@@ -55,12 +96,17 @@ export async function POST(request: NextRequest) {
 export async function PUT(request: NextRequest) {
   try {
     const body = await request.json();
-    const { id, ...updates } = body;
     
-    if (!id) {
-      return NextResponse.json({ error: '缺少客户ID' }, { status: 400 });
+    // 验证输入数据
+    const validation = updateCustomerSchema.safeParse(body);
+    if (!validation.success) {
+      return NextResponse.json(
+        { error: '输入验证失败', details: validation.error.flatten() },
+        { status: 400 }
+      );
     }
     
+    const { id, ...updates } = validation.data;
     const customer = await db.updateCustomer(id, updates);
     return NextResponse.json(customer);
   } catch (error) {

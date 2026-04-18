@@ -133,7 +133,7 @@ export const followUps = pgTable(
     scheduled_at: timestamp("scheduled_at", { withTimezone: true }),
     completed_at: timestamp("completed_at", { withTimezone: true }),
     next_follow_up_at: timestamp("next_follow_up_at", { withTimezone: true }),
-    created_by: varchar("created_by", { length: 100 }).default("sales_a"),
+    created_by: varchar("created_by", { length: 100 }).default("system"),
     deleted_at: timestamp("deleted_at", { withTimezone: true }),
     created_at: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
     updated_at: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),

@@ -23,6 +23,7 @@ import {
   Receipt,
   Activity as ActivityIcon,
   CheckSquare,
+  Sparkles,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
@@ -68,6 +69,11 @@ const navigation: NavItemType[] = [
     href: '/opportunities', 
     icon: Briefcase,
     gradient: 'from-orange-500 to-amber-500',
+    subMenu: [
+      { name: '商机列表', href: '/opportunities' },
+      { name: 'AI 预测', href: '/predictions' },
+      { name: '预测配置', href: '/opportunities/prediction-config' },
+    ],
   },
   { 
     name: '产品管理', 

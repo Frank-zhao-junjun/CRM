@@ -17,7 +17,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { ArrowLeft, Edit, Trash2, DollarSign, Building2, Calendar, User, FileText, Plus, Send, ArrowRight, X, Activity } from 'lucide-react';
+import { ArrowLeft, Edit, Trash2, DollarSign, Building2, Calendar, User, FileText, Plus, Send, ArrowRight, X, Activity, Sparkles } from 'lucide-react';
 import Link from 'next/link';
 import { OpportunityStage, QUOTE_STATUS_CONFIG, type Quote, type QuoteStatus } from '@/lib/crm-types';
 import { cn } from '@/lib/utils';
@@ -29,13 +29,16 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { format } from 'date-fns';
 import { zhCN } from 'date-fns/locale';
 import { ActivityTimeline } from '@/components/crm/activity-timeline';
 import { FollowUpTimeline } from '@/components/crm/follow-up-timeline';
 import { FOLLOW_UP_METHOD_CONFIG, type FollowUpMethod } from '@/lib/crm-types';
 import { SendEmailDialog } from '@/components/email/send-email-dialog';
+import { OpportunityPredictionEngine } from '@/lib/opportunity-prediction-engine';
+import { PredictionDetails, RecommendationCard } from '@/components/crm/prediction-details';
+import { ProbabilityBadge } from '@/components/crm/prediction-components';
 
 const stageLabels: Record<OpportunityStage, { label: string; className: string; description: string }> = {
   qualified: { label: '商机确认', className: 'bg-blue-500/10 text-blue-500 border-blue-500/20', description: '商机已确认，待深入沟通' },
@@ -86,6 +89,13 @@ export default function OpportunityDetailPage() {
   });
 
   const opportunity = opportunities.find(o => o.id === params.id);
+
+  // 计算 AI 预测
+  const predictionEngine = useMemo(() => new OpportunityPredictionEngine(), []);
+  const aiPrediction = useMemo(() => {
+    if (!opportunity) return null;
+    return predictionEngine.calculatePrediction(opportunity);
+  }, [opportunity, predictionEngine]);
 
   const fetchQuotes = useCallback(async () => {
     if (!params.id) return;
@@ -261,7 +271,12 @@ export default function OpportunityDetailPage() {
             </Link>
           </Button>
           <div>
-            <h2 className="text-2xl font-bold">{opportunity.title}</h2>
+            <div className="flex items-center gap-3">
+              <h2 className="text-2xl font-bold">{opportunity.title}</h2>
+              {aiPrediction && (
+                <ProbabilityBadge probability={aiPrediction.probability} size="md" />
+              )}
+            </div>
             <p className="text-muted-foreground">{opportunity.customerName}</p>
           </div>
         </div>
@@ -330,15 +345,23 @@ export default function OpportunityDetailPage() {
                 </div>
               </div>
               <div>
-                <p className="text-sm text-muted-foreground mb-1">成交概率</p>
+                <p className="text-sm text-muted-foreground mb-1 flex items-center gap-1">
+                  <Sparkles className="h-3 w-3 text-green-600" />
+                  AI 预测概率
+                </p>
                 <div className="flex items-center gap-2">
                   <div className="flex-1 h-2 bg-muted rounded-full overflow-hidden">
                     <div
-                      className="h-full bg-primary rounded-full"
-                      style={{ width: `${opportunity.probability}%` }}
+                      className={cn(
+                        "h-full rounded-full transition-all",
+                        aiPrediction && aiPrediction.probability >= 70 ? "bg-gradient-to-r from-green-400 to-emerald-500" :
+                        aiPrediction && aiPrediction.probability >= 40 ? "bg-gradient-to-r from-yellow-400 to-amber-500" :
+                        "bg-gradient-to-r from-gray-400 to-gray-500"
+                      )}
+                      style={{ width: `${aiPrediction?.probability || 0}%` }}
                     />
                   </div>
-                  <span className="text-sm font-medium">{opportunity.probability}%</span>
+                  <span className="text-sm font-medium">{aiPrediction?.probability || 0}%</span>
                 </div>
               </div>
             </div>
@@ -383,42 +406,25 @@ export default function OpportunityDetailPage() {
           </CardContent>
         </Card>
 
-        {/* 销售漏斗进度 */}
+        {/* AI 预测分析 */}
         <Card>
           <CardHeader>
-            <CardTitle>销售漏斗</CardTitle>
+            <CardTitle className="flex items-center gap-2">
+              <Sparkles className="h-4 w-4 text-green-600" />
+              AI 预测分析
+            </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-3">
-            {['qualified', 'discovery', 'proposal', 'negotiation', 'contract', 'closed_won'].map((stage, index) => {
-              const stageData = stageLabels[stage as OpportunityStage];
-              const isActive = opportunity.stage === stage;
-              const isPast = ['qualified', 'discovery', 'proposal', 'negotiation', 'contract', 'closed_won'].indexOf(opportunity.stage) > index;
-              return (
-                <div key={stage} className="flex items-center gap-3">
-                  <div className={cn(
-                    "w-7 h-7 rounded-full flex items-center justify-center text-xs font-medium",
-                    isActive ? "bg-primary text-primary-foreground" : isPast ? "bg-green-100 text-green-600 dark:bg-green-900 dark:text-green-400" : "bg-muted"
-                  )}>
-                    {isPast ? '✓' : index + 1}
-                  </div>
-                  <div className="flex-1">
-                    <p className={cn(
-                      "text-sm font-medium",
-                      isActive && "text-primary",
-                      isPast && "text-green-600 dark:text-green-400"
-                    )}>
-                      {stageData.label}
-                    </p>
-                    {isActive && (
-                      <p className="text-xs text-muted-foreground">{stageData.description}</p>
-                    )}
-                  </div>
-                  {isActive && (
-                    <Badge variant="secondary">当前</Badge>
-                  )}
-                </div>
-              );
-            })}
+          <CardContent>
+            {aiPrediction ? (
+              <div className="space-y-4">
+                <PredictionDetails predictionResult={aiPrediction} />
+              </div>
+            ) : (
+              <div className="text-center py-8 text-muted-foreground">
+                <Sparkles className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                <p className="text-sm">加载预测分析...</p>
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>

@@ -374,7 +374,7 @@ function CreateWorkflowDialog({ onClose }: { onClose: () => void }) {
           title: taskTitle || `跟进${triggerConfig?.entity || '客户'}`,
           priority: taskPriority,
           delayHours: Number(delayHours),
-          assignedTo: 'sales_a',
+          assignedTo: null,
         },
       }] : [{
         type: 'send_notification',

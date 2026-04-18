@@ -73,7 +73,7 @@ export default function FollowUpsPage() {
           scheduledAt: f.scheduled_at as string | null,
           completedAt: f.completed_at as string | null,
           nextFollowUpAt: f.next_follow_up_at as string | null,
-          createdBy: (f.created_by || 'sales_a') as string,
+          createdBy: (f.created_by || 'system') as string,
           isOverdue: !f.completed_at && f.scheduled_at ? new Date(f.scheduled_at as string) < new Date() : false,
           createdAt: f.created_at as string,
           updatedAt: f.updated_at as string,

@@ -1,6 +1,48 @@
 // Leads API 路由
 import { NextRequest, NextResponse } from 'next/server';
+import { z } from 'zod';
 import * as db from '@/lib/crm-database';
+
+// 创建线索验证 schema
+const createLeadSchema = z.object({
+  title: z.string().min(1, '线索标题不能为空').max(255),
+  source: z.enum(['referral', 'website', 'cold_call', 'event', 'advertisement', 'other'], {
+    errorMap: () => ({ message: '来源必须是: referral, website, cold_call, event, advertisement, other' }),
+  }),
+  customerId: z.string().min(1, '客户ID不能为空').optional(),
+  customer_id: z.string().min(1, '客户ID不能为空').optional(),
+  customerName: z.string().optional(),
+  customer_name: z.string().optional(),
+  contactId: z.string().optional(),
+  contact_id: z.string().optional(),
+  contactName: z.string().optional(),
+  contact_name: z.string().optional(),
+  estimatedValue: z.number().min(0).optional(),
+  estimated_value: z.number().min(0).optional(),
+  probability: z.number().min(0).max(100).optional(),
+  status: z.enum(['new', 'contacted', 'qualified', 'disqualified']).optional(),
+  notes: z.string().optional(),
+});
+
+// 更新线索验证 schema
+const updateLeadSchema = z.object({
+  id: z.string().min(1, '线索ID不能为空'),
+  title: z.string().min(1).max(255).optional(),
+  source: z.enum(['referral', 'website', 'cold_call', 'event', 'advertisement', 'other']).optional(),
+  customerId: z.string().optional(),
+  customer_id: z.string().optional(),
+  customerName: z.string().optional(),
+  customer_name: z.string().optional(),
+  contactId: z.string().optional(),
+  contact_id: z.string().optional(),
+  contactName: z.string().optional(),
+  contact_name: z.string().optional(),
+  estimatedValue: z.number().min(0).optional(),
+  estimated_value: z.number().min(0).optional(),
+  probability: z.number().min(0).max(100).optional(),
+  status: z.enum(['new', 'contacted', 'qualified', 'disqualified']).optional(),
+  notes: z.string().optional(),
+});
 
 export async function GET(request: NextRequest) {
   try {
@@ -37,18 +79,28 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
+    
+    // 验证输入数据
+    const validation = createLeadSchema.safeParse(body);
+    if (!validation.success) {
+      return NextResponse.json(
+        { error: '输入验证失败', details: validation.error.flatten() },
+        { status: 400 }
+      );
+    }
+    
     const lead = await db.createLead({
       id: `lead_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
-      title: body.title,
-      source: body.source,
-      customer_id: body.customerId || body.customer_id,
-      customer_name: body.customerName || body.customer_name,
-      contact_id: body.contactId || body.contact_id,
-      contact_name: body.contactName || body.contact_name,
-      estimated_value: body.estimatedValue || body.estimated_value || 0,
-      probability: body.probability || 10,
-      status: body.status || 'new',
-      notes: body.notes,
+      title: validation.data.title,
+      source: validation.data.source,
+      customer_id: validation.data.customerId || validation.data.customer_id,
+      customer_name: validation.data.customerName || validation.data.customer_name || '',
+      contact_id: validation.data.contactId || validation.data.contact_id,
+      contact_name: validation.data.contactName || validation.data.contact_name,
+      estimated_value: validation.data.estimatedValue || validation.data.estimated_value || 0,
+      probability: validation.data.probability || 10,
+      status: validation.data.status || 'new',
+      notes: validation.data.notes,
     });
     
     // 记录活动
@@ -80,12 +132,17 @@ export async function POST(request: NextRequest) {
 export async function PUT(request: NextRequest) {
   try {
     const body = await request.json();
-    const { id, ...updates } = body;
     
-    if (!id) {
-      return NextResponse.json({ error: '缺少线索ID' }, { status: 400 });
+    // 验证输入数据
+    const validation = updateLeadSchema.safeParse(body);
+    if (!validation.success) {
+      return NextResponse.json(
+        { error: '输入验证失败', details: validation.error.flatten() },
+        { status: 400 }
+      );
     }
     
+    const { id, ...updates } = validation.data;
     const lead = await db.updateLead(id, updates);
     return NextResponse.json(lead);
   } catch (error) {

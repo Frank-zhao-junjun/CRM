@@ -1,7 +1,34 @@
 // 任务管理 API
 
 import { NextRequest, NextResponse } from 'next/server';
+import { z } from 'zod';
 import * as db from '@/lib/crm-database';
+
+// 创建任务验证 schema
+const createTaskSchema = z.object({
+  title: z.string().min(1, '任务标题不能为空').max(255),
+  description: z.string().optional(),
+  entityType: z.enum(['customer', 'contact', 'lead', 'opportunity']).optional(),
+  entityId: z.string().optional(),
+  entityName: z.string().optional(),
+  priority: z.enum(['low', 'medium', 'high']).optional(),
+  dueDate: z.string().datetime().optional().or(z.string().optional()),
+  assignedTo: z.string().optional(),
+});
+
+// 更新任务验证 schema
+const updateTaskSchema = z.object({
+  id: z.string().min(1, '任务ID不能为空'),
+  title: z.string().min(1).max(255).optional(),
+  description: z.string().optional(),
+  entityType: z.enum(['customer', 'contact', 'lead', 'opportunity']).optional(),
+  entityId: z.string().optional(),
+  entityName: z.string().optional(),
+  priority: z.enum(['low', 'medium', 'high']).optional(),
+  status: z.enum(['pending', 'completed']).optional(),
+  dueDate: z.string().datetime().optional().or(z.string().optional()),
+  assignedTo: z.string().nullable().optional(),
+});
 
 export async function GET(request: NextRequest) {
   try {
@@ -54,29 +81,38 @@ export async function POST(request: NextRequest) {
 
     switch (action) {
       case 'create': {
+        // 验证输入数据
+        const validation = createTaskSchema.safeParse(data);
+        if (!validation.success) {
+          return NextResponse.json(
+            { error: '输入验证失败', details: validation.error.flatten() },
+            { status: 400 }
+          );
+        }
+
         const task = await db.createTask({
           id: `task_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
-          title: data.title,
-          description: data.description || null,
-          entity_type: data.entityType || null,
-          entity_id: data.entityId || null,
-          entity_name: data.entityName || null,
-          priority: data.priority || 'medium',
+          title: validation.data.title,
+          description: validation.data.description || null,
+          entity_type: validation.data.entityType || null,
+          entity_id: validation.data.entityId || null,
+          entity_name: validation.data.entityName || null,
+          priority: validation.data.priority || 'medium',
           status: 'pending',
-          due_date: data.dueDate || null,
+          due_date: validation.data.dueDate || null,
           source: 'manual',
           workflow_id: null,
-          assigned_to: data.assignedTo || 'sales_a',
+          assigned_to: validation.data.assignedTo || null,  // 移除硬编码
         });
 
         // Record activity
         await db.createActivity({
           id: `act_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
           type: 'created',
-          entity_type: (data.entityType as 'customer' | 'contact' | 'lead' | 'opportunity') || 'customer',
-          entity_id: data.entityId || task.id,
-          entity_name: data.entityName || data.title,
-          description: `创建任务: ${data.title}`,
+          entity_type: (validation.data.entityType as 'customer' | 'contact' | 'lead' | 'opportunity') || 'customer',
+          entity_id: validation.data.entityId || task.id,
+          entity_name: validation.data.entityName || validation.data.title,
+          description: `创建任务: ${validation.data.title}`,
           timestamp: new Date(),
         });
 
@@ -85,6 +121,9 @@ export async function POST(request: NextRequest) {
 
       case 'complete': {
         const taskId = data.id || body.id;
+        if (!taskId) {
+          return NextResponse.json({ error: '任务ID不能为空' }, { status: 400 });
+        }
         const task = await db.completeTask(taskId);
 
         await db.createActivity({
@@ -114,6 +153,15 @@ export async function PUT(request: NextRequest) {
     const body = await request.json();
     const { id, data } = body;
 
+    // 验证输入数据
+    const validation = updateTaskSchema.safeParse({ id, ...data });
+    if (!validation.success) {
+      return NextResponse.json(
+        { error: '输入验证失败', details: validation.error.flatten() },
+        { status: 400 }
+      );
+    }
+
     const updates: Record<string, unknown> = {};
     if (data.title !== undefined) updates.title = data.title;
     if (data.description !== undefined) updates.description = data.description;
@@ -130,7 +178,7 @@ export async function PUT(request: NextRequest) {
     if (data.dueDate !== undefined) updates.due_date = data.dueDate;
     if (data.assignedTo !== undefined) updates.assigned_to = data.assignedTo;
 
-    const task = await db.updateTask(id, updates);
+    const task = await db.updateTask(validation.data.id, updates);
     return NextResponse.json(task);
   } catch (error) {
     console.error('Tasks PUT error:', error);

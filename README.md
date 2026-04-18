@@ -326,7 +326,56 @@ import { RoleBadge, RoleBadgeGroup } from '@/components/crm/role-badge';
 - 评分详情：`src/components/crm/score-details.tsx`
 - 数据库迁移：`supabase/migrations/20260419_lead_scoring.sql`
 
-### 20. 销售目标管理 (V4.5 NEW)
+### 20. AI 商机预测 (Phase 1 - V5.2 NEW)
+
+**AI 智能化升级第二步**
+
+基于多维度算法自动预测商机成交概率，帮助销售团队识别高价值商机并制定最佳跟进策略。
+
+#### 预测维度
+- **商机阶段**：根据销售漏斗阶段评估（商机确认10% → 合同签署90%）
+- **金额大小**：大额商机决策周期长，适当降低概率
+- **客户历史**：有成功成交记录的客户更值得信赖
+- **竞争状况**：评估竞争对手对成交的影响
+- **互动频率**：近30天互动次数越多，成交可能性越高
+- **时间线**：预计成交时间越近，概率越高
+
+#### 预测级别
+- **高概率 (≥70%)**：绿色徽章 + 进度条，重点跟进策略
+- **中概率 (40-69%)**：黄色徽章 + 进度条，培育跟进策略
+- **低概率 (<40%)**：灰色徽章 + 进度条，暂缓跟进策略
+
+#### 功能特性
+- **商机列表页**：显示 AI 预测概率列，支持筛选和排序
+- **商机详情页**：右侧卡片展示完整预测明细
+- **预测仪表盘** (/predictions)
+  - 加权管道预测：∑(金额×概率)
+  - 概率分布饼图
+  - 各阶段预测柱状图
+  - 高概率商机 TOP 5
+  - AI 预测洞察
+- **预测配置页面** (/opportunities/prediction-config)
+  - 可视化权重配置（滑块+输入框）
+  - 阶段基准概率配置
+  - 权重总和实时校验
+  - 配置预览公式
+  - 保存到本地存储
+
+#### 页面路径
+- 预测仪表盘：`/predictions`
+- 预测配置：`/opportunities/prediction-config`
+- 商机列表页自动显示 AI 预测列
+
+#### 相关文件
+- 预测引擎：`src/lib/opportunity-prediction-engine.ts`
+- 类型定义：`src/lib/opportunity-prediction-types.ts`
+- 预测组件：`src/components/crm/prediction-components.tsx`
+- 预测详情：`src/components/crm/prediction-details.tsx`
+- 仪表盘页面：`src/app/predictions/page.tsx`
+- 配置页面：`src/app/opportunities/prediction-config/page.tsx`
+- 数据库迁移：`supabase/migrations/20260419_opportunity_prediction.sql`
+
+### 21. 销售目标管理 (V4.5 NEW)
 - **目标管理页面** (/targets)
   - 统计概览卡片（活跃目标数、达标率、平均完成率、周期剩余天数）
   - 目标卡片列表（可视化进度条、状态标签、分配对象）

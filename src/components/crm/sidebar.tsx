@@ -24,6 +24,7 @@ import {
   Activity as ActivityIcon,
   CheckSquare,
   Sparkles,
+  AlertTriangle,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
@@ -163,6 +164,17 @@ const navigation: NavItemType[] = [
     icon: Target,
     gradient: 'from-red-500 to-pink-500',
     badge: 'NEW',
+  },
+  { 
+    name: '流失预警', 
+    href: '/churn-alerts', 
+    icon: AlertTriangle,
+    gradient: 'from-red-600 to-orange-500',
+    badge: 'AI',
+    subMenu: [
+      { name: '预警列表', href: '/churn-alerts' },
+      { name: '预警配置', href: '/churn-alerts/config' },
+    ],
   },
 ];
 

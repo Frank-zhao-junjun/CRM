@@ -384,7 +384,62 @@ import { RoleBadge, RoleBadgeGroup } from '@/components/crm/role-badge';
 - 配置页面：`src/app/opportunities/prediction-config/page.tsx`
 - 数据库迁移：`supabase/migrations/20260419_opportunity_prediction.sql`
 
-### 21. 销售目标管理 (V4.5 NEW)
+### 21. 流失预警模块 (Phase 1 - Week 4 NEW)
+
+**AI 智能化升级第三步**
+
+基于多维度算法自动评估客户流失风险，帮助销售团队识别高风险客户并及时干预。
+
+#### 风险评估维度
+| 维度 | 权重 | 说明 |
+|------|------|------|
+| 最近互动时间 | 25% | 超过30天无互动+20分，60天+40分，90天+60分 |
+| 订单频率 | 20% | 超过180天无订单+30分，365天+50分 |
+| 商机转化率 | 15% | 转化率低于10%+20分，5%+40分 |
+| 合同到期 | 20% | 30天内到期+30分，已过期+50分 |
+| 客户活跃度 | 20% | 90天无活动+20分，180天+40分 |
+
+#### 风险等级
+- **高风险 (≥70分)**：红色徽章，需要立即跟进
+- **中风险 (40-69分)**：黄色徽章，建议安排跟进
+- **低风险 (<40分)**：绿色徽章，保持正常维护
+
+#### 功能特性
+- **流失预警列表** (/churn-alerts)
+  - 预警列表页显示所有风险客户
+  - 按风险等级筛选（高/中/低）
+  - 搜索客户名称
+  - 统计面板（预警总数、高风险数、中风险数、未读数）
+  - 快速操作（查看详情、快速跟进、发送邮件、忽略预警）
+  - 分页支持
+  
+- **客户详情页风险展示**
+  - 流失风险评估卡片
+  - 显示综合风险分数和等级
+  - 风险因素明细（可展开查看）
+  - 重新评估按钮
+  
+- **流失预警配置** (/churn-alerts/config)
+  - 风险阈值配置（高/中风险分界线）
+  - 评估维度权重配置（滑块调节）
+  - 预警规则配置（自动预警开关）
+  - 评分规则说明
+
+#### 页面路径
+- 流失预警列表：`/churn-alerts`
+- 预警配置：`/churn-alerts/config`
+- 客户详情页自动显示流失风险评估
+
+#### 相关文件
+- 类型定义：`src/lib/churn-prediction-types.ts`
+- 风险引擎：`src/lib/churn-prediction-engine.ts`
+- 风险展示组件：`src/components/crm/churn-risk-display.tsx`
+- 预警列表页：`src/app/churn-alerts/page.tsx`
+- 配置页面：`src/app/churn-alerts/config/page.tsx`
+- API接口：`src/app/api/churn/`
+- 数据库迁移：`supabase/migrations/20260419_churn_prediction.sql`
+
+### 22. 销售目标管理 (V4.5 NEW)
 - **目标管理页面** (/targets)
   - 统计概览卡片（活跃目标数、达标率、平均完成率、周期剩余天数）
   - 目标卡片列表（可视化进度条、状态标签、分配对象）

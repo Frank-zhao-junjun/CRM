@@ -33,6 +33,9 @@ import {
   CustomerInvoicesCard, 
   CustomerTasksCard 
 } from '@/components/crm/customer-360';
+// 流失风险评估组件
+import { ChurnRiskDisplay } from '@/components/crm/churn-risk-display';
+import { ChurnRiskResult, ChurnRiskLevel } from '@/lib/churn-prediction-types';
 
 const statusLabels: Record<CustomerStatus, { label: string; className: string }> = {
   active: { label: '活跃', className: 'bg-green-500/10 text-green-500 border-green-500/20' },
@@ -50,6 +53,9 @@ export default function CustomerDetailPage() {
   const [allTags, setAllTags] = useState<TagType[]>([]);
   const [showTagSelector, setShowTagSelector] = useState(false);
   const [loadingTags, setLoadingTags] = useState(false);
+  // 流失风险状态
+  const [churnRisk, setChurnRisk] = useState<ChurnRiskResult | null>(null);
+  const [loadingChurnRisk, setLoadingChurnRisk] = useState(false);
 
   const customer = customers.find(c => c.id === params.id);
   const customerContacts = contacts.filter(c => c.customerId === params.id);
@@ -82,9 +88,33 @@ export default function CustomerDetailPage() {
     }
   }, []);
 
+  // 加载流失风险评估
+  const fetchChurnRisk = useCallback(async () => {
+    if (!customer?.id) return;
+    setLoadingChurnRisk(true);
+    try {
+      const res = await fetch('/api/churn/score', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ customerId: customer.id }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.result) {
+          setChurnRisk(data.result);
+        }
+      }
+    } catch (err) {
+      console.error('获取流失风险失败:', err);
+    } finally {
+      setLoadingChurnRisk(false);
+    }
+  }, [customer?.id]);
+
   useEffect(() => {
     fetchCustomerTags();
-  }, [fetchCustomerTags]);
+    fetchChurnRisk();
+  }, [fetchCustomerTags, fetchChurnRisk]);
 
   // 添加标签到客户
   const addTagToCustomer = async (tagId: string) => {
@@ -305,6 +335,32 @@ export default function CustomerDetailPage() {
                   <p className="text-sm whitespace-pre-wrap">{customer.notes}</p>
                 </div>
               </>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* 流失风险评估 */}
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-base">流失风险评估</CardTitle>
+            <Button variant="ghost" size="sm" onClick={fetchChurnRisk} disabled={loadingChurnRisk}>
+              {loadingChurnRisk ? '计算中...' : '重新评估'}
+            </Button>
+          </CardHeader>
+          <CardContent>
+            {loadingChurnRisk ? (
+              <div className="flex items-center justify-center py-8">
+                <div className="animate-spin w-6 h-6 border-2 border-primary border-t-transparent rounded-full" />
+              </div>
+            ) : churnRisk ? (
+              <ChurnRiskDisplay riskResult={churnRisk} showDetails />
+            ) : (
+              <div className="text-center py-4">
+                <p className="text-muted-foreground text-sm">暂无风险评估数据</p>
+                <Button variant="outline" size="sm" onClick={fetchChurnRisk} className="mt-2">
+                  立即评估
+                </Button>
+              </div>
             )}
           </CardContent>
         </Card>

@@ -71,7 +71,8 @@ interface CRMContextType {
 
 // API helper functions
 async function apiGet<T>(type: string, params?: Record<string, string>): Promise<T> {
-  const url = new URL('/api/crm', window.location.origin);
+  const baseUrl = typeof window !== 'undefined' ? window.location.origin : '';
+  const url = new URL('/api/crm', baseUrl || 'http://localhost:5000');
   url.searchParams.set('type', type);
   if (params) {
     Object.entries(params).forEach(([key, value]) => {
@@ -113,7 +114,8 @@ async function apiPut<T>(action: string, id: string, data: unknown): Promise<T> 
 }
 
 async function apiDelete(action: string, id: string): Promise<void> {
-  const url = new URL('/api/crm', window.location.origin);
+  const baseUrl = typeof window !== 'undefined' ? window.location.origin : '';
+  const url = new URL('/api/crm', baseUrl || 'http://localhost:5000');
   url.searchParams.set('action', action);
   url.searchParams.set('id', id);
   const response = await fetch(url.toString(), { method: 'DELETE' });

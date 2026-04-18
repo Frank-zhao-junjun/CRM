@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
-import { ArrowLeft, Trash2, DollarSign, Building2, User, Lightbulb, ArrowRightLeft, XCircle, Clock, Sparkles } from 'lucide-react';
+import { ArrowLeft, Trash2, DollarSign, Building2, User, Lightbulb, ArrowRightLeft, XCircle, Clock, Sparkles, Settings } from 'lucide-react';
 import Link from 'next/link';
 import { LEAD_STATUS_CONFIG, LEAD_SOURCE_CONFIG } from '@/lib/crm-types';
 import { cn } from '@/lib/utils';
@@ -18,19 +18,42 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import { useState } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { format } from 'date-fns';
 import { zhCN } from 'date-fns/locale';
 import { FollowUpTimeline } from '@/components/crm/follow-up-timeline';
+import { ScoreDetails, ScoreSummary } from '@/components/crm/score-details';
+import { ScoreBadge } from '@/components/crm/score-components';
+import { LeadScoringEngine } from '@/lib/lead-scoring-engine';
+import { LeadScoreResult } from '@/lib/lead-scoring-types';
+
+// 创建评分引擎实例
+const scoringEngine = new LeadScoringEngine();
 
 export default function LeadDetailPage() {
   const params = useParams();
   const router = useRouter();
-  const { leads, deleteLead, qualifyLead, disqualifyLead, refreshData } = useCRM();
+  const { leads, customers, contacts, deleteLead, qualifyLead, disqualifyLead, refreshData } = useCRM();
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [showDisqualifyDialog, setShowDisqualifyDialog] = useState(false);
+  const [scoreResult, setScoreResult] = useState<LeadScoreResult | null>(null);
 
   const lead = leads.find(l => l.id === params.id);
+
+  // 计算评分
+  useEffect(() => {
+    if (lead) {
+      const customer = customers.find(c => c.id === lead.customerId);
+      const contactList = contacts.filter(c => c.customerId === lead.customerId);
+      const result = scoringEngine.calculateScore(lead, {
+        customer,
+        contacts: contactList,
+        activities: [],
+        followUps: [],
+      });
+      setScoreResult(result);
+    }
+  }, [lead, customers, contacts]);
 
   if (!lead) {
     return (
@@ -77,7 +100,12 @@ export default function LeadDetailPage() {
             </Link>
           </Button>
           <div>
-            <h2 className="text-2xl font-bold">{lead.title}</h2>
+            <div className="flex items-center gap-3">
+              <h2 className="text-2xl font-bold">{lead.title}</h2>
+              {scoreResult && (
+                <ScoreBadge score={scoreResult.totalScore} size="md" />
+              )}
+            </div>
             <p className="text-muted-foreground">{lead.customerName}</p>
           </div>
         </div>
@@ -204,6 +232,26 @@ export default function LeadDetailPage() {
             )}
           </CardContent>
         </Card>
+
+        {/* AI 评分详情 */}
+        {scoreResult && (
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-base flex items-center gap-2">
+                <Sparkles className="h-4 w-4 text-yellow-500" />
+                AI 智能评分
+              </CardTitle>
+              <Link href="/leads/scoring-config">
+                <Button variant="ghost" size="icon" className="h-8 w-8">
+                  <Settings className="h-4 w-4" />
+                </Button>
+              </Link>
+            </CardHeader>
+            <CardContent>
+              <ScoreDetails scoreResult={scoreResult} />
+            </CardContent>
+          </Card>
+        )}
 
         {/* 状态流程 */}
         <Card>

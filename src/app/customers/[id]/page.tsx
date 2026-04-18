@@ -24,6 +24,15 @@ import { ActivityTimeline } from '@/components/crm/activity-timeline';
 import { zhCN } from 'date-fns/locale';
 import { SendEmailDialog } from '@/components/email/send-email-dialog';
 import type { Tag as TagType } from '@/storage/database/shared/schema';
+// 客户360视图组件
+import { 
+  CustomerDashboard,
+  CustomerQuotesCard, 
+  CustomerOrdersCard, 
+  CustomerContractsCard, 
+  CustomerInvoicesCard, 
+  CustomerTasksCard 
+} from '@/components/crm/customer-360';
 
 const statusLabels: Record<CustomerStatus, { label: string; className: string }> = {
   active: { label: '活跃', className: 'bg-green-500/10 text-green-500 border-green-500/20' },
@@ -373,6 +382,25 @@ export default function CustomerDetailPage() {
           )}
         </CardContent>
       </Card>
+
+      {/* 客户360总览仪表盘 */}
+      <CustomerDashboard 
+        customerId={customer.id}
+        customerName={customer.name}
+      />
+
+      {/* 客户360业务数据 - 报价单、订单、合同 */}
+      <div className="grid gap-6 lg:grid-cols-3">
+        <CustomerQuotesCard customerId={customer.id} />
+        <CustomerOrdersCard customerId={customer.id} />
+        <CustomerContractsCard customerId={customer.id} />
+      </div>
+
+      {/* 客户360业务数据 - 发票、任务 */}
+      <div className="grid gap-6 lg:grid-cols-2">
+        <CustomerInvoicesCard customerId={customer.id} />
+        <CustomerTasksCard customerId={customer.id} />
+      </div>
 
       {/* 元信息 */}
       <Card>

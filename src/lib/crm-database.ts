@@ -669,6 +669,18 @@ export async function getQuotesByOpportunity(opportunityId: string): Promise<Quo
   return data as Quote[];
 }
 
+// 按客户ID获取报价单（用于客户360视图）
+export async function getQuotesByCustomer(customerId: string): Promise<Quote[]> {
+  const client = getSupabaseClient();
+  const { data, error } = await client
+    .from('quotes')
+    .select('*')
+    .eq('customer_id', customerId)
+    .order('created_at', { ascending: false });
+  if (error) throw new Error(`获取客户报价单失败: ${error.message}`);
+  return data as Quote[];
+}
+
 export async function createQuote(quote: InsertQuote, items?: Omit<InsertQuoteItem, 'quote_id'>[]): Promise<Quote> {
   const client = getSupabaseClient();
   const { data, error } = await client
@@ -772,6 +784,18 @@ export async function getOrderById(id: string): Promise<Order | null> {
     .order('sort_order', { ascending: true });
 
   return { ...data, items: (items || []) as OrderItem[] } as Order & { items: OrderItem[] };
+}
+
+// 按客户ID获取订单（用于客户360视图）
+export async function getOrdersByCustomer(customerId: string): Promise<Order[]> {
+  const client = getSupabaseClient();
+  const { data, error } = await client
+    .from('orders')
+    .select('*')
+    .eq('customer_id', customerId)
+    .order('created_at', { ascending: false });
+  if (error) throw new Error(`获取客户订单失败: ${error.message}`);
+  return data as Order[];
 }
 
 export async function createOrder(order: Omit<InsertOrder, 'order_number'>, items?: Omit<InsertOrderItem, 'order_id'>[]): Promise<Order> {
@@ -1441,6 +1465,23 @@ export async function getTaskById(id: string): Promise<any | null> {
   return data ? rowToTask(data as TaskRow) : null;
 }
 
+// 按客户ID获取任务（用于客户360视图）
+export async function getTasksByCustomer(customerId: string): Promise<any[]> {
+  const { data, error } = await client
+    .from('tasks')
+    .select('*')
+    .eq('related_id', customerId)
+    .eq('related_type', 'customer')
+    .order('due_date', { ascending: true });
+
+  if (error) {
+    console.error('获取客户任务失败:', error);
+    return [];
+  }
+
+  return (data as TaskRow[])?.map(rowToTask) || [];
+}
+
 export async function createTask(task: InsertTask): Promise<any> {
   const now = new Date().toISOString();
   const { data, error } = await client
@@ -1555,6 +1596,18 @@ export async function getInvoiceById(id: string): Promise<Invoice | null> {
     .maybeSingle();
   if (error) throw new Error(`获取发票失败: ${error.message}`);
   return data as Invoice | null;
+}
+
+// 按客户ID获取发票（用于客户360视图）
+export async function getInvoicesByCustomer(customerId: string): Promise<Invoice[]> {
+  const client = getSupabaseClient();
+  const { data, error } = await client
+    .from('invoices')
+    .select('*')
+    .eq('customer_id', customerId)
+    .order('created_at', { ascending: false });
+  if (error) throw new Error(`获取客户发票失败: ${error.message}`);
+  return data as Invoice[];
 }
 
 export async function createInvoice(invoice: InsertInvoice): Promise<Invoice> {

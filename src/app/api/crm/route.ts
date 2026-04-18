@@ -68,8 +68,57 @@ export async function GET(request: NextRequest) {
     
     // Tasks (任务管理 V4.1)
     if (type === 'tasks') {
+      const customerId = searchParams.get('customerId');
+      if (customerId) {
+        const tasks = await db.getTasksByCustomer(customerId);
+        return NextResponse.json(tasks);
+      }
       const tasks = await db.getAllTasks();
       return NextResponse.json(tasks);
+    }
+    
+    // 客户360视图 - 报价单
+    if (type === 'quotes') {
+      const customerId = searchParams.get('customerId');
+      if (customerId) {
+        const quotes = await db.getQuotesByCustomer(customerId);
+        return NextResponse.json(quotes);
+      }
+      const quotes = await db.getAllQuotes();
+      return NextResponse.json(quotes);
+    }
+    
+    // 客户360视图 - 订单
+    if (type === 'orders') {
+      const customerId = searchParams.get('customerId');
+      if (customerId) {
+        const orders = await db.getOrdersByCustomer(customerId);
+        return NextResponse.json(orders);
+      }
+      const orders = await db.getAllOrders();
+      return NextResponse.json(orders);
+    }
+    
+    // 客户360视图 - 合同
+    if (type === 'contracts') {
+      const customerId = searchParams.get('customerId');
+      if (customerId) {
+        const contracts = await db.getContractsByCustomer(customerId);
+        return NextResponse.json(contracts);
+      }
+      const contracts = await db.getAllContracts();
+      return NextResponse.json(contracts);
+    }
+    
+    // 客户360视图 - 发票
+    if (type === 'invoices') {
+      const customerId = searchParams.get('customerId');
+      if (customerId) {
+        const invoices = await db.getInvoicesByCustomer(customerId);
+        return NextResponse.json(invoices);
+      }
+      const invoices = await db.getAllInvoices();
+      return NextResponse.json(invoices);
     }
     
     if (type === 'contacts') {

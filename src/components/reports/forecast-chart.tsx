@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from 'react';
 import { 
-  LineChart, 
   Line, 
   XAxis, 
   YAxis, 
@@ -13,6 +12,8 @@ import {
   Area,
   ComposedChart
 } from 'recharts';
+import type { TooltipProps } from 'recharts';
+import type { NameType, ValueType } from 'recharts/types/component/DefaultTooltipContent';
 
 // API 数据类型
 interface ForecastItem {
@@ -47,16 +48,42 @@ interface ForecastChartProps {
   data: ForecastPoint[];
 }
 
-const CustomTooltip = ({ active, payload, label }: any) => {
+type ForecastTooltipProps = TooltipProps<ValueType, NameType> & {
+  label?: string;
+  payload?: Array<{
+    color?: string;
+    name?: NameType;
+    value?: ValueType;
+  }>;
+};
+
+function formatTooltipValue(value: ValueType | undefined): string {
+  if (typeof value === 'number') {
+    return value.toLocaleString();
+  }
+
+  if (typeof value === 'string') {
+    const numericValue = Number(value);
+    return Number.isFinite(numericValue) ? numericValue.toLocaleString() : value;
+  }
+
+  if (Array.isArray(value) && value.length > 0) {
+    return formatTooltipValue(value[0]);
+  }
+
+  return '0';
+}
+
+const CustomTooltip = ({ active, payload, label }: ForecastTooltipProps) => {
   if (active && payload && payload.length) {
     return (
       <div className="bg-white dark:bg-gray-800 p-3 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700">
         <p className="font-semibold text-gray-900 dark:text-white mb-2">{label}</p>
         <div className="space-y-1 text-sm">
-          {payload.map((entry: any, index: number) => (
+          {payload.map((entry, index) => (
             <p key={index} style={{ color: entry.color }} className="flex justify-between gap-4">
-              <span>{entry.name}:</span>
-              <span className="font-medium">¥{entry.value.toLocaleString()}</span>
+              <span>{String(entry.name ?? '')}:</span>
+              <span className="font-medium">¥{formatTooltipValue(entry.value)}</span>
             </p>
           ))}
         </div>

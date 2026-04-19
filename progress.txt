@@ -59,3 +59,27 @@
 - [ ] 部署到 vfdm2xmfj2.coze.site
 - [ ] 更新 README.md
 - [ ] 飞书通知主人
+
+## 2026-04-18
+
+### QA-R1 全量 CRM Ralph 风格 QA
+- 状态: ❌ 阻断
+- 方法: Ralph 风格 US 重组 + 风险驱动 QA + 静态质量门优先
+- 证据:
+  - `pnpm ts-check` 失败
+  - `pnpm eslint .` 结果为 312 problems (71 errors, 241 warnings)
+  - `pnpm test` 缺少 script
+  - `pnpm next build` 失败
+- 已确认阻断:
+  - `src/app/emails/page.tsx` JSX 解析错误
+  - `src/app/opportunities/page.tsx` JSX 文本解析错误
+  - `src/app/invoices/[id]/edit/page.tsx` 类型导入语法错误
+  - `src/app/calendar/page.tsx` 依赖不存在的 `@/hooks/use-toast`
+  - `src/storage/database/supabase-client.ts` 将 `child_process` 带入前端依赖图
+  - `src/app/contracts/[id]/edit/page.tsx` / `src/app/contracts/new/page.tsx` 使用不存在的 `FileBarGraph`
+- 结论: 当前主干不满足发布或整体验收条件
+- 报告: `docs/qa/ralph-qa-round-20260418.md`
+- 下一步:
+  - 先修复 build blocker
+  - 再补最小化自动化回归门
+  - 然后重跑质量门并执行高风险链路冒烟

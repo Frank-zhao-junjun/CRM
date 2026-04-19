@@ -11,6 +11,8 @@ import {
   ResponsiveContainer,
   Legend
 } from 'recharts';
+import type { TooltipProps } from 'recharts';
+import type { NameType, ValueType } from 'recharts/types/component/DefaultTooltipContent';
 
 interface TeamMember {
   memberId: string;
@@ -44,12 +46,18 @@ interface TeamRankingChartProps {
   sortBy: 'wonAmount' | 'wonCount' | 'conversionRate' | 'newOpps';
 }
 
+type TeamRankingTooltipProps = TooltipProps<ValueType, NameType> & {
+  payload?: Array<{
+    payload: RankingData;
+  }>;
+};
+
 const CHART_COLORS = {
   wonAmount: '#10b981',
   pipelineAmount: '#3b82f6',
 };
 
-const CustomTooltip = ({ active, payload, label }: any) => {
+const CustomTooltip = ({ active, payload }: TeamRankingTooltipProps) => {
   if (active && payload && payload.length) {
     const data = payload[0]?.payload;
     return (

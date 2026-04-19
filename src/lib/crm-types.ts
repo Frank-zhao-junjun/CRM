@@ -101,7 +101,7 @@ export interface SalesOpportunity {
 export interface Activity {
   id: string;
   type: 'created' | 'updated' | 'deleted' | 'stage_change' | 'closed_won' | 'closed_lost' | 'qualified' | 'disqualified' | 'follow_up';
-  entityType: 'customer' | 'contact' | 'lead' | 'opportunity';
+  entityType: 'customer' | 'contact' | 'lead' | 'opportunity' | 'product' | 'payment_plan' | 'task';
   entityId: string;
   entityName: string;
   description: string;
@@ -529,7 +529,7 @@ export interface Task {
   status: TaskStatus;
   assigneeId?: string;
   assigneeName?: string;
-  relatedType?: 'customer' | 'lead' | 'opportunity' | 'contract' | 'order';
+  relatedType?: 'customer' | 'contact' | 'lead' | 'opportunity' | 'contract' | 'order';
   relatedId?: string;
   relatedName?: string;
   dueDate: string;
@@ -560,4 +560,57 @@ export const TASK_STATUS_CONFIG: Record<TaskStatus, { label: string; className: 
   in_progress: { label: '进行中', className: 'bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20', color: 'text-blue-600' },
   completed: { label: '已完成', className: 'bg-green-500/10 text-green-600 dark:text-green-400 border-green-500/20', color: 'text-green-600' },
   cancelled: { label: '已取消', className: 'bg-stone-500/10 text-stone-600 dark:text-stone-400 border-stone-500/20', color: 'text-stone-600' },
+};
+
+// ============ 回款管理类型 (V3.3 新增) ============
+export type PaymentStatus = 'pending' | 'overdue' | 'partial' | 'paid' | 'cancelled';
+export type PaymentMethod = 'bank_transfer' | 'cash' | 'credit_card' | 'other';
+
+export interface PaymentPlan {
+  id: string;
+  planNumber: string;
+  contractId?: string;
+  contractNumber?: string;
+  customerId?: string;
+  customerName?: string;
+  opportunityId?: string;
+  opportunityName?: string;
+  title: string;
+  totalAmount: number;
+  paidAmount: number;
+  pendingAmount: number;
+  dueDate: string;
+  status: PaymentStatus;
+  paymentMethod?: PaymentMethod;
+  installments?: Array<Record<string, unknown>>;
+  overdueDays: number;
+  isOverdue: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface PaymentStats {
+  totalReceivable: number;
+  totalReceived: number;
+  totalOverdue: number;
+  overdueCount: number;
+  pendingCount: number;
+  paidCount: number;
+  collectionRate: number;
+  overdueRate: number;
+}
+
+export const PAYMENT_STATUS_CONFIG: Record<PaymentStatus, { label: string; className: string; bgColor: string }> = {
+  pending: { label: '待收款', className: 'bg-gray-500/10 text-gray-600 dark:text-gray-400 border-gray-500/20', bgColor: 'bg-gray-400' },
+  overdue: { label: '已逾期', className: 'bg-red-500/10 text-red-600 dark:text-red-400 border-red-500/20', bgColor: 'bg-red-500' },
+  partial: { label: '部分回款', className: 'bg-yellow-500/10 text-yellow-700 dark:text-yellow-400 border-yellow-500/20', bgColor: 'bg-yellow-500' },
+  paid: { label: '已结清', className: 'bg-green-500/10 text-green-600 dark:text-green-400 border-green-500/20', bgColor: 'bg-green-500' },
+  cancelled: { label: '已取消', className: 'bg-stone-500/10 text-stone-600 dark:text-stone-400 border-stone-500/20', bgColor: 'bg-stone-400' },
+};
+
+export const PAYMENT_METHOD_CONFIG: Record<PaymentMethod, { label: string }> = {
+  bank_transfer: { label: '银行转账' },
+  cash: { label: '现金' },
+  credit_card: { label: '信用卡' },
+  other: { label: '其他' },
 };

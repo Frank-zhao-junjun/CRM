@@ -12,9 +12,8 @@ import {
   Cell,
   LabelList
 } from 'recharts';
-
-// 销售漏斗阶段配置（不含终态）
-const FUNNEL_STAGES = ['qualified', 'discovery', 'proposal', 'negotiation', 'contract'] as const;
+import type { TooltipProps } from 'recharts';
+import type { NameType, ValueType } from 'recharts/types/component/DefaultTooltipContent';
 
 // 阶段颜色配置
 const STAGE_COLORS: Record<string, string> = {
@@ -39,6 +38,12 @@ interface FunnelChartProps {
   viewMode: 'count' | 'amount';
 }
 
+type FunnelTooltipProps = TooltipProps<ValueType, NameType> & {
+  payload?: Array<{
+    payload: FunnelDataItem;
+  }>;
+};
+
 const STAGE_LABELS: Record<string, string> = {
   qualified: '已Qualify',
   discovery: '需求调研',
@@ -47,7 +52,7 @@ const STAGE_LABELS: Record<string, string> = {
   contract: '合同签署',
 };
 
-const CustomTooltip = ({ active, payload, label }: any) => {
+const CustomTooltip = ({ active, payload }: FunnelTooltipProps) => {
   if (active && payload && payload.length) {
     const data = payload[0].payload;
     return (

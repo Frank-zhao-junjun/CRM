@@ -230,3 +230,48 @@ export interface ScoredLead {
   createdAt: string;
   updatedAt: string;
 }
+
+export function getScoreLevel(score: number): ScoreLevel {
+  if (score >= 70) return 'hot';
+  if (score >= 40) return 'warm';
+  return 'cold';
+}
+
+export function getScoreColorClass(score: number): string {
+  return SCORE_LEVEL_CONFIG[getScoreLevel(score)].color;
+}
+
+export function getScoreBadgeClass(score: number): string {
+  const config = SCORE_LEVEL_CONFIG[getScoreLevel(score)];
+  return `${config.bgClass} ${config.color} border ${config.borderClass}`;
+}
+
+export function getScoreDistribution(leads: ScoredLead[]): {
+  hot: number;
+  warm: number;
+  cold: number;
+  average: number;
+  total: number;
+} {
+  const stats = leads.reduce(
+    (accumulator, lead) => {
+      const score = lead.score ?? 0;
+      const level = getScoreLevel(score);
+
+      accumulator[level] += 1;
+      accumulator.total += 1;
+      accumulator.scoreSum += score;
+
+      return accumulator;
+    },
+    { hot: 0, warm: 0, cold: 0, total: 0, scoreSum: 0 }
+  );
+
+  return {
+    hot: stats.hot,
+    warm: stats.warm,
+    cold: stats.cold,
+    total: stats.total,
+    average: stats.total > 0 ? Math.round((stats.scoreSum / stats.total) * 10) / 10 : 0,
+  };
+}

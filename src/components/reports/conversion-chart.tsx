@@ -10,9 +10,10 @@ import {
   Tooltip, 
   ResponsiveContainer,
   Cell,
-  ReferenceLine,
-  Legend
+  ReferenceLine
 } from 'recharts';
+import type { TooltipProps } from 'recharts';
+import type { NameType, ValueType } from 'recharts/types/component/DefaultTooltipContent';
 
 interface ConversionDataItem {
   fromStage: string;
@@ -28,6 +29,12 @@ interface ConversionChartProps {
   data: ConversionDataItem[];
 }
 
+type ConversionTooltipProps = TooltipProps<ValueType, NameType> & {
+  payload?: Array<{
+    payload: ConversionDataItem;
+  }>;
+};
+
 const STAGE_LABELS: Record<string, string> = {
   lead: '线索',
   qualified: '已Qualify',
@@ -38,7 +45,7 @@ const STAGE_LABELS: Record<string, string> = {
   closed_won: '成交',
 };
 
-const CustomTooltip = ({ active, payload, label }: any) => {
+const CustomTooltip = ({ active, payload }: ConversionTooltipProps) => {
   if (active && payload && payload.length) {
     const data = payload[0].payload;
     return (

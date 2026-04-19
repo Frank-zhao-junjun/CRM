@@ -75,6 +75,7 @@ interface ApiResponse<T> {
   success: boolean;
   data: T;
   timestamp: string;
+  error?: string;
 }
 
 // 时间范围类型

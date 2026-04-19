@@ -22,7 +22,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { ArrowLeft, Plus, X, FileBarGraph, Building2, Briefcase, FileText, AlertCircle } from 'lucide-react';
+import { ArrowLeft, Plus, X, FileBarChart, Building2, Briefcase, FileText, AlertCircle } from 'lucide-react';
 import Link from 'next/link';
 import { type Contract, type ContractStatus, type ContractMilestone } from '@/lib/crm-types';
 
@@ -247,7 +247,7 @@ export default function EditContractPage() {
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <FileBarGraph className="h-5 w-5" /> 基本信息
+                <FileBarChart className="h-5 w-5" /> 基本信息
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">

@@ -32,7 +32,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { ArrowLeft, FileBarGraph, Building2, Briefcase, FileText, Edit, Trash2, Calendar, CheckCircle, XCircle, Play, Ban, AlertTriangle } from 'lucide-react';
+import { ArrowLeft, Building2, Briefcase, FileText, Edit, Trash2, Calendar, CheckCircle, XCircle, Play, Ban, AlertTriangle } from 'lucide-react';
 import Link from 'next/link';
 import { CONTRACT_STATUS_CONFIG, type Contract, type ContractStatus, type ContractMilestone } from '@/lib/crm-types';
 import { format } from 'date-fns';

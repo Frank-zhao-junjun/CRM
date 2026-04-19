@@ -5,9 +5,16 @@ import { createClient } from '@supabase/supabase-js';
 import { ChurnPredictionEngine } from '@/lib/churn-prediction-engine';
 import { CustomerChurnContext, DEFAULT_CHURN_CONFIG } from '@/lib/churn-prediction-types';
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
-const supabase = createClient(supabaseUrl, supabaseServiceKey);
+function getSupabase() {
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+  if (!supabaseUrl || !supabaseServiceKey) {
+    return null;
+  }
+
+  return createClient(supabaseUrl, supabaseServiceKey);
+}
 
 // 计算客户流失风险
 export async function POST(request: NextRequest) {
@@ -21,8 +28,10 @@ export async function POST(request: NextRequest) {
 
     // 获取客户数据
     let customerContext: CustomerChurnContext | null = null;
+    const supabase = getSupabase();
 
-    try {
+    if (supabase) {
+      try {
       // 获取客户信息
       const { data: customer } = await supabase
         .from('customers')
@@ -100,8 +109,9 @@ export async function POST(request: NextRequest) {
           })),
         };
       }
-    } catch (dbError) {
-      console.log('数据库查询失败，使用模拟数据');
+      } catch (dbError) {
+        console.log('数据库查询失败，使用模拟数据');
+      }
     }
 
     // 使用传入的context或构造模拟数据
@@ -139,18 +149,20 @@ export async function POST(request: NextRequest) {
     const result = engine.calculateRisk(customerId, customerContext);
 
     // 保存风险结果到数据库（可选）
-    try {
-      await supabase.from('customers').upsert({
-        id: customerId,
-        churn_risk_score: result.riskScore,
-        churn_risk_level: result.riskLevel,
-        churn_risk_details: result.dimensions,
-        churn_risk_updated_at: new Date().toISOString(),
-      }, {
-        onConflict: 'id',
-      });
-    } catch (saveError) {
-      console.log('保存风险结果失败');
+    if (supabase) {
+      try {
+        await supabase.from('customers').upsert({
+          id: customerId,
+          churn_risk_score: result.riskScore,
+          churn_risk_level: result.riskLevel,
+          churn_risk_details: result.dimensions,
+          churn_risk_updated_at: new Date().toISOString(),
+        }, {
+          onConflict: 'id',
+        });
+      } catch (saveError) {
+        console.log('保存风险结果失败');
+      }
     }
 
     return NextResponse.json({
@@ -184,19 +196,22 @@ export async function GET(request: NextRequest) {
   try {
     const searchParams = request.nextUrl.searchParams;
     const limit = parseInt(searchParams.get('limit') || '10');
+    const supabase = getSupabase();
 
     // 获取需要评估的客户
     let customers: any[] = [];
 
-    try {
-      const { data } = await supabase
-        .from('customers')
-        .select('id, name, status, created_at, updated_at')
-        .limit(limit);
+    if (supabase) {
+      try {
+        const { data } = await supabase
+          .from('customers')
+          .select('id, name, status, created_at, updated_at')
+          .limit(limit);
 
-      customers = data || [];
-    } catch (dbError) {
-      console.log('数据库查询失败');
+        customers = data || [];
+      } catch (dbError) {
+        console.log('数据库查询失败');
+      }
     }
 
     if (customers.length === 0) {

@@ -19,7 +19,9 @@ export async function GET(request: NextRequest) {
 
     if (error) throw new Error(`按标签筛选客户失败: ${error.message}`);
 
-    const customers = data?.map((item: { customer: Customer }) => item.customer).filter(Boolean) || [];
+    const customers = data
+      ?.map((item: { customer: Customer[] | Customer | null }) => Array.isArray(item.customer) ? item.customer[0] : item.customer)
+      .filter(Boolean) || [];
     return NextResponse.json(customers);
   } catch (error) {
     console.error('按标签筛选客户失败:', error);

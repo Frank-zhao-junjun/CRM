@@ -3,6 +3,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 import * as db from '@/lib/crm-database';
 
+type FollowUpCompatDb = typeof db & {
+  completeFollowUp?: (id: string, completedAt: string) => Promise<unknown>;
+  updateFollowUp?: (id: string, updates: Record<string, unknown>) => Promise<unknown>;
+  deleteFollowUp?: (id: string) => Promise<void>;
+};
+
+const followUpDb = db as FollowUpCompatDb;
+
 export async function GET(request: NextRequest) {
   try {
     const searchParams = request.nextUrl.searchParams;
@@ -48,16 +56,13 @@ export async function POST(request: NextRequest) {
           entity_type: data.entityType,
           entity_id: data.entityId,
           entity_name: data.entityName || null,
-          title: data.title,
-          content: data.content || null,
-          follow_up_type: data.followUpType || 'call',
-          due_date: data.dueDate ? new Date(data.dueDate).toISOString() : null,
-          completed: false,
+          type: data.followUpType || 'note',
+          method: data.method || data.followUpType || 'note',
+          content: data.content || data.title || '',
+          scheduled_at: data.dueDate ? new Date(data.dueDate) : null,
           completed_at: null,
-          assignee_id: data.assigneeId || null,
-          assignee_name: data.assigneeName || null,
-          reminder: data.reminder || false,
-          notes: data.notes || null,
+          next_follow_up_at: data.nextFollowUpAt ? new Date(data.nextFollowUpAt) : null,
+          created_by: data.assigneeId || 'system',
         });
         return NextResponse.json(followUp);
       }
@@ -69,8 +74,8 @@ export async function POST(request: NextRequest) {
         // 更新为已完成
         const now = new Date().toISOString();
         // 注意: 如果数据库没有 completeFollowUp 函数，需要使用 updateFollowUp
-        const followUp = await (db as any).completeFollowUp?.(id, now) 
-          || await (db as any).updateFollowUp?.(id, { 
+        const followUp = await followUpDb.completeFollowUp?.(id, now) 
+          || await followUpDb.updateFollowUp?.(id, { 
               completed: true, 
               completed_at: now 
             });
@@ -81,14 +86,14 @@ export async function POST(request: NextRequest) {
         if (!id) {
           return NextResponse.json({ error: '缺少跟进记录ID' }, { status: 400 });
         }
-        const updates: Record<string, any> = {};
-        if (data.title !== undefined) updates.title = data.title;
-        if (data.content !== undefined) updates.content = data.content;
-        if (data.dueDate !== undefined) updates.due_date = data.dueDate ? new Date(data.dueDate).toISOString() : null;
-        if (data.followUpType !== undefined) updates.follow_up_type = data.followUpType;
-        if (data.notes !== undefined) updates.notes = data.notes;
+        const updates: Record<string, unknown> = {};
+        if (data.content !== undefined || data.title !== undefined) updates.content = data.content || data.title;
+        if (data.dueDate !== undefined) updates.scheduled_at = data.dueDate ? new Date(data.dueDate) : null;
+        if (data.followUpType !== undefined) updates.type = data.followUpType;
+        if (data.method !== undefined) updates.method = data.method;
+        if (data.nextFollowUpAt !== undefined) updates.next_follow_up_at = data.nextFollowUpAt ? new Date(data.nextFollowUpAt) : null;
         
-        const followUp = await (db as any).updateFollowUp?.(id, updates);
+        const followUp = await followUpDb.updateFollowUp?.(id, updates);
         return NextResponse.json(followUp);
       }
 
@@ -96,7 +101,7 @@ export async function POST(request: NextRequest) {
         if (!id) {
           return NextResponse.json({ error: '缺少跟进记录ID' }, { status: 400 });
         }
-        await (db as any).deleteFollowUp?.(id);
+        await followUpDb.deleteFollowUp?.(id);
         return NextResponse.json({ success: true });
       }
 

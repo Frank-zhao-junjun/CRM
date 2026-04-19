@@ -91,18 +91,16 @@ export async function POST(request: NextRequest) {
         }
 
         const task = await db.createTask({
-          id: `task_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
           title: validation.data.title,
-          description: validation.data.description || null,
-          entity_type: validation.data.entityType || null,
-          entity_id: validation.data.entityId || null,
-          entity_name: validation.data.entityName || null,
+          description: validation.data.description || undefined,
+          type: 'follow_up',
           priority: validation.data.priority || 'medium',
           status: 'pending',
-          due_date: validation.data.dueDate || null,
-          source: 'manual',
-          workflow_id: null,
-          assigned_to: validation.data.assignedTo || null,  // 移除硬编码
+          relatedType: validation.data.entityType,
+          relatedId: validation.data.entityId || undefined,
+          relatedName: validation.data.entityName || undefined,
+          dueDate: validation.data.dueDate || new Date().toISOString(),
+          assigneeId: validation.data.assignedTo || undefined,
         });
 
         // Record activity
@@ -129,9 +127,9 @@ export async function POST(request: NextRequest) {
         await db.createActivity({
           id: `act_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
           type: 'updated',
-          entity_type: (task.entity_type as 'customer' | 'contact' | 'lead' | 'opportunity') || 'customer',
-          entity_id: task.entity_id || task.id,
-          entity_name: task.entity_name || task.title,
+          entity_type: (task.relatedType as 'customer' | 'contact' | 'lead' | 'opportunity') || 'customer',
+          entity_id: task.relatedId || task.id,
+          entity_name: task.relatedName || task.title,
           description: `完成任务: ${task.title}`,
           timestamp: new Date(),
         });
@@ -165,18 +163,13 @@ export async function PUT(request: NextRequest) {
     const updates: Record<string, unknown> = {};
     if (data.title !== undefined) updates.title = data.title;
     if (data.description !== undefined) updates.description = data.description;
-    if (data.entityType !== undefined) updates.entity_type = data.entityType;
-    if (data.entityId !== undefined) updates.entity_id = data.entityId;
-    if (data.entityName !== undefined) updates.entity_name = data.entityName;
+    if (data.entityType !== undefined) updates.relatedType = data.entityType;
+    if (data.entityId !== undefined) updates.relatedId = data.entityId;
+    if (data.entityName !== undefined) updates.relatedName = data.entityName;
     if (data.priority !== undefined) updates.priority = data.priority;
-    if (data.status !== undefined) {
-      updates.status = data.status;
-      if (data.status === 'completed') {
-        updates.completed_at = new Date().toISOString();
-      }
-    }
-    if (data.dueDate !== undefined) updates.due_date = data.dueDate;
-    if (data.assignedTo !== undefined) updates.assigned_to = data.assignedTo;
+    if (data.status !== undefined) updates.status = data.status;
+    if (data.dueDate !== undefined) updates.dueDate = data.dueDate;
+    if (data.assignedTo !== undefined) updates.assigneeId = data.assignedTo || undefined;
 
     const task = await db.updateTask(validation.data.id, updates);
     return NextResponse.json(task);

@@ -19,7 +19,9 @@ export async function GET(request: NextRequest) {
 
     if (error) throw new Error(`获取客户标签失败: ${error.message}`);
 
-    const tags = data?.map((item: { tag: Tag }) => item.tag).filter(Boolean) || [];
+    const tags = data
+      ?.map((item: { tag: Tag[] | Tag | null }) => Array.isArray(item.tag) ? item.tag[0] : item.tag)
+      .filter(Boolean) || [];
     return NextResponse.json(tags as Tag[]);
   } catch (error) {
     console.error('获取客户标签失败:', error);

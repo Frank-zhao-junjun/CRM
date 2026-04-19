@@ -7,7 +7,7 @@ import * as db from '@/lib/crm-database';
 const createLeadSchema = z.object({
   title: z.string().min(1, '线索标题不能为空').max(255),
   source: z.enum(['referral', 'website', 'cold_call', 'event', 'advertisement', 'other'], {
-    errorMap: () => ({ message: '来源必须是: referral, website, cold_call, event, advertisement, other' }),
+    message: '来源必须是: referral, website, cold_call, event, advertisement, other',
   }),
   customerId: z.string().min(1, '客户ID不能为空').optional(),
   customer_id: z.string().min(1, '客户ID不能为空').optional(),
@@ -88,12 +88,17 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       );
     }
+
+    const customerId = validation.data.customerId ?? validation.data.customer_id;
+    if (!customerId) {
+      return NextResponse.json({ error: '客户ID不能为空' }, { status: 400 });
+    }
     
     const lead = await db.createLead({
       id: `lead_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
       title: validation.data.title,
       source: validation.data.source,
-      customer_id: validation.data.customerId || validation.data.customer_id,
+      customer_id: customerId,
       customer_name: validation.data.customerName || validation.data.customer_name || '',
       contact_id: validation.data.contactId || validation.data.contact_id,
       contact_name: validation.data.contactName || validation.data.contact_name,

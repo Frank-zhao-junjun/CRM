@@ -7,8 +7,14 @@ import { NextRequest, NextResponse } from 'next/server';
 import * as XLSX from 'xlsx';
 import * as db from '@/lib/crm-database';
 
+type EntityColumnConfig = {
+  headers: string[];
+  keys: string[];
+  labels: Record<string, Record<string, string>>;
+};
+
 // 字段配置
-const ENTITY_COLUMNS: Record<string, { headers: string[]; keys: string[]; labels: Record<string, string> }> = {
+const ENTITY_COLUMNS: Record<string, EntityColumnConfig> = {
   customers: {
     headers: ['ID', '姓名', '邮箱', '电话', '公司', '状态', '行业', '网站', '地址', '备注', '创建时间', '更新时间'],
     keys: ['id', 'name', 'email', 'phone', 'company', 'status', 'industry', 'website', 'address', 'notes', 'created_at', 'updated_at'],
@@ -134,7 +140,7 @@ async function getEntityData(entityType: string): Promise<ExportRecord[]> {
 }
 
 // 生成CSV
-function generateCSV(data: ExportRecord[], config: typeof ENTITY_COLUMNS[string]): string {
+function generateCSV(data: ExportRecord[], config: EntityColumnConfig): string {
   const rows: string[][] = [config.headers];
   
   for (const record of data) {
@@ -149,7 +155,7 @@ function generateCSV(data: ExportRecord[], config: typeof ENTITY_COLUMNS[string]
 }
 
 // 生成Excel
-function generateExcel(data: ExportRecord[], config: typeof ENTITY_COLUMNS[string]): Uint8Array {
+function generateExcel(data: ExportRecord[], config: EntityColumnConfig): Uint8Array {
   const rows: (string | number | boolean | null)[][] = [config.headers];
   
   for (const record of data) {
@@ -216,7 +222,9 @@ export async function GET(request: NextRequest) {
       });
     } else {
       const excel = generateExcel(data, config);
-      return new Response(excel, {
+      const body = Uint8Array.from(excel);
+
+      return new Response(body, {
         status: 200,
         headers: {
           'Content-Type': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',

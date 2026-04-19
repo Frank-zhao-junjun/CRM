@@ -59,7 +59,7 @@ export async function POST(request: NextRequest) {
         // 处理日期字段
         const processDate = (dateStr: string | undefined) => {
           if (!dateStr) return null;
-          return new Date(dateStr).toISOString();
+          return new Date(dateStr);
         };
         
         const contract = await db.createContract(
@@ -95,8 +95,8 @@ export async function POST(request: NextRequest) {
 
       case 'createFromQuote': {
         const contract = await db.createContractFromQuote(data.quoteId, {
-          effective_date: data.effectiveDate ? new Date(data.effectiveDate).toISOString() : null,
-          expiration_date: data.expirationDate ? new Date(data.expirationDate).toISOString() : null,
+          effective_date: data.effectiveDate ? new Date(data.effectiveDate) : null,
+          expiration_date: data.expirationDate ? new Date(data.expirationDate) : null,
           terms: data.terms || null,
           custom_terms: data.customTerms || null,
           notes: data.notes || null,
@@ -107,7 +107,7 @@ export async function POST(request: NextRequest) {
       case 'update': {
         const processDate = (dateStr: string | undefined) => {
           if (!dateStr) return null;
-          return new Date(dateStr).toISOString();
+          return new Date(dateStr);
         };
         
         const contract = await db.updateContract(bodyId || data?.id, {

@@ -39,13 +39,13 @@ export async function POST(request: NextRequest) {
       case 'create': {
         const contact = await db.createContact({
           id: data.id || `contact_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
-          customer_id: data.customerId || null,
-          name: data.name,
-          title: data.title || null,
+          customer_id: data.customerId,
+          first_name: data.firstName || '',
+          last_name: data.lastName || '',
+          position: data.position || null,
           phone: data.phone || null,
           email: data.email || null,
           is_primary: data.isPrimary || false,
-          notes: data.notes || null,
         });
         return NextResponse.json(contact);
       }
@@ -54,7 +54,15 @@ export async function POST(request: NextRequest) {
         if (!id) {
           return NextResponse.json({ error: '缺少联系人ID' }, { status: 400 });
         }
-        const contact = await db.updateContact(id, data);
+        const contact = await db.updateContact(id, {
+          customer_id: data.customerId,
+          first_name: data.firstName,
+          last_name: data.lastName,
+          position: data.position,
+          phone: data.phone,
+          email: data.email,
+          is_primary: data.isPrimary,
+        });
         return NextResponse.json(contact);
       }
 

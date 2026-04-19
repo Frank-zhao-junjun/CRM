@@ -35,17 +35,21 @@ export async function GET(request: NextRequest) {
         );
       }
       
-      const formattedRoles = userRoles?.map((ur: { 
-        id: string; 
-        user_id: string; 
-        created_at: string; 
-        roles: { id: string; name: string; description: string | null; is_system: boolean } 
-      }) => ({
-        id: ur.id,
-        user_id: ur.user_id,
-        created_at: ur.created_at,
-        ...ur.roles,
-      })) || [];
+      const formattedRoles = userRoles?.map((ur: {
+        id: string;
+        user_id: string;
+        created_at: string;
+        roles: Array<{ id: string; name: string; description: string | null; is_system: boolean }>;
+      }) => {
+        const role = ur.roles[0];
+
+        return {
+          ...(role || {}),
+          id: ur.id,
+          user_id: ur.user_id,
+          created_at: ur.created_at,
+        };
+      }) || [];
       
       return NextResponse.json(formattedRoles);
     }
@@ -85,12 +89,13 @@ export async function GET(request: NextRequest) {
       }>;
     }>();
     
-    allUserRoles?.forEach((ur: { 
-      id: string; 
-      user_id: string; 
-      created_at: string; 
-      roles: { id: string; name: string; description: string | null; is_system: boolean } 
+    allUserRoles?.forEach((ur: {
+      id: string;
+      user_id: string;
+      created_at: string;
+      roles: Array<{ id: string; name: string; description: string | null; is_system: boolean }>;
     }) => {
+      const role = ur.roles[0];
       if (!usersMap.has(ur.user_id)) {
         usersMap.set(ur.user_id, {
           id: ur.id,
@@ -98,7 +103,9 @@ export async function GET(request: NextRequest) {
           roles: [],
         });
       }
-      usersMap.get(ur.user_id)?.roles.push(ur.roles);
+      if (role) {
+        usersMap.get(ur.user_id)?.roles.push(role);
+      }
     });
     
     const users = Array.from(usersMap.values());

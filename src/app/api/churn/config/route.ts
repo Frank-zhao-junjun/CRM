@@ -3,9 +3,16 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
-const supabase = createClient(supabaseUrl, supabaseServiceKey);
+function getSupabase() {
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+  if (!supabaseUrl || !supabaseServiceKey) {
+    return null;
+  }
+
+  return createClient(supabaseUrl, supabaseServiceKey);
+}
 
 // 模拟配置数据
 let mockConfig = {
@@ -27,29 +34,33 @@ let mockConfig = {
 // 获取配置
 export async function GET() {
   try {
-    // 尝试从数据库获取
-    try {
-      const { data, error } = await supabase
-        .from('churn_prediction_config')
-        .select('*')
-        .eq('is_active', true)
-        .single();
+    const supabase = getSupabase();
 
-      if (!error && data) {
-        return NextResponse.json({
-          config: {
-            highRiskThreshold: data.high_risk_threshold,
-            mediumRiskThreshold: data.medium_risk_threshold,
-            dimensionConfigs: data.dimension_configs,
-            enableAutoAlert: data.enable_auto_alert,
-            alertOnHighRisk: data.alert_on_high_risk,
-            alertOnRiskIncrease: data.alert_on_risk_increase,
-            riskIncreaseThreshold: data.risk_increase_threshold,
-          },
-        });
+    // 尝试从数据库获取
+    if (supabase) {
+      try {
+        const { data, error } = await supabase
+          .from('churn_prediction_config')
+          .select('*')
+          .eq('is_active', true)
+          .single();
+
+        if (!error && data) {
+          return NextResponse.json({
+            config: {
+              highRiskThreshold: data.high_risk_threshold,
+              mediumRiskThreshold: data.medium_risk_threshold,
+              dimensionConfigs: data.dimension_configs,
+              enableAutoAlert: data.enable_auto_alert,
+              alertOnHighRisk: data.alert_on_high_risk,
+              alertOnRiskIncrease: data.alert_on_risk_increase,
+              riskIncreaseThreshold: data.risk_increase_threshold,
+            },
+          });
+        }
+      } catch (dbError) {
+        console.log('数据库查询失败，使用默认配置');
       }
-    } catch (dbError) {
-      console.log('数据库查询失败，使用默认配置');
     }
 
     return NextResponse.json({ config: mockConfig });
@@ -64,6 +75,7 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
     const { config } = body;
+    const supabase = getSupabase();
 
     if (!config) {
       return NextResponse.json({ error: '配置不能为空' }, { status: 400 });
@@ -81,18 +93,31 @@ export async function POST(request: NextRequest) {
     };
 
     // 尝试保存到数据库
-    try {
-      // 先检查是否存在
-      const { data: existing } = await supabase
-        .from('churn_prediction_config')
-        .select('id')
-        .eq('is_active', true)
-        .single();
-
-      if (existing) {
-        await supabase
+    if (supabase) {
+      try {
+        // 先检查是否存在
+        const { data: existing } = await supabase
           .from('churn_prediction_config')
-          .update({
+          .select('id')
+          .eq('is_active', true)
+          .single();
+
+        if (existing) {
+          await supabase
+            .from('churn_prediction_config')
+            .update({
+              high_risk_threshold: mockConfig.highRiskThreshold,
+              medium_risk_threshold: mockConfig.mediumRiskThreshold,
+              dimension_configs: mockConfig.dimensionConfigs,
+              enable_auto_alert: mockConfig.enableAutoAlert,
+              alert_on_high_risk: mockConfig.alertOnHighRisk,
+              alert_on_risk_increase: mockConfig.alertOnRiskIncrease,
+              risk_increase_threshold: mockConfig.riskIncreaseThreshold,
+              updated_at: new Date().toISOString(),
+            })
+            .eq('id', existing.id);
+        } else {
+          await supabase.from('churn_prediction_config').insert({
             high_risk_threshold: mockConfig.highRiskThreshold,
             medium_risk_threshold: mockConfig.mediumRiskThreshold,
             dimension_configs: mockConfig.dimensionConfigs,
@@ -100,23 +125,12 @@ export async function POST(request: NextRequest) {
             alert_on_high_risk: mockConfig.alertOnHighRisk,
             alert_on_risk_increase: mockConfig.alertOnRiskIncrease,
             risk_increase_threshold: mockConfig.riskIncreaseThreshold,
-            updated_at: new Date().toISOString(),
-          })
-          .eq('id', existing.id);
-      } else {
-        await supabase.from('churn_prediction_config').insert({
-          high_risk_threshold: mockConfig.highRiskThreshold,
-          medium_risk_threshold: mockConfig.mediumRiskThreshold,
-          dimension_configs: mockConfig.dimensionConfigs,
-          enable_auto_alert: mockConfig.enableAutoAlert,
-          alert_on_high_risk: mockConfig.alertOnHighRisk,
-          alert_on_risk_increase: mockConfig.alertOnRiskIncrease,
-          risk_increase_threshold: mockConfig.riskIncreaseThreshold,
-          is_active: true,
-        });
+            is_active: true,
+          });
+        }
+      } catch (dbError) {
+        console.log('数据库保存失败，使用内存存储');
       }
-    } catch (dbError) {
-      console.log('数据库保存失败，使用内存存储');
     }
 
     return NextResponse.json({ success: true, config: mockConfig });

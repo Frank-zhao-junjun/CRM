@@ -82,19 +82,26 @@ export async function POST(request: NextRequest) {
       );
     }
     
+    const customerId = validation.data.customerId || validation.data.customer_id;
+    if (!customerId) {
+      return NextResponse.json({ error: '客户ID不能为空' }, { status: 400 });
+    }
+
+    const expectedCloseDate = validation.data.expectedCloseDate || validation.data.expected_close_date;
+
     const opportunity = await db.createOpportunity({
       id: `opp_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
       title: validation.data.title,
-      customer_id: validation.data.customerId || validation.data.customer_id,
+      customer_id: customerId,
       customer_name: validation.data.customerName || validation.data.customer_name || '',
-      contact_id: validation.data.contactId || validation.data.contact_id,
-      contact_name: validation.data.contactName || validation.data.contact_name,
-      value: validation.data.value,
-      stage: validation.data.stage || 'prospecting',
-      probability: validation.data.probability,
-      expected_close_date: validation.data.expectedCloseDate || validation.data.expected_close_date,
-      notes: validation.data.notes,
-      source: validation.data.source,
+      contact_id: validation.data.contactId || validation.data.contact_id || null,
+      contact_name: validation.data.contactName || validation.data.contact_name || null,
+      value: String(validation.data.value),
+      stage: validation.data.stage || 'qualified',
+      probability: validation.data.probability || 20,
+      expected_close_date: expectedCloseDate ? new Date(expectedCloseDate) : null,
+      notes: validation.data.notes || null,
+      source_lead_id: validation.data.source || null,
     });
     
     // 记录活动
@@ -128,7 +135,36 @@ export async function PUT(request: NextRequest) {
       );
     }
     
-    const { id, ...updates } = validation.data;
+    const { id, ...data } = validation.data;
+    const updates = {
+      ...(data.title !== undefined ? { title: data.title } : {}),
+      ...(data.customerId !== undefined || data.customer_id !== undefined
+        ? { customer_id: data.customerId || data.customer_id }
+        : {}),
+      ...(data.customerName !== undefined || data.customer_name !== undefined
+        ? { customer_name: data.customerName || data.customer_name || '' }
+        : {}),
+      ...(data.contactId !== undefined || data.contact_id !== undefined
+        ? { contact_id: data.contactId || data.contact_id || null }
+        : {}),
+      ...(data.contactName !== undefined || data.contact_name !== undefined
+        ? { contact_name: data.contactName || data.contact_name || null }
+        : {}),
+      ...(data.value !== undefined ? { value: String(data.value) } : {}),
+      ...(data.stage !== undefined ? { stage: data.stage } : {}),
+      ...(data.probability !== undefined ? { probability: data.probability } : {}),
+      ...(data.expectedCloseDate !== undefined || data.expected_close_date !== undefined
+        ? {
+            expected_close_date:
+              data.expectedCloseDate || data.expected_close_date
+                ? new Date((data.expectedCloseDate || data.expected_close_date) as string)
+                : null,
+          }
+        : {}),
+      ...(data.notes !== undefined ? { notes: data.notes || null } : {}),
+      ...(data.source !== undefined ? { source_lead_id: data.source || null } : {}),
+    };
+
     const opportunity = await db.updateOpportunity(id, updates);
     return NextResponse.json(opportunity);
   } catch (error) {

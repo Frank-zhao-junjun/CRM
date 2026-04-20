@@ -1,0 +1,16 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "noEmit": true
+  },
+  "include": [
+    "src/app/api/crm/route.ts",
+    "src/app/api/search/route.ts",
+    "src/lib/crm-database.ts",
+    "src/lib/crm-types.ts",
+    "src/domain/value-objects/OpportunityStage.ts",
+    "src/domain/value-objects/OpportunityStage.test.ts"
+  ],
+  "exclude": ["node_modules", "dist", ".next"]
+}
+

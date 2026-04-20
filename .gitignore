@@ -96,7 +96,6 @@ Desktop.ini
 *.tsbuildinfo
 
 # Misc
-.vercel
 .turbo
 
 .coze-logs

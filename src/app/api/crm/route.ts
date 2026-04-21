@@ -547,15 +547,6 @@ export async function POST(request: NextRequest) {
         return NextResponse.json(product);
       }
       
-      // Delete Product (产品管理)
-      case 'deleteProduct': {
-        if (!withPermissionGuard(request, 'product', 'delete')) {
-          return NextResponse.json({ error: '权限不足：删除产品' }, { status: 403 });
-        }
-        await db.deleteProduct(data.id);
-        return NextResponse.json({ success: true });
-      }
-
       default:
         return NextResponse.json({ error: 'Unknown action' }, { status: 400 });
     }

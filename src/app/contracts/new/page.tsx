@@ -22,7 +22,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { ArrowLeft, Plus, X, FileBarGraph, FileText, Briefcase, Building2 } from 'lucide-react';
+import { ArrowLeft, Plus, X, FileBarChart, FileText, Briefcase, Building2 } from 'lucide-react';
 import Link from 'next/link';
 
 interface Opportunity {
@@ -243,7 +243,7 @@ export default function NewContractPage() {
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <FileBarGraph className="h-5 w-5" /> 基本信息
+                <FileBarChart className="h-5 w-5" /> 基本信息
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">

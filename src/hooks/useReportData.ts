@@ -90,6 +90,7 @@ export interface BIDashboardData {
 interface ApiResponse<T> {
   success: boolean;
   data: T;
+  error?: string;
   timestamp: string;
 }
 

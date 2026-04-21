@@ -19,11 +19,7 @@ export default function ConversionReportPage() {
   const [timeRange, setTimeRange] = useState<TimeRange>('all');
   const [compareEnabled, setCompareEnabled] = useState(false);
   
-  const { conversionData, bottleneckStages, overallConversion } = useConversionData(
-    opportunities, 
-    timeRange,
-    compareEnabled ? 'prev' : undefined
-  );
+  const { conversionData, loading, error } = useConversionData(timeRange);
 
   const handleExport = () => {
     const headers = ['阶段', '进入数量', '流出数量', '转化率', '平均停留时间', '是否瓶颈'];
@@ -32,7 +28,7 @@ export default function ConversionReportPage() {
       item.fromCount.toString(),
       item.toCount.toString(),
       `${item.conversionRate.toFixed(1)}%`,
-      `${item.avgDays.toFixed(0)}天`,
+      `${(item as any).avgDays?.toFixed(0) || '-'}天`,
       item.isBottleneck ? '是' : '否',
     ]);
     
@@ -40,8 +36,8 @@ export default function ConversionReportPage() {
       headers.join(','),
       ...rows.map(row => row.join(',')),
       '',
-      `整体转化率,${overallConversion.toFixed(1)}%`,
-      `瓶颈阶段数量,${bottleneckStages.length}`,
+      `整体转化率,${conversionData.length > 0 ? (conversionData.reduce((sum, item) => sum + item.conversionRate, 0) / conversionData.length).toFixed(1) : '0'}%`,
+      `瓶颈阶段数量,${conversionData.filter(item => item.isBottleneck).length}`,
     ].join('\n');
     
     const blob = new Blob(['\ufeff' + csvContent], { type: 'text/csv;charset=utf-8;' });
@@ -58,7 +54,9 @@ export default function ConversionReportPage() {
   // 计算统计
   const totalEntered = conversionData.reduce((sum, d) => sum + d.fromCount, 0);
   const totalConverted = conversionData.reduce((sum, d) => sum + d.toCount, 0);
-  const avgStayDays = conversionData.reduce((sum, d) => sum + d.avgDays, 0) / Math.max(conversionData.length, 1);
+  const avgStayDays = conversionData.reduce((sum, d) => sum + ((d as any).avgDays || 0), 0) / Math.max(conversionData.length, 1);
+  const overallConversion = totalEntered > 0 ? (totalConverted / totalEntered) * 100 : 0;
+  const bottleneckStages = conversionData.filter(item => item.isBottleneck);
 
   return (
     <div className="space-y-6">
@@ -192,7 +190,7 @@ export default function ConversionReportPage() {
         <CardContent>
           <div className="space-y-4">
             {conversionData.map((item, index) => (
-              <div key={item.stage} className="relative">
+              <div key={item.toStage} className="relative">
                 {/* 连接线 */}
                 {index < conversionData.length - 1 && (
                   <div className="absolute left-6 top-full w-0.5 h-4 -translate-x-1/2 bg-gray-300 dark:bg-gray-600" />
@@ -207,11 +205,10 @@ export default function ConversionReportPage() {
                   <div className="w-24 flex items-center gap-2">
                     <div 
                       className="w-3 h-3 rounded-full"
-                      // @ts-expect-error inline style
                       style={{ 
-                        background: item.color.includes('to-') 
-                          ? `linear-gradient(135deg, ${item.color.split('-')[1]} to ${item.color.split('-')[2]})` 
-                          : item.color 
+                        background: ((item as any).color || '').includes('to-') 
+                          ? `linear-gradient(135deg, ${((item as any).color || '').split('-')[1]} to ${((item as any).color || '').split('-')[2]})` 
+                          : (item as any).color 
                       }}
                     />
                     <span className="font-medium text-sm">{item.stageLabel}</span>
@@ -253,7 +250,7 @@ export default function ConversionReportPage() {
                   
                   {/* 平均停留 */}
                   <div className="w-20 text-right text-sm text-muted-foreground">
-                    {item.avgDays.toFixed(0)}天
+                    {((item as any).avgDays || 0).toFixed(0)}天
                   </div>
                   
                   {/* 状态 */}
@@ -289,7 +286,7 @@ export default function ConversionReportPage() {
           <CardContent className="space-y-3">
             {bottleneckStages.map((stage) => (
               <div 
-                key={stage.stage}
+                key={stage.toStage}
                 className="p-3 rounded-lg bg-white dark:bg-gray-800 border border-amber-200 dark:border-amber-700"
               >
                 <div className="font-medium text-amber-900 dark:text-amber-100">

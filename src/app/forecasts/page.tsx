@@ -24,6 +24,7 @@ interface AccuracyData {
   forecastValue: number;
   actualValue: number;
   accuracy: number;
+  variance?: number;
 }
 
 interface ForecastData {
@@ -309,8 +310,8 @@ export default function ForecastsPage() {
                               {formatCurrency(item.actualValue)}
                             </td>
                             <td className="px-6 py-4 text-sm text-right">
-                              <span className={item.variance >= 0 ? 'text-green-600' : 'text-red-600'}>
-                                {item.variance >= 0 ? '+' : ''}{formatCurrency(item.variance)}
+                              <span className={(item.variance ?? 0) >= 0 ? 'text-green-600' : 'text-red-600'}>
+                                {(item.variance ?? 0) >= 0 ? '+' : ''}{formatCurrency(item.variance ?? 0)}
                               </span>
                             </td>
                             <td className="px-6 py-4 text-center">

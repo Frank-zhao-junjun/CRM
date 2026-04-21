@@ -17,7 +17,7 @@ import {
 } from '@/components/ui/table';
 import { ArrowLeft, Plus, Trash2, Save } from 'lucide-react';
 import Link from 'next/link';
-import type { Invoice, type InvoiceStatus } from '@/lib/crm-types';
+import type { Invoice, InvoiceStatus } from '@/lib/crm-types';
 
 interface InvoiceItemForm {
   productName: string;

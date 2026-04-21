@@ -24,6 +24,7 @@ interface EmailTemplate {
   body: string;
   variables: string;
   category: string;
+  is_active?: boolean;
 }
 
 interface SendEmailDialogProps {

@@ -192,3 +192,55 @@ export function useTeamRankingApi(timeRange: 'month' | 'quarter' | 'year' | 'all
     error,
   };
 }
+import type { SalesOpportunity } from '@/lib/crm-types';
+
+type TimeRange = 'month' | 'quarter' | 'year' | 'all';
+
+export function useTeamRanking(
+  opportunities: SalesOpportunity[],
+  timeRange: TimeRange
+): RankingData[] {
+  const now = new Date();
+  const filtered = opportunities.filter((opp) => {
+    if (!opp.createdAt) return false;
+    const created = new Date(opp.createdAt);
+    if (timeRange === 'all') return true;
+    if (timeRange === 'month') return created >= new Date(now.getFullYear(), now.getMonth(), 1);
+    if (timeRange === 'quarter') {
+      const q = Math.floor(now.getMonth() / 3);
+      return created >= new Date(now.getFullYear(), q * 3, 1);
+    }
+    if (timeRange === 'year') return created >= new Date(now.getFullYear(), 0, 1);
+    return true;
+  });
+
+  const byAssignee = new Map<string, RankingData>();
+  for (const opp of filtered) {
+    const key = opp.assigneeId || opp.assigneeName || 'unassigned';
+    const name = opp.assigneeName || '未分配';
+    if (!byAssignee.has(key)) {
+      byAssignee.set(key, {
+        member: { id: key, name },
+        metrics: { wonAmount: 0, wonCount: 0, newOpps: 0, pipelineAmount: 0, conversionRate: 0, avgDealSize: 0, growth: 0 },
+      });
+    }
+    const entry = byAssignee.get(key)!;
+    if (opp.stage === 'closed_won') {
+      entry.metrics.wonAmount += opp.value;
+      entry.metrics.wonCount += 1;
+    } else if (!['closed_lost'].includes(opp.stage)) {
+      entry.metrics.pipelineAmount += opp.value;
+    }
+    entry.metrics.newOpps += 1;
+  }
+
+  const result: RankingData[] = [];
+  byAssignee.forEach((data) => {
+    const total = data.metrics.wonCount + data.metrics.newOpps;
+    data.metrics.conversionRate = total > 0 ? (data.metrics.wonCount / total) * 100 : 0;
+    data.metrics.avgDealSize = data.metrics.wonCount > 0 ? data.metrics.wonAmount / data.metrics.wonCount : 0;
+    result.push(data);
+  });
+
+  return result.sort((a, b) => b.metrics.wonAmount - a.metrics.wonAmount);
+}

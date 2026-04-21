@@ -1,5 +1,5 @@
 import 'server-only';
-import { getSupabaseClient } from '@/storage/database/supabase-client';
+import { getSupabaseClient } from '@/storage/database/supabase-client.server';
 import type { EmailConfig, InsertEmailConfig, EmailTemplate, InsertEmailTemplate, EmailLog, InsertEmailLog } from '@/storage/database/shared/schema';
 import nodemailer from 'nodemailer';
 

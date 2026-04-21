@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Label } from '@/components/ui/separator';
+import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -64,8 +64,8 @@ export default function UsersPage() {
       // 获取角色列表
       const rolesResponse = await fetch('/api/roles');
       if (rolesResponse.ok) {
-        const rolesData = await rolesResponse.json();
-        setRoles(rolesData);
+        const roles = await rolesResponse.json();
+        setRoles(roles);
       }
       
       // 获取用户角色列表
@@ -80,19 +80,19 @@ export default function UsersPage() {
             id: '1',
             user_id: 'user_001',
             user_name: '张三',
-            roles: [rolesData?.[0] || { id: '1', name: 'admin', description: '管理员', is_system: true, permissions: [] }],
+            roles: [roles?.[0] || { id: '1', name: 'admin', description: '管理员', is_system: true }],
           },
           {
             id: '2',
             user_id: 'user_002',
             user_name: '李四',
-            roles: [rolesData?.[1] || { id: '2', name: 'sales_manager', description: '销售经理', is_system: true, permissions: [] }],
+            roles: [roles?.[1] || { id: '2', name: 'sales_manager', description: '销售经理', is_system: true }],
           },
           {
             id: '3',
             user_id: 'user_003',
             user_name: '王五',
-            roles: [rolesData?.[2] || { id: '3', name: 'sales_rep', description: '销售人员', is_system: true, permissions: [] }],
+            roles: [roles?.[2] || { id: '3', name: 'sales_rep', description: '销售人员', is_system: true }],
           },
         ]);
       }
@@ -104,19 +104,19 @@ export default function UsersPage() {
           id: '1',
           user_id: 'user_001',
           user_name: '张三',
-          roles: [{ id: '1', name: 'admin', description: '管理员', is_system: true, permissions: [] }],
+          roles: [{ id: '1', name: 'admin', description: '管理员', is_system: true }],
         },
         {
           id: '2',
           user_id: 'user_002',
           user_name: '李四',
-          roles: [{ id: '2', name: 'sales_manager', description: '销售经理', is_system: true, permissions: [] }],
+          roles: [{ id: '2', name: 'sales_manager', description: '销售经理', is_system: true }],
         },
         {
           id: '3',
           user_id: 'user_003',
           user_name: '王五',
-          roles: [{ id: '3', name: 'sales_rep', description: '销售人员', is_system: true, permissions: [] }],
+          roles: [{ id: '3', name: 'sales_rep', description: '销售人员', is_system: true }],
         },
       ]);
       setRoles([

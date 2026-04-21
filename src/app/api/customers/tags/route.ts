@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getSupabaseClient } from '@/storage/database/supabase-client';
+import { getSupabaseClient } from '@/storage/database/supabase-client.server';
 import type { Tag } from '@/storage/database/shared/schema';
 
 export async function GET(request: NextRequest) {
@@ -19,7 +19,9 @@ export async function GET(request: NextRequest) {
 
     if (error) throw new Error(`获取客户标签失败: ${error.message}`);
 
-    const tags = data?.map((item: { tag: Tag }) => item.tag).filter(Boolean) || [];
+    const tags = (data as unknown as { tag: Tag }[] | undefined)
+      ?.map((item) => item.tag)
+      .filter(Boolean) || [];
     return NextResponse.json(tags as Tag[]);
   } catch (error) {
     console.error('获取客户标签失败:', error);

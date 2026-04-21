@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useCRM } from '@/lib/crm-context';
 import { ForecastChart, useForecastData } from '@/components/reports/forecast-chart';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
@@ -17,7 +18,7 @@ export default function ForecastReportPage() {
   const { opportunities } = useCRM();
   const [period, setPeriod] = useState<Period>('quarter');
   
-  const { forecastData, totals } = useForecastData(opportunities, period);
+  const forecastData = useForecastData(opportunities as unknown as any[], period);
 
   const handleExport = () => {
     const headers = ['月份', '乐观预测', '预期预测', '保守预测', '实际收入'];
@@ -31,7 +32,11 @@ export default function ForecastReportPage() {
     
     // 添加总计行
     rows.push([]);
-    rows.push(['总计', `¥${totals.optimistic.toLocaleString()}`, `¥${totals.expected.toLocaleString()}`, `¥${totals.conservative.toLocaleString()}`, '-']);
+    rows.push(['总计', 
+      `¥${forecastData.reduce((sum, d) => sum + (d.optimistic || 0), 0).toLocaleString()}`, 
+      `¥${forecastData.reduce((sum, d) => sum + (d.expected || 0), 0).toLocaleString()}`, 
+      `¥${forecastData.reduce((sum, d) => sum + (d.conservative || 0), 0).toLocaleString()}`, 
+      '-']);
     
     const csvContent = [
       headers.join(','),
@@ -123,7 +128,7 @@ export default function ForecastReportPage() {
             <Target className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-blue-600">{formatCurrency(totals.expected)}</div>
+            <div className="text-2xl font-bold text-blue-600">{formatCurrency(forecastData.reduce((sum, d) => sum + (d.expected || 0), 0))}</div>
             <p className="text-xs text-muted-foreground">
               {period === 'quarter' ? '未来3个月' : period === 'half' ? '未来6个月' : '未来12个月'}
             </p>
@@ -135,7 +140,7 @@ export default function ForecastReportPage() {
             <TrendingUp className="h-4 w-4 text-green-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-green-600">{formatCurrency(totals.optimistic)}</div>
+            <div className="text-2xl font-bold text-green-600">{formatCurrency(forecastData.reduce((sum, d) => sum + (d.optimistic || 0), 0))}</div>
             <p className="text-xs text-muted-foreground">
               所有商机都成交
             </p>
@@ -147,7 +152,7 @@ export default function ForecastReportPage() {
             <TrendingDown className="h-4 w-4 text-amber-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-amber-600">{formatCurrency(totals.conservative)}</div>
+            <div className="text-2xl font-bold text-amber-600">{formatCurrency(forecastData.reduce((sum, d) => sum + (d.conservative || 0), 0))}</div>
             <p className="text-xs text-muted-foreground">
               按概率60%计算
             </p>
@@ -238,13 +243,13 @@ export default function ForecastReportPage() {
                       <div className="w-20 h-2 bg-green-200 rounded-full overflow-hidden">
                         <div 
                           className="h-full bg-green-500 rounded-full"
-                          style={{ width: `${totals.optimistic > 0 ? (item.optimistic / totals.optimistic) * 100 : 0}%` }}
+                          style={{ width: `${(item.optimistic / (forecastData.reduce((s, d) => s + (d.optimistic || 0), 0) || 1)) * 100}%` }}
                         />
                       </div>
                       <div className="w-16 h-2 bg-blue-200 rounded-full overflow-hidden">
                         <div 
                           className="h-full bg-blue-500 rounded-full"
-                          style={{ width: `${totals.expected > 0 ? (item.expected / totals.expected) * 100 : 0}%` }}
+                          style={{ width: `${(item.expected / (forecastData.reduce((s, d) => s + (d.expected || 0), 0) || 1)) * 100}%` }}
                         />
                       </div>
                     </div>

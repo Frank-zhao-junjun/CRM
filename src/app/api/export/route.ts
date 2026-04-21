@@ -9,7 +9,8 @@ import * as db from '@/lib/crm-database';
 import { withPermissionGuard } from '@/lib/api-permission';
 
 // 字段配置
-const ENTITY_COLUMNS: Record<string, { headers: string[]; keys: string[]; labels: Record<string, string> }> = {
+type LabelMap = Record<string, string | Record<string, string>>;
+const ENTITY_COLUMNS: Record<string, { headers: string[]; keys: string[]; labels: LabelMap }> = {
   customers: {
     headers: ['ID', '姓名', '邮箱', '电话', '公司', '状态', '行业', '网站', '地址', '备注', '创建时间', '更新时间'],
     keys: ['id', 'name', 'email', 'phone', 'company', 'status', 'industry', 'website', 'address', 'notes', 'created_at', 'updated_at'],
@@ -83,12 +84,12 @@ function escapeCSV(value: unknown): string {
 }
 
 // 格式化值
-function formatValue(key: string, value: unknown, labels: Record<string, Record<string, string>>): string {
+function formatValue(key: string, value: unknown, labels: LabelMap): string {
   if (value === null || value === undefined) return '';
   
   // 应用标签映射
-  if (labels[key] && typeof value === 'string') {
-    return labels[key][value] || value;
+  if (labels[key] && typeof value === 'string' && typeof labels[key] === 'object') {
+    return (labels[key] as Record<string, string>)[value] || value;
   }
   
   // 布尔值
@@ -222,7 +223,7 @@ export async function GET(request: NextRequest) {
       }
 
       const excel = generateExcel(data, config);
-      return new Response(excel, {
+      return new Response(excel as unknown as BodyInit, {
         status: 200,
         headers: {
           'Content-Type': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',

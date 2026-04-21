@@ -16,6 +16,14 @@ import {
 } from '@/components/ui/select';
 import { ArrowLeft, Plus, Trash2, Save } from 'lucide-react';
 import Link from 'next/link';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
 import type { Order, OrderItem } from '@/lib/crm-types';
 
 interface InvoiceItemForm {
@@ -93,7 +101,7 @@ export default function NewInvoicePage() {
         ...prev,
         orderId: order.id,
         customerId: order.customerId,
-        customerName: order.customerName,
+        customerName: order.customerName || '',
       }));
       // 从订单items带入
       // 这里简化处理，实际可以从API获取订单详情
@@ -409,12 +417,4 @@ export default function NewInvoicePage() {
   );
 }
 
-// 需要导入 Table 组件
-import {
-  Table,
-  TableBody as TableBodyComponent,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
+// Table components already imported at top of file

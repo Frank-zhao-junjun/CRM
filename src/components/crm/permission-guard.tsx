@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, ReactNode } from 'react';
+import { useEffect, useState, ReactNode, ElementType } from 'react';
 import { getUserPermissions, PermissionName } from '@/lib/permissions';
 import { Skeleton } from '@/components/ui/skeleton';
 
@@ -54,7 +54,7 @@ interface PermissionGuardProps {
   // 子元素
   children: ReactNode;
   // 包裹元素的标签
-  as?: keyof JSX.IntrinsicElements;
+  as?: ElementType;
 }
 
 // PermissionGuard 组件
@@ -96,13 +96,13 @@ export function PermissionGuard({
       
       if (permission) {
         // 单个权限检查
-        result = userPermissions.has(permission);
+        result = userPermissions.includes(permission);
       } else if (permissions && permissions.length > 0) {
         // 多个权限检查
         if (mode === 'all') {
-          result = permissions.every(p => userPermissions.has(p));
+          result = permissions.every(p => userPermissions.includes(p));
         } else {
-          result = permissions.some(p => userPermissions.has(p));
+          result = permissions.some(p => userPermissions.includes(p));
         }
       }
       
@@ -199,10 +199,7 @@ interface PermissionBadgeProps {
 // 导出所有权限相关组件
 export const PermissionComponents = {
   Guard: PermissionGuard,
-  Button: PermissionButton,
-  Link: PermissionLink,
-  Page: PermissionPage,
-  Badge: PermissionBadge,
+  // Button, Link, Page, Badge - TODO: implement as needed
 };
 
 export default PermissionGuard;

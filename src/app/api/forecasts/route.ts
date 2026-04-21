@@ -1,7 +1,7 @@
 // 销售预测 API
 
 import { NextRequest, NextResponse } from 'next/server';
-import { getSupabaseClient } from '@/storage/database/supabase-client';
+import { getSupabaseClient } from '@/storage/database/supabase-client.server';
 import {
   generateForecastReport,
   generateQuarterlyForecast,

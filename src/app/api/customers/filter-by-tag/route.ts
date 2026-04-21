@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getSupabaseClient } from '@/storage/database/supabase-client';
+import { getSupabaseClient } from '@/storage/database/supabase-client.server';
 import type { Customer } from '@/storage/database/shared/schema';
 
 export async function GET(request: NextRequest) {
@@ -19,7 +19,9 @@ export async function GET(request: NextRequest) {
 
     if (error) throw new Error(`按标签筛选客户失败: ${error.message}`);
 
-    const customers = data?.map((item: { customer: Customer }) => item.customer).filter(Boolean) || [];
+    const customers = (data as unknown as { customer: Customer }[] | undefined)
+      ?.map((item) => item.customer)
+      .filter(Boolean) || [];
     return NextResponse.json(customers);
   } catch (error) {
     console.error('按标签筛选客户失败:', error);

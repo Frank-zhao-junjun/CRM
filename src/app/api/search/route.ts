@@ -2,7 +2,7 @@
 // Supports searching across: customers, contacts, opportunities, leads, quotes, orders, contracts, products
 
 import { NextRequest, NextResponse } from 'next/server';
-import { getSupabaseClient } from '@/storage/database/supabase-client';
+import { getSupabaseClient } from '@/storage/database/supabase-client.server';
 
 interface SearchResult {
   id: string;

@@ -3,7 +3,7 @@
  * 处理预警规则和记录的持久化（使用 Supabase）
  */
 
-import { getSupabaseClient } from '@/storage/database/supabase-client';
+import { getSupabaseClient } from '@/storage/database/supabase-client.server';
 import type {
   AlertRule,
   AlertRecord,
@@ -322,7 +322,7 @@ export async function deleteAlertRecord(id: string): Promise<boolean> {
 export async function getAlertStats(): Promise<AlertStats> {
   const client = getSupabaseClient();
   const now = new Date();
-  const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString();
+  const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
   const weekStart = new Date(todayStart.getTime() - 7 * 24 * 60 * 60 * 1000).toISOString();
 
   const { data, error } = await client

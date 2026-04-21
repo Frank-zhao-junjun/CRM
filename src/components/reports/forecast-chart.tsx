@@ -228,3 +228,5 @@ export function useForecastTimeline(opportunities: ForecastItem[], period: 'quar
 
   return chartData;
 }
+// Alias exports
+export const useForecastData = useForecastTimeline;

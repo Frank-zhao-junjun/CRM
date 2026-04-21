@@ -1,6 +1,6 @@
 'use client';
 
-import { createContext, useContext, useState, useCallback, useEffect, ReactNode } from 'react';
+import { createContext, useContext, useState, useCallback, useEffect, useMemo, ReactNode } from 'react';
 import { Customer, Contact, SalesOpportunity, DashboardStats, Activity, OpportunityStage, SalesLead, Product, PaymentPlan, Task } from './crm-types';
 
 interface CRMContextType {
@@ -440,6 +440,30 @@ export function CRMProvider({ children }: { children: ReactNode }) {
   const [leads, setLeads] = useState<SalesLead[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
   const [paymentPlans, setPaymentPlans] = useState<PaymentPlan[]>([]);
+
+  // 回款计算
+  const todayPayments = useMemo(() => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    return paymentPlans.filter(p => {
+      if (p.status === 'paid' || p.status === 'cancelled') return false;
+      const dueDate = new Date(p.dueDate || '');
+      dueDate.setHours(0, 0, 0, 0);
+      return dueDate.getTime() === today.getTime();
+    });
+  }, [paymentPlans]);
+
+  const overduePayments = useMemo(() => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    return paymentPlans.filter(p => {
+      if (p.status === 'paid' || p.status === 'cancelled') return false;
+      const dueDate = new Date(p.dueDate || '');
+      dueDate.setHours(0, 0, 0, 0);
+      return dueDate.getTime() < today.getTime();
+    });
+  }, [paymentPlans]);
+
   const [tasks, setTasks] = useState<Task[]>([]); // 任务管理 V4.1
   const [activities, setActivities] = useState<Activity[]>([]);
   const [loading, setLoading] = useState(true);

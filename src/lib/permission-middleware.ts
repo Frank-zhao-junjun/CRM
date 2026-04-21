@@ -1,6 +1,6 @@
 // 权限检查装饰器 - 用于 API 路由
 import { NextRequest, NextResponse } from 'next/server';
-import { checkPermission, PermissionName } from '@/lib/permissions';
+import { checkPermission, PermissionName, hasAnyPermission } from '@/lib/permissions.server';
 
 // 权限检查中间件包装器
 export function withPermission(
@@ -62,7 +62,6 @@ export function withAnyPermission(
   handler: (request: NextRequest, context: { userId: string }) => Promise<NextResponse>
 ) {
   return async (request: NextRequest, context: { userId: string }): Promise<NextResponse> => {
-    const { hasAnyPermission } = await import('@/lib/permissions');
     const hasPerm = await hasAnyPermission(context.userId, permissions);
     
     if (!hasPerm) {

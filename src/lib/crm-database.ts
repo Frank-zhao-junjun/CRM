@@ -1,8 +1,7 @@
-import 'server-only';
 import { createHash } from 'node:crypto';
-import { getSupabaseClient } from '@/storage/database/supabase-client';
+import { getSupabaseClient } from '@/storage/database/supabase-client.server';
 import type { Customer, InsertCustomer, Contact, InsertContact, Opportunity, InsertOpportunity, Activity, InsertActivity, FollowUp, InsertFollowUp, Notification, InsertNotification, Quote, InsertQuote, QuoteItem, InsertQuoteItem, Order, InsertOrder, OrderItem, InsertOrderItem, Contract, InsertContract, ContractMilestone, InsertContractMilestone } from '@/storage/database/shared/schema';
-import type { NotificationType, Task, TaskPriority, TaskType } from '@/lib/crm-types';
+import type { NotificationType, Task, TaskPriority, TaskType, Invoice } from '@/lib/crm-types';
 
 // CRM 数据库服务 - 支持线索管理
 
@@ -998,7 +997,6 @@ export async function convertQuoteToOrder(quoteId: string): Promise<Order> {
   const order = await createOrder(
     {
       quote_id: quoteId,
-      order_number: orderNumber,
       opportunity_id: quoteData.opportunity_id,
       customer_id: opp.customer_id,
       customer_name: opp.customer_name || quoteData.customer_name,
@@ -2290,6 +2288,19 @@ export async function updateTask(id: string, updates: Partial<InsertTask>): Prom
   return rowToTask(data as TaskRow);
 }
 
+export async function completeTask(id: string): Promise<Task> {
+  const client = getSupabaseClient();
+  const now = new Date().toISOString();
+  const { data, error } = await client
+    .from('tasks')
+    .update({ status: 'completed', completed_at: now, updated_at: now })
+    .eq('id', id)
+    .select()
+    .single();
+  if (error) throw new Error(`完成任务失败: ${error.message}`);
+  return rowToTask(data as TaskRow);
+}
+
 export async function deleteTask(id: string): Promise<void> {
   const client = getSupabaseClient();
   const { error } = await client
@@ -2321,4 +2332,110 @@ function rowToTask(row: TaskRow): Task {
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
+}
+
+// ========== Missing Task/Invoice/Order functions ==========
+
+export async function getTasksByEntity(entityType: string, entityId: string): Promise<Task[]> {
+  const client = getSupabaseClient();
+  const { data, error } = await client
+    .from('tasks')
+    .select('*')
+    .eq('related_type', entityType)
+    .eq('related_id', entityId)
+    .order('due_date', { ascending: false });
+  if (error) throw new Error(`获取关联任务失败: ${error.message}`);
+  return (data || []).map(rowToTask);
+}
+
+export async function getPendingTasks(): Promise<Task[]> {
+  const client = getSupabaseClient();
+  const { data, error } = await client
+    .from('tasks')
+    .select('*')
+    .in('status', ['pending', 'in_progress'])
+    .order('due_date', { ascending: true });
+  if (error) throw new Error(`获取待处理任务失败: ${error.message}`);
+  return (data || []).map(rowToTask);
+}
+
+export async function getTodayTasks(): Promise<Task[]> {
+  const client = getSupabaseClient();
+  const today = new Date().toISOString().split('T')[0];
+  const { data, error } = await client
+    .from('tasks')
+    .select('*')
+    .gte('due_date', today)
+    .lt('due_date', today + 'T23:59:59')
+    .order('due_date', { ascending: true });
+  if (error) throw new Error(`获取今日任务失败: ${error.message}`);
+  return (data || []).map(rowToTask);
+}
+
+export async function getOverdueTasks(): Promise<Task[]> {
+  const client = getSupabaseClient();
+  const today = new Date().toISOString().split('T')[0];
+  const { data, error } = await client
+    .from('tasks')
+    .select('*')
+    .lt('due_date', today)
+    .in('status', ['pending', 'in_progress'])
+    .order('due_date', { ascending: true });
+  if (error) throw new Error(`获取逾期任务失败: ${error.message}`);
+  return (data || []).map(rowToTask);
+}
+
+export async function getTasksByCustomer(customerId: string): Promise<Task[]> {
+  const client = getSupabaseClient();
+  const { data, error } = await client
+    .from('tasks')
+    .select('*')
+    .eq('related_type', 'customer')
+    .eq('related_id', customerId)
+    .order('due_date', { ascending: false });
+  if (error) throw new Error(`获取客户任务失败: ${error.message}`);
+  return (data || []).map(rowToTask);
+}
+
+export async function getQuotesByCustomer(customerId: string): Promise<Quote[]> {
+  const client = getSupabaseClient();
+  const { data, error } = await client
+    .from('quotes')
+    .select('*')
+    .eq('customer_id', customerId)
+    .order('created_at', { ascending: false });
+  if (error) throw new Error(`获取客户报价单失败: ${error.message}`);
+  return data as Quote[];
+}
+
+export async function getOrdersByCustomer(customerId: string): Promise<Order[]> {
+  const client = getSupabaseClient();
+  const { data, error } = await client
+    .from('orders')
+    .select('*')
+    .eq('customer_id', customerId)
+    .order('created_at', { ascending: false });
+  if (error) throw new Error(`获取客户订单失败: ${error.message}`);
+  return data as Order[];
+}
+
+export async function getAllInvoices(): Promise<Invoice[]> {
+  const client = getSupabaseClient();
+  const { data, error } = await client
+    .from('invoices')
+    .select('*')
+    .order('created_at', { ascending: false });
+  if (error) throw new Error(`获取发票列表失败: ${error.message}`);
+  return data as Invoice[];
+}
+
+export async function getInvoicesByCustomer(customerId: string): Promise<Invoice[]> {
+  const client = getSupabaseClient();
+  const { data, error } = await client
+    .from('invoices')
+    .select('*')
+    .eq('customer_id', customerId)
+    .order('created_at', { ascending: false });
+  if (error) throw new Error(`获取客户发票失败: ${error.message}`);
+  return data as Invoice[];
 }

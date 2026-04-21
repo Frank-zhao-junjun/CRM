@@ -40,7 +40,7 @@ export async function POST(request: NextRequest) {
       case 'create': {
         const processDate = (dateStr: string | undefined) => {
           if (!dateStr) return null;
-          return new Date(dateStr).toISOString();
+          return new Date(dateStr);
         };
         
         const milestone = await db.createMilestone({
@@ -63,7 +63,7 @@ export async function POST(request: NextRequest) {
       case 'update': {
         const processDate = (dateStr: string | undefined) => {
           if (!dateStr) return null;
-          return new Date(dateStr).toISOString();
+          return new Date(dateStr);
         };
         
         const milestone = await db.updateMilestone(bodyId || data?.id, {

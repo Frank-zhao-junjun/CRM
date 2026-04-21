@@ -1,6 +1,6 @@
 // 获取所有用户角色列表
 import { NextRequest, NextResponse } from 'next/server';
-import { getSupabaseClient } from '@/storage/database/supabase-client';
+import { getSupabaseClient } from '@/storage/database/supabase-client.server';
 
 // 获取所有用户及其角色
 export async function GET(request: NextRequest) {
@@ -35,17 +35,23 @@ export async function GET(request: NextRequest) {
         );
       }
       
-      const formattedRoles = userRoles?.map((ur: { 
-        id: string; 
-        user_id: string; 
-        created_at: string; 
-        roles: { id: string; name: string; description: string | null; is_system: boolean } 
-      }) => ({
-        id: ur.id,
-        user_id: ur.user_id,
-        created_at: ur.created_at,
-        ...ur.roles,
-      })) || [];
+      const formattedRoles = (userRoles as Array<{
+        id: string;
+        user_id: string;
+        created_at: string;
+        roles: Array<{ id: string; name: string; description: string | null; is_system: boolean }>;
+      }>)?.map((ur) => {
+        const role = ur.roles?.[0] || {};
+        return {
+          user_role_id: ur.id,
+          user_id: ur.user_id,
+          created_at: ur.created_at,
+          role_id: role.id,
+          role_name: role.name,
+          description: role.description,
+          is_system: role.is_system,
+        };
+      }) || [];
       
       return NextResponse.json(formattedRoles);
     }
@@ -85,12 +91,12 @@ export async function GET(request: NextRequest) {
       }>;
     }>();
     
-    allUserRoles?.forEach((ur: { 
-      id: string; 
-      user_id: string; 
-      created_at: string; 
-      roles: { id: string; name: string; description: string | null; is_system: boolean } 
-    }) => {
+    (allUserRoles as Array<{
+      id: string;
+      user_id: string;
+      created_at: string;
+      roles: Array<{ id: string; name: string; description: string | null; is_system: boolean }>;
+    }>)?.forEach((ur) => {
       if (!usersMap.has(ur.user_id)) {
         usersMap.set(ur.user_id, {
           id: ur.id,
@@ -98,7 +104,7 @@ export async function GET(request: NextRequest) {
           roles: [],
         });
       }
-      usersMap.get(ur.user_id)?.roles.push(ur.roles);
+      usersMap.get(ur.user_id)?.roles.push(...ur.roles);
     });
     
     const users = Array.from(usersMap.values());

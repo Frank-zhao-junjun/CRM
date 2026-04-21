@@ -1,7 +1,8 @@
 // 角色管理 API 路由
 import { NextRequest, NextResponse } from 'next/server';
-import { getSupabaseClient } from '@/storage/database/supabase-client';
-import { getAllRoles, getRoleWithPermissions, defaultPermissions, defaultRoles, clearPermissionCache } from '@/lib/permissions';
+import { getSupabaseClient } from '@/storage/database/supabase-client.server';
+import { defaultPermissions, defaultRoles } from '@/lib/permissions';
+import { getAllRoles, getRoleWithPermissions, clearPermissionCache } from '@/lib/permissions.server';
 import type { Role, Permission } from '@/storage/database/shared/schema';
 
 // 获取所有角色
@@ -112,7 +113,7 @@ export async function POST(request: NextRequest) {
         .in('name', permissions);
       
       const permIdMap = new Map<string, string>();
-      perms?.forEach((p: Permission) => {
+      perms?.forEach((p: { id: string; name: string }) => {
         permIdMap.set(p.name, p.id);
       });
       
@@ -210,7 +211,7 @@ export async function PUT(request: NextRequest) {
     if (description !== undefined) {
       updates.description = description;
     }
-    updates.updated_at = new Date().toISOString();
+    updates.updated_at = new Date();
     
     if (Object.keys(updates).length > 0) {
       const { error: updateError } = await client
@@ -248,7 +249,7 @@ export async function PUT(request: NextRequest) {
           .in('name', permissions);
         
         const permIdMap = new Map<string, string>();
-        perms?.forEach((p: Permission) => {
+        perms?.forEach((p: { id: string; name: string }) => {
           permIdMap.set(p.name, p.id);
         });
         

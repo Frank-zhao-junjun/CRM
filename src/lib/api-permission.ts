@@ -1,6 +1,6 @@
 // 权限检查辅助函数 - 在 API 路由中使用
 import { NextRequest, NextResponse } from 'next/server';
-import { hasPermission, PermissionName } from '@/lib/permissions';
+import { hasPermission, PermissionName } from '@/lib/permissions.server';
 
 /**
  * API 权限检查工具
@@ -86,8 +86,8 @@ export async function checkApiPermission(
 export async function withPermissionGuard(
   request: NextRequest,
   permission: PermissionName,
-  handler: (userId: string) => Promise<NextResponse>
-): Promise<NextResponse> {
+  handler: (userId: string) => Promise<Response>
+): Promise<Response> {
   const { allowed, userId, reason } = await checkApiPermission(request, permission);
   
   if (!allowed) {
@@ -110,8 +110,8 @@ export async function withPermissionGuard(
 export async function withAllPermissionsGuard(
   request: NextRequest,
   permissions: PermissionName[],
-  handler: (userId: string) => Promise<NextResponse>
-): Promise<NextResponse> {
+  handler: (userId: string) => Promise<Response>
+): Promise<Response> {
   const { allowed, userId, reason } = await checkApiPermission(request, permissions[0]);
   
   if (!allowed) {

@@ -1,15 +1,15 @@
 // 用户角色管理 API 路由
 import { NextRequest, NextResponse } from 'next/server';
-import { getSupabaseClient } from '@/storage/database/supabase-client';
+import { getSupabaseClient } from '@/storage/database/supabase-client.server';
 import { clearPermissionCache } from '@/lib/permissions';
 
 // 获取用户角色列表
 export async function GET(
   request: NextRequest,
-  { params }: { params: { userId: string } }
+  { params }: { params: Promise<{ userId: string }> }
 ) {
   try {
-    const userId = params.userId;
+    const { userId } = await params;
     const client = getSupabaseClient();
     
     // 获取用户的角色
@@ -37,17 +37,23 @@ export async function GET(
     }
     
     // 格式化返回数据
-    const formattedUserRoles = userRoles?.map((ur: { 
-      id: string; 
-      user_id: string; 
-      created_at: string; 
-      roles: { id: string; name: string; description: string | null; is_system: boolean } 
-    }) => ({
-      id: ur.id,
-      user_id: ur.user_id,
-      created_at: ur.created_at,
-      ...ur.roles,
-    })) || [];
+    const formattedUserRoles = (userRoles as Array<{
+      id: string;
+      user_id: string;
+      created_at: string;
+      roles: Array<{ id: string; name: string; description: string | null; is_system: boolean }>;
+    }>)?.map((ur) => {
+      const role = ur.roles?.[0] || {};
+      return {
+        user_role_id: ur.id,
+        user_id: ur.user_id,
+        created_at: ur.created_at,
+        role_id: role.id,
+        role_name: role.name,
+        description: role.description,
+        is_system: role.is_system,
+      };
+    }) || [];
     
     return NextResponse.json(formattedUserRoles);
   } catch (error) {
@@ -62,10 +68,10 @@ export async function GET(
 // 分配用户角色
 export async function POST(
   request: NextRequest,
-  { params }: { params: { userId: string } }
+  { params }: { params: Promise<{ userId: string }> }
 ) {
   try {
-    const userId = params.userId;
+    const { userId } = await params;
     const body = await request.json();
     const { role_id } = body;
     
@@ -141,10 +147,10 @@ export async function POST(
 // 批量更新用户角色
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { userId: string } }
+  { params }: { params: Promise<{ userId: string }> }
 ) {
   try {
-    const userId = params.userId;
+    const { userId } = await params;
     const body = await request.json();
     const { role_ids } = body;
     
@@ -210,17 +216,23 @@ export async function PUT(
       `)
       .eq('user_id', userId);
     
-    const formattedRoles = updatedRoles?.map((ur: { 
-      id: string; 
-      user_id: string; 
-      created_at: string; 
-      roles: { id: string; name: string; description: string | null; is_system: boolean } 
-    }) => ({
-      id: ur.id,
-      user_id: ur.user_id,
-      created_at: ur.created_at,
-      ...ur.roles,
-    })) || [];
+    const formattedRoles = (updatedRoles as Array<{
+      id: string;
+      user_id: string;
+      created_at: string;
+      roles: Array<{ id: string; name: string; description: string | null; is_system: boolean }>;
+    }>)?.map((ur) => {
+      const role = ur.roles?.[0] || {};
+      return {
+        user_role_id: ur.id,
+        user_id: ur.user_id,
+        created_at: ur.created_at,
+        role_id: role.id,
+        role_name: role.name,
+        description: role.description,
+        is_system: role.is_system,
+      };
+    }) || [];
     
     return NextResponse.json(formattedRoles);
   } catch (error) {
@@ -235,10 +247,10 @@ export async function PUT(
 // 移除用户角色
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { userId: string } }
+  { params }: { params: Promise<{ userId: string }> }
 ) {
   try {
-    const userId = params.userId;
+    const { userId } = await params;
     const searchParams = request.nextUrl.searchParams;
     const roleId = searchParams.get('role_id');
     

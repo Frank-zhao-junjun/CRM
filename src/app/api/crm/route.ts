@@ -1,9 +1,9 @@
 // CRM API 路由 - 处理所有 CRUD 操作 (支持线索管理)
 
 import { NextRequest, NextResponse } from 'next/server';
-import { getSupabaseClient } from '@/lib/supabase-client';
+import { getSupabaseClient } from '@/storage/database/supabase-client.server';
 import * as db from '@/lib/crm-database';
-import { withPermissionGuard, checkApiPermission } from '@/lib/api-permission';
+import { checkApiPermission } from '@/lib/api-permission';
 
 function getSecureUserId(request: NextRequest): string | null {
   // 仅从认证上下文获取用户ID，禁止从 URL 参数获取
@@ -207,7 +207,7 @@ export async function POST(request: NextRequest) {
     switch (action) {
       // Customer
       case 'createCustomer': {
-        if (!withPermissionGuard(request, 'customer', 'create')) {
+        if (!(await checkApiPermission(request, 'customers.create')).allowed) {
           return NextResponse.json({ error: '权限不足：创建客户' }, { status: 403 });
         }
         const customer = await db.createCustomer(data);
@@ -226,7 +226,7 @@ export async function POST(request: NextRequest) {
       
       // Contact
       case 'createContact': {
-        if (!withPermissionGuard(request, 'contact', 'create')) {
+        if (!(await checkApiPermission(request, 'contacts.create')).allowed) {
           return NextResponse.json({ error: '权限不足：创建联系人' }, { status: 403 });
         }
         const contact = await db.createContact(data);
@@ -244,7 +244,7 @@ export async function POST(request: NextRequest) {
       
       // Lead (线索)
       case 'createLead': {
-        if (!withPermissionGuard(request, 'lead', 'create')) {
+        if (!(await checkApiPermission(request, 'leads.create')).allowed) {
           return NextResponse.json({ error: '权限不足：创建线索' }, { status: 403 });
         }
         const lead = await db.createLead({
@@ -279,7 +279,7 @@ export async function POST(request: NextRequest) {
       
       // Lead Qualified (线索转为机会)
       case 'qualifyLead': {
-        if (!withPermissionGuard(request, 'lead', 'update')) {
+        if (!(await checkApiPermission(request, 'leads.update')).allowed) {
           return NextResponse.json({ error: '权限不足：线索转商机' }, { status: 403 });
         }
         const lead = await db.getLeadById(data.leadId);
@@ -357,7 +357,7 @@ export async function POST(request: NextRequest) {
       
       // Opportunity
       case 'createOpportunity': {
-        if (!withPermissionGuard(request, 'opportunity', 'create')) {
+        if (!(await checkApiPermission(request, 'opportunities.create')).allowed) {
           return NextResponse.json({ error: '权限不足：创建商机' }, { status: 403 });
         }
         const opportunity = await db.createOpportunity({
@@ -394,7 +394,7 @@ export async function POST(request: NextRequest) {
       
       // Activity
       case 'createActivity': {
-        if (!withPermissionGuard(request, 'activity', 'create')) {
+        if (!(await checkApiPermission(request, 'activities.create')).allowed) {
           return NextResponse.json({ error: '权限不足：创建活动' }, { status: 403 });
         }
         const activity = await db.createActivity(data);
@@ -403,7 +403,7 @@ export async function POST(request: NextRequest) {
       
       // FollowUp (V3.0)
       case 'createFollowUp': {
-        if (!withPermissionGuard(request, 'follow_up', 'create')) {
+        if (!(await checkApiPermission(request, 'follow_ups.create')).allowed) {
           return NextResponse.json({ error: '权限不足：创建跟进' }, { status: 403 });
         }
         const followUp = await db.createFollowUp({
@@ -450,7 +450,7 @@ export async function POST(request: NextRequest) {
       
       // Complete FollowUp (V3.0)
       case 'completeFollowUp': {
-        if (!withPermissionGuard(request, 'follow_up', 'update')) {
+        if (!(await checkApiPermission(request, 'follow_ups.update')).allowed) {
           return NextResponse.json({ error: '权限不足：完成任务' }, { status: 403 });
         }
         const followUp = await db.completeFollowUp(data.followUpId);
@@ -459,7 +459,7 @@ export async function POST(request: NextRequest) {
       
       // Notification (V3.0)
       case 'createNotification': {
-        if (!withPermissionGuard(request, 'notification', 'create')) {
+        if (!(await checkApiPermission(request, 'notifications.create')).allowed) {
           return NextResponse.json({ error: '权限不足：创建通知' }, { status: 403 });
         }
         const notification = await db.createNotification({
@@ -476,7 +476,7 @@ export async function POST(request: NextRequest) {
       
       // Task (任务管理 V4.1)
       case 'addTask': {
-        if (!withPermissionGuard(request, 'task', 'create')) {
+        if (!(await checkApiPermission(request, 'tasks.create')).allowed) {
           return NextResponse.json({ error: '权限不足：创建任务' }, { status: 403 });
         }
         const task = await db.createTask({
@@ -506,29 +506,28 @@ export async function POST(request: NextRequest) {
       
       // Product (产品管理)
       case 'addProduct': {
-        if (!withPermissionGuard(request, 'product', 'create')) {
+        if (!(await checkApiPermission(request, 'products.create')).allowed) {
           return NextResponse.json({ error: '权限不足：创建产品' }, { status: 403 });
         }
         const product = await db.createProduct({
+          id: `prod_${generateId('prod')}`,
           name: data.name,
           sku: data.sku,
           category: data.category,
           description: data.description,
-          unit_price: data.unitPrice ?? data.unit_price ?? 0,
-          unit: data.unit,
+          unitPrice: data.unitPrice ?? data.unit_price ?? 0,
+          unit: data.unit || '',
           cost: data.cost ?? 0,
           stock: data.stock ?? 0,
-          is_active: data.isActive !== undefined ? data.isActive : true,
-          image_url: data.imageUrl,
-          specifications: data.specifications || {},
-          created_by: getSecureUserId(request) || undefined,
+          isActive: data.isActive !== undefined ? data.isActive : true,
+          createdAt: new Date().toISOString(),
         });
         return NextResponse.json(product);
       }
       
       // Update Product (产品管理)
       case 'updateProduct': {
-        if (!withPermissionGuard(request, 'product', 'update')) {
+        if (!(await checkApiPermission(request, 'products.update')).allowed) {
           return NextResponse.json({ error: '权限不足：更新产品' }, { status: 403 });
         }
         const product = await db.updateProduct(data.id, {
@@ -536,13 +535,11 @@ export async function POST(request: NextRequest) {
           sku: data.sku,
           category: data.category,
           description: data.description,
-          unit_price: data.unitPrice ?? data.unit_price,
+          unitPrice: data.unitPrice ?? data.unit_price,
           unit: data.unit,
           cost: data.cost,
           stock: data.stock,
-          is_active: data.isActive,
-          image_url: data.imageUrl,
-          specifications: data.specifications,
+          isActive: data.isActive,
         });
         return NextResponse.json(product);
       }
@@ -564,7 +561,7 @@ export async function PUT(request: NextRequest) {
     switch (action) {
       // Customer
       case 'updateCustomer': {
-        if (!withPermissionGuard(request, 'customer', 'update')) {
+        if (!(await checkApiPermission(request, 'customers.update')).allowed) {
           return NextResponse.json({ error: '权限不足：更新客户' }, { status: 403 });
         }
         const customer = await db.updateCustomer(id, data);
@@ -582,7 +579,7 @@ export async function PUT(request: NextRequest) {
       
       // Contact
       case 'updateContact': {
-        if (!withPermissionGuard(request, 'contact', 'update')) {
+        if (!(await checkApiPermission(request, 'contacts.update')).allowed) {
           return NextResponse.json({ error: '权限不足：更新联系人' }, { status: 403 });
         }
         const contact = await db.updateContact(id, data);
@@ -591,7 +588,7 @@ export async function PUT(request: NextRequest) {
       
       // Lead (线索)
       case 'updateLead': {
-        if (!withPermissionGuard(request, 'lead', 'update')) {
+        if (!(await checkApiPermission(request, 'leads.update')).allowed) {
           return NextResponse.json({ error: '权限不足：更新线索' }, { status: 403 });
         }
         const lead = await db.updateLead(id, data);
@@ -600,7 +597,7 @@ export async function PUT(request: NextRequest) {
       
       // Opportunity (机会)
       case 'updateOpportunity': {
-        if (!withPermissionGuard(request, 'opportunity', 'update')) {
+        if (!(await checkApiPermission(request, 'opportunities.update')).allowed) {
           return NextResponse.json({ error: '权限不足：更新商机' }, { status: 403 });
         }
         const oldOpp = await db.getOpportunityById(id);
@@ -638,7 +635,7 @@ export async function PUT(request: NextRequest) {
       
       // Stage Change (阶段变更) - 后端统一处理
       case 'changeStage': {
-        if (!withPermissionGuard(request, 'opportunity', 'update')) {
+        if (!(await checkApiPermission(request, 'opportunities.update')).allowed) {
           return NextResponse.json({ error: '权限不足：变更商机阶段' }, { status: 403 });
         }
         const opportunity = await db.getOpportunityById(id);
@@ -734,7 +731,7 @@ export async function PUT(request: NextRequest) {
       
       // Mark Notification Read (V3.0)
       case 'markNotificationRead': {
-        if (!withPermissionGuard(request, 'notification', 'update')) {
+        if (!(await checkApiPermission(request, 'notifications.update')).allowed) {
           return NextResponse.json({ error: '权限不足：标记通知已读' }, { status: 403 });
         }
         await db.markNotificationRead(id);
@@ -743,7 +740,7 @@ export async function PUT(request: NextRequest) {
       
       // Mark All Notifications Read (V3.0)
       case 'markAllNotificationsRead': {
-        if (!withPermissionGuard(request, 'notification', 'update')) {
+        if (!(await checkApiPermission(request, 'notifications.update')).allowed) {
           return NextResponse.json({ error: '权限不足：标记全部已读' }, { status: 403 });
         }
         await db.markAllNotificationsRead();
@@ -752,7 +749,7 @@ export async function PUT(request: NextRequest) {
       
       // Task (任务管理 V4.1)
       case 'updateTask': {
-        if (!withPermissionGuard(request, 'task', 'update')) {
+        if (!(await checkApiPermission(request, 'tasks.update')).allowed) {
           return NextResponse.json({ error: '权限不足：更新任务' }, { status: 403 });
         }
         const task = await db.updateTask(id, data);
@@ -761,7 +758,7 @@ export async function PUT(request: NextRequest) {
       
       // Payment Plan (回款管理 V3.3)
       case 'addPaymentPlan': {
-        if (!withPermissionGuard(request, 'payment_plan', 'create')) {
+        if (!(await checkApiPermission(request, 'payment_plans.create')).allowed) {
           return NextResponse.json({ error: '权限不足：创建回款计划' }, { status: 403 });
         }
         const plan = await db.createPaymentPlan({
@@ -792,7 +789,7 @@ export async function PUT(request: NextRequest) {
           entity_type: 'lead' as any,
           entity_id: plan.id,
           entity_name: plan.title,
-          description: `创建回款计划 "${plan.title}"，金额 ¥${Number(plan.total_amount).toLocaleString()}`,
+          description: `创建回款计划 "${plan.title}"，金额 ¥${Number(plan.totalAmount).toLocaleString()}`,
           timestamp: new Date(),
         });
         return NextResponse.json(plan);
@@ -820,7 +817,7 @@ export async function DELETE(request: NextRequest) {
     switch (action) {
       // Customer (级联删除)
       case 'deleteCustomer': {
-        if (!withPermissionGuard(request, 'customer', 'delete')) {
+        if (!(await checkApiPermission(request, 'customers.delete')).allowed) {
           return NextResponse.json({ error: '权限不足：删除客户' }, { status: 403 });
         }
         const customer = await db.getCustomerById(id);
@@ -840,7 +837,7 @@ export async function DELETE(request: NextRequest) {
       }
       
       case 'deleteContact': {
-        if (!withPermissionGuard(request, 'contact', 'delete')) {
+        if (!(await checkApiPermission(request, 'contacts.delete')).allowed) {
           return NextResponse.json({ error: '权限不足：删除联系人' }, { status: 403 });
         }
         await db.deleteContact(id);
@@ -849,7 +846,7 @@ export async function DELETE(request: NextRequest) {
       
       // Lead
       case 'deleteLead': {
-        if (!withPermissionGuard(request, 'lead', 'delete')) {
+        if (!(await checkApiPermission(request, 'leads.delete')).allowed) {
           return NextResponse.json({ error: '权限不足：删除线索' }, { status: 403 });
         }
         const lead = await db.getLeadById(id);
@@ -870,7 +867,7 @@ export async function DELETE(request: NextRequest) {
       
       // Opportunity
       case 'deleteOpportunity': {
-        if (!withPermissionGuard(request, 'opportunity', 'delete')) {
+        if (!(await checkApiPermission(request, 'opportunities.delete')).allowed) {
           return NextResponse.json({ error: '权限不足：删除商机' }, { status: 403 });
         }
         const opportunity = await db.getOpportunityById(id);
@@ -891,7 +888,7 @@ export async function DELETE(request: NextRequest) {
       
       // Payment Plan (回款管理 V3.3)
       case 'deletePaymentPlan': {
-        if (!withPermissionGuard(request, 'payment_plan', 'delete')) {
+        if (!(await checkApiPermission(request, 'payment_plans.delete')).allowed) {
           return NextResponse.json({ error: '权限不足：删除回款计划' }, { status: 403 });
         }
         await db.deletePaymentPlan(id);
@@ -900,7 +897,7 @@ export async function DELETE(request: NextRequest) {
       
       // Task (任务管理 V4.1)
       case 'deleteTask': {
-        if (!withPermissionGuard(request, 'task', 'delete')) {
+        if (!(await checkApiPermission(request, 'tasks.delete')).allowed) {
           return NextResponse.json({ error: '权限不足：删除任务' }, { status: 403 });
         }
         await db.deleteTask(id);
@@ -909,7 +906,7 @@ export async function DELETE(request: NextRequest) {
       
       // Product (产品管理 V3.2)
       case 'deleteProduct': {
-        if (!withPermissionGuard(request, 'product', 'delete')) {
+        if (!(await checkApiPermission(request, 'products.delete')).allowed) {
           return NextResponse.json({ error: '权限不足：删除产品' }, { status: 403 });
         }
         await db.deleteProduct(id);

@@ -35,7 +35,7 @@ import {
   ArrowRight, 
   Receipt 
 } from 'lucide-react';
-import { PaymentPlan, PaymentStats, PAYMENT_STATUS_CONFIG, PAYMENT_METHOD_CONFIG } from '@/lib/crm-types';
+import { PaymentPlan, PaymentStats, PAYMENT_STATUS_CONFIG, PAYMENT_METHOD_CONFIG, PaymentMethod } from '@/lib/crm-types';
 
 // 统计卡片组件
 function StatCard({ title, value, subtitle, icon: Icon, colorClass }: {
@@ -98,7 +98,7 @@ function PaymentRow({ payment, onRecord }: {
           </div>
           <div className="w-24 h-1.5 bg-gray-200 rounded-full mt-1 overflow-hidden">
             <div 
-              className={`h-full ${statusConfig.bgColor}`}
+              className={`h-full ${statusConfig.className}`}
               style={{ width: `${(payment.paidAmount / payment.totalAmount) * 100}%` }}
             />
           </div>
@@ -119,7 +119,7 @@ function PaymentRow({ payment, onRecord }: {
 }
 
 export default function PaymentsPage() {
-  const { state, addPaymentPlan, updatePaymentPlan } = useCRM();
+  const { paymentPlans, todayPayments, overduePayments, customers, opportunities, addPaymentPlan, updatePaymentPlan } = useCRM();
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [activeTab, setActiveTab] = useState('all');
@@ -143,7 +143,7 @@ export default function PaymentsPage() {
 
   // 计算统计数据
   const stats: PaymentStats = useMemo(() => {
-    const plans = state.paymentPlans || [];
+    const plans = paymentPlans || [];
     const totalReceivable = plans.reduce((sum, p) => sum + p.totalAmount, 0);
     const totalReceived = plans.reduce((sum, p) => sum + p.paidAmount, 0);
     const overduePlans = plans.filter(p => p.isOverdue && p.status !== 'paid' && p.status !== 'cancelled');
@@ -159,11 +159,11 @@ export default function PaymentsPage() {
       collectionRate: totalReceivable > 0 ? (totalReceived / totalReceivable) * 100 : 0,
       overdueRate: totalReceivable > 0 ? (totalOverdue / totalReceivable) * 100 : 0,
     };
-  }, [state.paymentPlans]);
+  }, [paymentPlans]);
 
   // 筛选回款计划
   const filteredPayments = useMemo(() => {
-    let plans = state.paymentPlans || [];
+    let plans = paymentPlans || [];
     
     // 按标签筛选
     if (activeTab === 'overdue') {
@@ -185,16 +185,16 @@ export default function PaymentsPage() {
       plans = plans.filter(p => 
         p.title.toLowerCase().includes(term) ||
         p.customerName?.toLowerCase().includes(term) ||
-        p.planNumber.toLowerCase().includes(term)
+        (p.planNumber || '').toLowerCase().includes(term)
       );
     }
     
     return plans.sort((a, b) => {
       if (a.isOverdue && !b.isOverdue) return -1;
       if (!a.isOverdue && b.isOverdue) return 1;
-      return new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime();
+      return new Date(a.dueDate || '').getTime() - new Date(b.dueDate || '').getTime();
     });
-  }, [state.paymentPlans, activeTab, statusFilter, searchTerm]);
+  }, [paymentPlans, activeTab, statusFilter, searchTerm]);
 
   // 创建新回款计划
   const handleCreatePlan = () => {
@@ -206,25 +206,22 @@ export default function PaymentsPage() {
     const dueDate = newPlan.dueDate;
     
     const plan: Omit<PaymentPlan, 'id' | 'createdAt' | 'updatedAt'> = {
-      planNumber: `PP-${new Date().getFullYear()}${String(new Date().getMonth() + 1).padStart(2, '0')}${String((state.paymentPlans?.length || 0) + 1).padStart(4, '0')}`,
+      planNumber: `PP-${new Date().getFullYear()}${String(new Date().getMonth() + 1).padStart(2, '0')}${String((paymentPlans?.length || 0) + 1).padStart(4, '0')}`,
       title: newPlan.title,
       customerId: newPlan.customerId || undefined,
-      customerName: newPlan.customerName || state.customers.find(c => c.id === newPlan.customerId)?.name,
+      customerName: newPlan.customerName || customers.find(c => c.id === newPlan.customerId)?.name,
       opportunityId: newPlan.opportunityId || undefined,
-      opportunityName: newPlan.opportunityName || state.opportunities.find(o => o.id === newPlan.opportunityId)?.title,
+      opportunityTitle: newPlan.opportunityName || opportunities.find(o => o.id === newPlan.opportunityId)?.title,
       totalAmount: parseFloat(newPlan.totalAmount),
       paidAmount: 0,
       pendingAmount: parseFloat(newPlan.totalAmount),
       dueDate: newPlan.dueDate,
       status: 'pending',
-      installments: [{
-        id: `inst-${Date.now()}`,
-        planId: `payment-${Date.now()}`,
-        installmentNumber: 1,
+      paymentPlanItems: [{
+        productName: newPlan.title,
+        quantity: 1,
+        unitPrice: parseFloat(newPlan.totalAmount),
         amount: parseFloat(newPlan.totalAmount),
-        dueDate: newPlan.dueDate,
-        paidAmount: 0,
-        status: 'pending',
       }],
       overdueDays: dueDate < today ? Math.ceil((new Date(today).getTime() - new Date(dueDate).getTime()) / (1000 * 60 * 60 * 24)) : 0,
       isOverdue: dueDate < today,
@@ -255,7 +252,7 @@ export default function PaymentsPage() {
       paidAmount: newPaidAmount,
       pendingAmount: Math.max(0, newPendingAmount),
       status: newPaidAmount >= selectedPayment.totalAmount ? 'paid' : 'partial',
-      paymentMethod: recordMethod,
+      paymentMethod: recordMethod as PaymentMethod,
     });
     
     setShowRecordDialog(false);
@@ -407,12 +404,12 @@ export default function PaymentsPage() {
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <Label>关联客户</Label>
-                <Select value={newPlan.customerId} onValueChange={(v) => setNewPlan({ ...newPlan, customerId: v, customerName: state.customers.find(c => c.id === v)?.name || '' })}>
+                <Select value={newPlan.customerId} onValueChange={(v) => setNewPlan({ ...newPlan, customerId: v, customerName: customers.find(c => c.id === v)?.name || '' })}>
                   <SelectTrigger>
                     <SelectValue placeholder="选择客户" />
                   </SelectTrigger>
                   <SelectContent>
-                    {state.customers.map(c => (
+                    {customers.map(c => (
                       <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
                     ))}
                   </SelectContent>
@@ -421,12 +418,12 @@ export default function PaymentsPage() {
               
               <div>
                 <Label>关联商机</Label>
-                <Select value={newPlan.opportunityId} onValueChange={(v) => setNewPlan({ ...newPlan, opportunityId: v, opportunityName: state.opportunities.find(o => o.id === v)?.title || '' })}>
+                <Select value={newPlan.opportunityId} onValueChange={(v) => setNewPlan({ ...newPlan, opportunityId: v, opportunityName: opportunities.find(o => o.id === v)?.title || '' })}>
                   <SelectTrigger>
                     <SelectValue placeholder="选择商机" />
                   </SelectTrigger>
                   <SelectContent>
-                    {state.opportunities.map(o => (
+                    {opportunities.map(o => (
                       <SelectItem key={o.id} value={o.id}>{o.title}</SelectItem>
                     ))}
                   </SelectContent>

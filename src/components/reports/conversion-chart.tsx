@@ -149,3 +149,5 @@ export function useConversionApiData(timeRange: 'month' | 'quarter' | 'year' | '
     error,
   };
 }
+// Alias exports
+export const useConversionData = useConversionApiData;

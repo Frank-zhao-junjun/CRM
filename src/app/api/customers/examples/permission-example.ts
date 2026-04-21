@@ -166,7 +166,7 @@ export async function PUT(request: NextRequest) {
   }
   
   // 普通编辑操作需要 edit 权限
-  return withPermissionGuard(request, 'customers.edit', async (userId) => {
+  return withPermissionGuard(request, 'customers.update', async (userId) => {
     try {
       const body = await request.json();
       const { id, ...updates } = body;

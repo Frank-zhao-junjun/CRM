@@ -55,18 +55,16 @@ export async function POST(request: NextRequest) {
     switch (action) {
       case 'create': {
         const task = await db.createTask({
-          id: `task_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
           title: data.title,
-          description: data.description || null,
-          entity_type: data.entityType || null,
-          entity_id: data.entityId || null,
-          entity_name: data.entityName || null,
+          description: data.description || undefined,
+          type: data.type || 'follow_up',
           priority: data.priority || 'medium',
           status: 'pending',
-          due_date: data.dueDate || null,
-          source: 'manual',
-          workflow_id: null,
-          assigned_to: data.assignedTo || 'sales_a',
+          assigneeId: data.assignedTo,
+          relatedType: data.entityType as 'customer' | 'lead' | 'opportunity' | 'contract' | 'order' | undefined,
+          relatedId: data.entityId || undefined,
+          relatedName: data.entityName || undefined,
+          dueDate: data.dueDate || new Date().toISOString(),
         });
 
         // Record activity
@@ -90,9 +88,9 @@ export async function POST(request: NextRequest) {
         await db.createActivity({
           id: `act_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
           type: 'updated',
-          entity_type: (task.entity_type as 'customer' | 'contact' | 'lead' | 'opportunity') || 'customer',
-          entity_id: task.entity_id || task.id,
-          entity_name: task.entity_name || task.title,
+          entity_type: (task.relatedType as 'customer' | 'contact' | 'lead' | 'opportunity') || 'customer',
+          entity_id: task.relatedId || task.id,
+          entity_name: task.relatedName || task.title,
           description: `完成任务: ${task.title}`,
           timestamp: new Date(),
         });

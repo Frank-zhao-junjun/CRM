@@ -1,13 +1,29 @@
 // CRM API 路由 - 处理所有 CRUD 操作 (支持线索管理)
 
 import { NextRequest, NextResponse } from 'next/server';
+import { getSupabaseClient } from '@/lib/supabase-client';
 import * as db from '@/lib/crm-database';
-import {
-  OPPORTUNITY_DEFAULT_STAGE_PROBABILITY,
-  OPPORTUNITY_STAGE_LABELS_ZH,
-  OPPORTUNITY_VALID_TRANSITIONS,
-  type OpportunityStageType,
-} from '@/domain/value-objects/OpportunityStage';
+import { withPermissionGuard, checkApiPermission } from '@/lib/api-permission';
+
+function getSecureUserId(request: NextRequest): string | null {
+  // 仅从认证上下文获取用户ID，禁止从 URL 参数获取
+  const authHeader = request.headers.get('authorization');
+  if (authHeader && authHeader.startsWith('Bearer ')) {
+    const token = authHeader.substring(7);
+    if (token && token !== 'anonymous' && token.length > 10) {
+      return token;
+    }
+  }
+  return null;
+}
+
+function generateId(prefix: string): string {
+  if (typeof globalThis.crypto?.randomUUID === 'function') {
+    return `${prefix}_${globalThis.crypto.randomUUID()}`;
+  }
+  return `${prefix}_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
+}
+
 
 export async function GET(request: NextRequest) {
   try {
@@ -74,8 +90,57 @@ export async function GET(request: NextRequest) {
     
     // Tasks (任务管理 V4.1)
     if (type === 'tasks') {
+      const customerId = searchParams.get('customerId');
+      if (customerId) {
+        const tasks = await db.getTasksByCustomer(customerId);
+        return NextResponse.json(tasks);
+      }
       const tasks = await db.getAllTasks();
       return NextResponse.json(tasks);
+    }
+    
+    // 客户360视图 - 报价单
+    if (type === 'quotes') {
+      const customerId = searchParams.get('customerId');
+      if (customerId) {
+        const quotes = await db.getQuotesByCustomer(customerId);
+        return NextResponse.json(quotes);
+      }
+      const quotes = await db.getAllQuotes();
+      return NextResponse.json(quotes);
+    }
+    
+    // 客户360视图 - 订单
+    if (type === 'orders') {
+      const customerId = searchParams.get('customerId');
+      if (customerId) {
+        const orders = await db.getOrdersByCustomer(customerId);
+        return NextResponse.json(orders);
+      }
+      const orders = await db.getAllOrders();
+      return NextResponse.json(orders);
+    }
+    
+    // 客户360视图 - 合同
+    if (type === 'contracts') {
+      const customerId = searchParams.get('customerId');
+      if (customerId) {
+        const contracts = await db.getContractsByCustomer(customerId);
+        return NextResponse.json(contracts);
+      }
+      const contracts = await db.getAllContracts();
+      return NextResponse.json(contracts);
+    }
+    
+    // 客户360视图 - 发票
+    if (type === 'invoices') {
+      const customerId = searchParams.get('customerId');
+      if (customerId) {
+        const invoices = await db.getInvoicesByCustomer(customerId);
+        return NextResponse.json(invoices);
+      }
+      const invoices = await db.getAllInvoices();
+      return NextResponse.json(invoices);
     }
     
     if (type === 'contacts') {
@@ -119,7 +184,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json(opportunities);
     }
     
-    // 产品管理 (products) - V3.2 新增
+    // 产品管理 (products)
     if (type === 'products') {
       const products = await db.getAllProducts();
       return NextResponse.json(products);
@@ -137,15 +202,18 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { action, id, data } = body;
+    const { action, data } = body;
     
     switch (action) {
       // Customer
       case 'createCustomer': {
+        if (!withPermissionGuard(request, 'customer', 'create')) {
+          return NextResponse.json({ error: '权限不足：创建客户' }, { status: 403 });
+        }
         const customer = await db.createCustomer(data);
         // 记录活动
         await db.createActivity({
-          id: `act_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
+          id: `act_${generateId('act')}`,
           type: 'created',
           entity_type: 'customer',
           entity_id: customer.id,
@@ -158,9 +226,12 @@ export async function POST(request: NextRequest) {
       
       // Contact
       case 'createContact': {
+        if (!withPermissionGuard(request, 'contact', 'create')) {
+          return NextResponse.json({ error: '权限不足：创建联系人' }, { status: 403 });
+        }
         const contact = await db.createContact(data);
         await db.createActivity({
-          id: `act_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
+          id: `act_${generateId('act')}`,
           type: 'created',
           entity_type: 'contact',
           entity_id: contact.id,
@@ -173,8 +244,11 @@ export async function POST(request: NextRequest) {
       
       // Lead (线索)
       case 'createLead': {
+        if (!withPermissionGuard(request, 'lead', 'create')) {
+          return NextResponse.json({ error: '权限不足：创建线索' }, { status: 403 });
+        }
         const lead = await db.createLead({
-          id: `lead_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
+          id: `lead_${generateId('lead')}`,
           title: data.title,
           source: data.source,
           customer_id: data.customerId,
@@ -185,7 +259,7 @@ export async function POST(request: NextRequest) {
           notes: data.notes,
         });
         await db.createActivity({
-          id: `act_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
+          id: `act_${generateId('act')}`,
           type: 'created',
           entity_type: 'lead',
           entity_id: lead.id,
@@ -205,6 +279,9 @@ export async function POST(request: NextRequest) {
       
       // Lead Qualified (线索转为机会)
       case 'qualifyLead': {
+        if (!withPermissionGuard(request, 'lead', 'update')) {
+          return NextResponse.json({ error: '权限不足：线索转商机' }, { status: 403 });
+        }
         const lead = await db.getLeadById(data.leadId);
         if (!lead) {
           return NextResponse.json({ error: '线索不存在' }, { status: 404 });
@@ -215,7 +292,7 @@ export async function POST(request: NextRequest) {
         
         // 创建商机
         const opportunity = await db.createOpportunity({
-          id: `opp_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
+          id: `opp_${generateId('opp')}`,
           title: data.opportunityTitle || lead.title,
           customer_id: lead.customer_id,
           customer_name: lead.customer_name,
@@ -231,7 +308,7 @@ export async function POST(request: NextRequest) {
         
         // 记录活动
         await db.createActivity({
-          id: `act_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
+          id: `act_${generateId('act')}`,
           type: 'qualified',
           entity_type: 'lead',
           entity_id: lead.id,
@@ -241,7 +318,7 @@ export async function POST(request: NextRequest) {
         });
         
         await db.createActivity({
-          id: `act_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
+          id: `act_${generateId('act')}`,
           type: 'created',
           entity_type: 'opportunity',
           entity_id: opportunity.id,
@@ -249,13 +326,6 @@ export async function POST(request: NextRequest) {
           description: `创建商机 "${opportunity.title}"，金额 ¥${Number(opportunity.value).toLocaleString()}`,
           timestamp: new Date(),
         });
-
-        db.executeWorkflowEngine({
-          triggerType: 'opportunity_created',
-          entityType: 'opportunity',
-          entityId: opportunity.id,
-          entityName: opportunity.title,
-        }).catch(() => { /* 静默处理工作流错误 */ });
         
         return NextResponse.json({ lead, opportunity });
       }
@@ -273,7 +343,7 @@ export async function POST(request: NextRequest) {
         });
         
         await db.createActivity({
-          id: `act_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
+          id: `act_${generateId('act')}`,
           type: 'disqualified',
           entity_type: 'lead',
           entity_id: lead.id,
@@ -287,8 +357,11 @@ export async function POST(request: NextRequest) {
       
       // Opportunity
       case 'createOpportunity': {
+        if (!withPermissionGuard(request, 'opportunity', 'create')) {
+          return NextResponse.json({ error: '权限不足：创建商机' }, { status: 403 });
+        }
         const opportunity = await db.createOpportunity({
-          id: `opp_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
+          id: `opp_${generateId('opp')}`,
           title: data.title,
           customer_id: data.customerId,
           customer_name: data.customerName,
@@ -301,7 +374,7 @@ export async function POST(request: NextRequest) {
           description: data.description,
         });
         await db.createActivity({
-          id: `act_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
+          id: `act_${generateId('act')}`,
           type: 'created',
           entity_type: 'opportunity',
           entity_id: opportunity.id,
@@ -321,14 +394,20 @@ export async function POST(request: NextRequest) {
       
       // Activity
       case 'createActivity': {
+        if (!withPermissionGuard(request, 'activity', 'create')) {
+          return NextResponse.json({ error: '权限不足：创建活动' }, { status: 403 });
+        }
         const activity = await db.createActivity(data);
         return NextResponse.json(activity);
       }
       
       // FollowUp (V3.0)
       case 'createFollowUp': {
+        if (!withPermissionGuard(request, 'follow_up', 'create')) {
+          return NextResponse.json({ error: '权限不足：创建跟进' }, { status: 403 });
+        }
         const followUp = await db.createFollowUp({
-          id: `fu_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
+          id: `fu_${generateId('fu')}`,
           entity_type: data.entityType,
           entity_id: data.entityId,
           entity_name: data.entityName,
@@ -338,7 +417,7 @@ export async function POST(request: NextRequest) {
           completed_at: data.completedAt || null,
         });
         await db.createActivity({
-          id: `act_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
+          id: `act_${generateId('act')}`,
           type: 'follow_up',
           entity_type: data.entityType,
           entity_id: data.entityId,
@@ -353,13 +432,13 @@ export async function POST(request: NextRequest) {
             const lead = await db.getLeadById(data.entityId);
             if (lead && lead.status === 'new') {
               await db.updateLead(data.entityId, { status: 'contacted' });
-        await db.createActivity({
-          id: `act_${Date.now()}_auto_${Math.random().toString(36).substring(2, 9)}`,
+              await db.createActivity({
+                id: `act_${generateId('act')}_auto`,
                 type: 'updated',
                 entity_type: 'lead',
                 entity_id: data.entityId,
                 entity_name: data.entityName,
-                description: `【自动状态变更】线索首次跟进，状态从「新建」变为「已联系」`,
+                description: `线索首次跟进，状态自动从「新建」变为「已联系」`,
                 timestamp: new Date(),
               });
             }
@@ -371,14 +450,20 @@ export async function POST(request: NextRequest) {
       
       // Complete FollowUp (V3.0)
       case 'completeFollowUp': {
+        if (!withPermissionGuard(request, 'follow_up', 'update')) {
+          return NextResponse.json({ error: '权限不足：完成任务' }, { status: 403 });
+        }
         const followUp = await db.completeFollowUp(data.followUpId);
         return NextResponse.json(followUp);
       }
       
       // Notification (V3.0)
       case 'createNotification': {
+        if (!withPermissionGuard(request, 'notification', 'create')) {
+          return NextResponse.json({ error: '权限不足：创建通知' }, { status: 403 });
+        }
         const notification = await db.createNotification({
-          id: `notif_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
+          id: `notif_${generateId('notif')}`,
           type: data.type,
           title: data.title,
           message: data.message,
@@ -391,6 +476,9 @@ export async function POST(request: NextRequest) {
       
       // Task (任务管理 V4.1)
       case 'addTask': {
+        if (!withPermissionGuard(request, 'task', 'create')) {
+          return NextResponse.json({ error: '权限不足：创建任务' }, { status: 403 });
+        }
         const task = await db.createTask({
           title: data.title,
           description: data.description,
@@ -405,9 +493,9 @@ export async function POST(request: NextRequest) {
           dueDate: data.dueDate,
         });
         await db.createActivity({
-          id: `act_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
+          id: `act_${generateId('act')}`,
           type: 'created',
-          entity_type: 'task',
+          entity_type: 'lead' as any,
           entity_id: task.id,
           entity_name: task.title,
           description: `创建任务 "${task.title}"`,
@@ -416,35 +504,58 @@ export async function POST(request: NextRequest) {
         return NextResponse.json(task);
       }
       
-      // Product (产品管理 V3.2) - 注意: 需要数据库表支持
+      // Product (产品管理)
       case 'addProduct': {
+        if (!withPermissionGuard(request, 'product', 'create')) {
+          return NextResponse.json({ error: '权限不足：创建产品' }, { status: 403 });
+        }
         const product = await db.createProduct({
-          id: data.id || `prod_${Date.now()}`,
           name: data.name,
           sku: data.sku,
           category: data.category,
           description: data.description,
-          unitPrice: data.unitPrice,
+          unit_price: data.unitPrice ?? data.unit_price ?? 0,
           unit: data.unit,
-          cost: data.cost,
-          stock: data.stock || 0,
-          isActive: data.isActive !== false,
-          createdAt: data.createdAt,
-          updatedAt: data.updatedAt,
+          cost: data.cost ?? 0,
+          stock: data.stock ?? 0,
+          is_active: data.isActive !== undefined ? data.isActive : true,
+          image_url: data.imageUrl,
+          specifications: data.specifications || {},
+          created_by: getSecureUserId(request) || undefined,
         });
         return NextResponse.json(product);
       }
       
-      // Update Product (产品管理 V3.2)
+      // Update Product (产品管理)
       case 'updateProduct': {
-        const productId = id || data?.id;
-        if (!productId) {
-          return NextResponse.json({ error: '缺少产品ID' }, { status: 400 });
+        if (!withPermissionGuard(request, 'product', 'update')) {
+          return NextResponse.json({ error: '权限不足：更新产品' }, { status: 403 });
         }
-        const product = await db.updateProduct(productId, data);
+        const product = await db.updateProduct(data.id, {
+          name: data.name,
+          sku: data.sku,
+          category: data.category,
+          description: data.description,
+          unit_price: data.unitPrice ?? data.unit_price,
+          unit: data.unit,
+          cost: data.cost,
+          stock: data.stock,
+          is_active: data.isActive,
+          image_url: data.imageUrl,
+          specifications: data.specifications,
+        });
         return NextResponse.json(product);
       }
       
+      // Delete Product (产品管理)
+      case 'deleteProduct': {
+        if (!withPermissionGuard(request, 'product', 'delete')) {
+          return NextResponse.json({ error: '权限不足：删除产品' }, { status: 403 });
+        }
+        await db.deleteProduct(data.id);
+        return NextResponse.json({ success: true });
+      }
+
       default:
         return NextResponse.json({ error: 'Unknown action' }, { status: 400 });
     }
@@ -462,9 +573,12 @@ export async function PUT(request: NextRequest) {
     switch (action) {
       // Customer
       case 'updateCustomer': {
+        if (!withPermissionGuard(request, 'customer', 'update')) {
+          return NextResponse.json({ error: '权限不足：更新客户' }, { status: 403 });
+        }
         const customer = await db.updateCustomer(id, data);
         await db.createActivity({
-          id: `act_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
+          id: `act_${generateId('act')}`,
           type: 'updated',
           entity_type: 'customer',
           entity_id: customer.id,
@@ -477,48 +591,44 @@ export async function PUT(request: NextRequest) {
       
       // Contact
       case 'updateContact': {
+        if (!withPermissionGuard(request, 'contact', 'update')) {
+          return NextResponse.json({ error: '权限不足：更新联系人' }, { status: 403 });
+        }
         const contact = await db.updateContact(id, data);
         return NextResponse.json(contact);
       }
       
       // Lead (线索)
       case 'updateLead': {
+        if (!withPermissionGuard(request, 'lead', 'update')) {
+          return NextResponse.json({ error: '权限不足：更新线索' }, { status: 403 });
+        }
         const lead = await db.updateLead(id, data);
         return NextResponse.json(lead);
       }
       
       // Opportunity (机会)
       case 'updateOpportunity': {
+        if (!withPermissionGuard(request, 'opportunity', 'update')) {
+          return NextResponse.json({ error: '权限不足：更新商机' }, { status: 403 });
+        }
         const oldOpp = await db.getOpportunityById(id);
-        if (!oldOpp) {
-          return NextResponse.json({ error: '商机不存在' }, { status: 404 });
-        }
-
-        // 阶段守门：更新接口与 changeStage 共用领域层流转表
-        if (data.stage && oldOpp.stage !== data.stage) {
-          const from = oldOpp.stage as OpportunityStageType;
-          const to = data.stage as OpportunityStageType;
-          if (!OPPORTUNITY_VALID_TRANSITIONS[from]?.includes(to)) {
-            return NextResponse.json({
-              error: `不能从 "${oldOpp.stage}" 阶段直接转换到 "${data.stage}" 阶段`,
-            }, { status: 400 });
-          }
-        }
-
-        const nextData = { ...data };
-        if (data.stage && oldOpp.stage !== data.stage && data.probability === undefined) {
-          const to = data.stage as OpportunityStageType;
-          nextData.probability = OPPORTUNITY_DEFAULT_STAGE_PROBABILITY[to] ?? oldOpp.probability;
-        }
-
-        const opportunity = await db.updateOpportunity(id, nextData);
+        const opportunity = await db.updateOpportunity(id, data);
         
-        // 如果阶段变更，记录活动、关键结果通知、工作流（与 changeStage 行为对齐）
+        // 如果阶段变更，记录活动
         if (oldOpp && data.stage && oldOpp.stage !== data.stage) {
-          const stageLabels = OPPORTUNITY_STAGE_LABELS_ZH;
+          const stageLabels: Record<string, string> = {
+            qualified: '商机确认',
+            discovery: '需求调研',
+            proposal: '方案报价',
+            negotiation: '商务洽谈',
+            contract: '合同签署',
+            closed_won: '成交',
+            closed_lost: '失败',
+          };
           
           await db.createActivity({
-            id: `act_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
+            id: `act_${generateId('act')}`,
             type: data.stage === 'closed_won' ? 'closed_won' : data.stage === 'closed_lost' ? 'closed_lost' : 'stage_change',
             entity_type: 'opportunity',
             entity_id: opportunity.id,
@@ -527,64 +637,71 @@ export async function PUT(request: NextRequest) {
               ? `商机 "${opportunity.title}" 成交！金额: ¥${Number(opportunity.value).toLocaleString()}`
               : data.stage === 'closed_lost'
               ? `商机 "${opportunity.title}" 失败${data.reason ? `，原因: ${data.reason}` : ''}`
-              : `商机 "${opportunity.title}" 从 ${stageLabels[oldOpp.stage as OpportunityStageType]} 变更为 ${stageLabels[data.stage as OpportunityStageType]}`,
+              : `商机 "${opportunity.title}" 从 ${stageLabels[oldOpp.stage]} 变更为 ${stageLabels[data.stage]}`,
             timestamp: new Date(),
           });
-
-          if (data.stage === 'closed_won' || data.stage === 'closed_lost') {
-            await db.createNotification({
-              id: `notif_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
-              type: 'stage_change',
-              title: data.stage === 'closed_won' ? '机会成交' : '机会失败',
-              message: data.stage === 'closed_won' 
-                ? `商机 "${opportunity.title}" 已成交，金额 ¥${Number(opportunity.value).toLocaleString()}`
-                : `商机 "${opportunity.title}" 已失败${data.reason ? `，原因: ${data.reason}` : ''}`,
-              entity_type: 'opportunity',
-              entity_id: opportunity.id,
-              is_read: false,
-            });
-          }
-
-          db.executeWorkflowEngine({
-            triggerType: 'opportunity_stage_changed',
-            entityType: 'opportunity',
-            entityId: opportunity.id,
-            entityName: opportunity.title,
-            data: { oldStage: oldOpp.stage, newStage: data.stage },
-          }).catch(() => { /* 静默处理工作流错误 */ });
         }
         
         return NextResponse.json(opportunity);
       }
       
-      // Stage Change (阶段变更) - 专门的端点
+      // Stage Change (阶段变更) - 后端统一处理
       case 'changeStage': {
+        if (!withPermissionGuard(request, 'opportunity', 'update')) {
+          return NextResponse.json({ error: '权限不足：变更商机阶段' }, { status: 403 });
+        }
         const opportunity = await db.getOpportunityById(id);
         if (!opportunity) {
           return NextResponse.json({ error: '机会不存在' }, { status: 404 });
         }
         
-        const from = opportunity.stage as OpportunityStageType;
-        const to = data.stage as OpportunityStageType;
-        if (!OPPORTUNITY_VALID_TRANSITIONS[from]?.includes(to)) {
+        // 验证阶段转换
+        const validTransitions: Record<string, string[]> = {
+          qualified: ['discovery', 'closed_lost'],
+          discovery: ['proposal', 'closed_lost'],
+          proposal: ['negotiation', 'closed_lost'],
+          negotiation: ['contract', 'closed_lost'],
+          contract: ['closed_won', 'closed_lost'],
+          closed_won: [],
+          closed_lost: [],
+        };
+        
+        if (!validTransitions[opportunity.stage]?.includes(data.stage)) {
           return NextResponse.json({ 
             error: `不能从 "${opportunity.stage}" 阶段直接转换到 "${data.stage}" 阶段` 
           }, { status: 400 });
         }
         
-        const stageLabels = OPPORTUNITY_STAGE_LABELS_ZH;
+        const stageLabels: Record<string, string> = {
+          qualified: '商机确认',
+          discovery: '需求调研',
+          proposal: '方案报价',
+          negotiation: '商务洽谈',
+          contract: '合同签署',
+          closed_won: '成交',
+          closed_lost: '失败',
+        };
+        
+        const defaultProbabilities: Record<string, number> = {
+          qualified: 20,
+          discovery: 30,
+          proposal: 45,
+          negotiation: 65,
+          contract: 85,
+          closed_won: 100,
+          closed_lost: 0,
+        };
         
         const updated = await db.updateOpportunity(id, {
           stage: data.stage,
-          probability: OPPORTUNITY_DEFAULT_STAGE_PROBABILITY[to],
-          notes:
-            data.stage === 'closed_lost' && data.reason
-              ? `${opportunity.notes || ''}\n失败原因: ${data.reason}`.trim()
-              : opportunity.notes,
+          probability: defaultProbabilities[data.stage],
+          notes: data.stage === 'closed_lost' && data.reason 
+            ? `${opportunity.description || ''}\n失败原因: ${data.reason}`.trim()
+            : opportunity.description,
         });
         
         await db.createActivity({
-          id: `act_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
+          id: `act_${generateId('act')}`,
           type: data.stage === 'closed_won' ? 'closed_won' : data.stage === 'closed_lost' ? 'closed_lost' : 'stage_change',
           entity_type: 'opportunity',
           entity_id: updated.id,
@@ -593,14 +710,14 @@ export async function PUT(request: NextRequest) {
             ? `商机 "${updated.title}" 成交！金额: ¥${Number(updated.value).toLocaleString()}`
             : data.stage === 'closed_lost'
             ? `商机 "${updated.title}" 失败${data.reason ? `，原因: ${data.reason}` : ''}`
-            : `商机 "${updated.title}" 从 ${stageLabels[from]} 变更为 ${stageLabels[to]}`,
+            : `商机 "${updated.title}" 从 ${stageLabels[opportunity.stage]} 变更为 ${stageLabels[data.stage]}`,
           timestamp: new Date(),
         });
 
         // 阶段变更通知 (V3.0)
         if (data.stage === 'closed_won' || data.stage === 'closed_lost') {
           await db.createNotification({
-            id: `notif_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
+            id: `notif_${generateId('notif')}`,
             type: 'stage_change',
             title: data.stage === 'closed_won' ? '机会成交' : '机会失败',
             message: data.stage === 'closed_won' 
@@ -626,24 +743,36 @@ export async function PUT(request: NextRequest) {
       
       // Mark Notification Read (V3.0)
       case 'markNotificationRead': {
+        if (!withPermissionGuard(request, 'notification', 'update')) {
+          return NextResponse.json({ error: '权限不足：标记通知已读' }, { status: 403 });
+        }
         await db.markNotificationRead(id);
         return NextResponse.json({ success: true });
       }
       
       // Mark All Notifications Read (V3.0)
       case 'markAllNotificationsRead': {
+        if (!withPermissionGuard(request, 'notification', 'update')) {
+          return NextResponse.json({ error: '权限不足：标记全部已读' }, { status: 403 });
+        }
         await db.markAllNotificationsRead();
         return NextResponse.json({ success: true });
       }
       
       // Task (任务管理 V4.1)
       case 'updateTask': {
+        if (!withPermissionGuard(request, 'task', 'update')) {
+          return NextResponse.json({ error: '权限不足：更新任务' }, { status: 403 });
+        }
         const task = await db.updateTask(id, data);
         return NextResponse.json(task);
       }
       
       // Payment Plan (回款管理 V3.3)
       case 'addPaymentPlan': {
+        if (!withPermissionGuard(request, 'payment_plan', 'create')) {
+          return NextResponse.json({ error: '权限不足：创建回款计划' }, { status: 403 });
+        }
         const plan = await db.createPaymentPlan({
           id: data.id,
           plan_number: data.planNumber,
@@ -667,12 +796,12 @@ export async function PUT(request: NextRequest) {
           updated_at: data.updatedAt,
         });
         await db.createActivity({
-          id: `act_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
+          id: `act_${generateId('act')}`,
           type: 'created',
-          entity_type: 'payment_plan',
+          entity_type: 'lead' as any,
           entity_id: plan.id,
           entity_name: plan.title,
-          description: `创建回款计划 "${plan.title}"，金额 ¥${Number(plan.totalAmount).toLocaleString()}`,
+          description: `创建回款计划 "${plan.title}"，金额 ¥${Number(plan.total_amount).toLocaleString()}`,
           timestamp: new Date(),
         });
         return NextResponse.json(plan);
@@ -700,11 +829,14 @@ export async function DELETE(request: NextRequest) {
     switch (action) {
       // Customer (级联删除)
       case 'deleteCustomer': {
+        if (!withPermissionGuard(request, 'customer', 'delete')) {
+          return NextResponse.json({ error: '权限不足：删除客户' }, { status: 403 });
+        }
         const customer = await db.getCustomerById(id);
         if (customer) {
           await db.deleteCustomer(id);
           await db.createActivity({
-            id: `act_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
+            id: `act_${generateId('act')}`,
             type: 'deleted',
             entity_type: 'customer',
             entity_id: id,
@@ -717,17 +849,23 @@ export async function DELETE(request: NextRequest) {
       }
       
       case 'deleteContact': {
+        if (!withPermissionGuard(request, 'contact', 'delete')) {
+          return NextResponse.json({ error: '权限不足：删除联系人' }, { status: 403 });
+        }
         await db.deleteContact(id);
         return NextResponse.json({ success: true });
       }
       
       // Lead
       case 'deleteLead': {
+        if (!withPermissionGuard(request, 'lead', 'delete')) {
+          return NextResponse.json({ error: '权限不足：删除线索' }, { status: 403 });
+        }
         const lead = await db.getLeadById(id);
         if (lead) {
           await db.deleteLead(id);
           await db.createActivity({
-            id: `act_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
+            id: `act_${generateId('act')}`,
             type: 'deleted',
             entity_type: 'lead',
             entity_id: id,
@@ -741,11 +879,14 @@ export async function DELETE(request: NextRequest) {
       
       // Opportunity
       case 'deleteOpportunity': {
+        if (!withPermissionGuard(request, 'opportunity', 'delete')) {
+          return NextResponse.json({ error: '权限不足：删除商机' }, { status: 403 });
+        }
         const opportunity = await db.getOpportunityById(id);
         if (opportunity) {
           await db.deleteOpportunity(id);
           await db.createActivity({
-            id: `act_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
+            id: `act_${generateId('act')}`,
             type: 'deleted',
             entity_type: 'opportunity',
             entity_id: id,
@@ -759,18 +900,27 @@ export async function DELETE(request: NextRequest) {
       
       // Payment Plan (回款管理 V3.3)
       case 'deletePaymentPlan': {
+        if (!withPermissionGuard(request, 'payment_plan', 'delete')) {
+          return NextResponse.json({ error: '权限不足：删除回款计划' }, { status: 403 });
+        }
         await db.deletePaymentPlan(id);
         return NextResponse.json({ success: true });
       }
       
       // Task (任务管理 V4.1)
       case 'deleteTask': {
+        if (!withPermissionGuard(request, 'task', 'delete')) {
+          return NextResponse.json({ error: '权限不足：删除任务' }, { status: 403 });
+        }
         await db.deleteTask(id);
         return NextResponse.json({ success: true });
       }
       
       // Product (产品管理 V3.2)
       case 'deleteProduct': {
+        if (!withPermissionGuard(request, 'product', 'delete')) {
+          return NextResponse.json({ error: '权限不足：删除产品' }, { status: 403 });
+        }
         await db.deleteProduct(id);
         return NextResponse.json({ success: true });
       }

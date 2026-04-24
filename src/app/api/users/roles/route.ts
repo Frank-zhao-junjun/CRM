@@ -1,6 +1,7 @@
 // 获取所有用户角色列表
 import { NextRequest, NextResponse } from 'next/server';
-import { getSupabaseClient } from '@/storage/database/supabase-client.server';
+import { createClient } from '@supabase/supabase-js';
+import { getSupabaseClient, getSupabaseCredentials, getSupabaseServiceRoleKey } from '@/storage/database/supabase-client.server';
 
 // 获取所有用户及其角色
 export async function GET(request: NextRequest) {
@@ -83,6 +84,8 @@ export async function GET(request: NextRequest) {
     const usersMap = new Map<string, {
       id: string;
       user_id: string;
+      user_name?: string;
+      email?: string;
       roles: Array<{
         id: string;
         name: string;
@@ -90,12 +93,12 @@ export async function GET(request: NextRequest) {
         is_system: boolean;
       }>;
     }>();
-    
+
     (allUserRoles as Array<{
       id: string;
       user_id: string;
       created_at: string;
-      roles: Array<{ id: string; name: string; description: string | null; is_system: boolean }>;
+      roles: { id: string; name: string; description: string | null; is_system: boolean } | Array<{ id: string; name: string; description: string | null; is_system: boolean }>;
     }>)?.forEach((ur) => {
       if (!usersMap.has(ur.user_id)) {
         usersMap.set(ur.user_id, {
@@ -104,11 +107,33 @@ export async function GET(request: NextRequest) {
           roles: [],
         });
       }
-      usersMap.get(ur.user_id)?.roles.push(...ur.roles);
+      const roleList = Array.isArray(ur.roles) ? ur.roles : ur.roles ? [ur.roles] : [];
+      usersMap.get(ur.user_id)?.roles.push(...roleList);
     });
-    
+
+    // Fetch auth users to get names/emails
+    try {
+      const { url } = getSupabaseCredentials();
+      const serviceRoleKey = getSupabaseServiceRoleKey();
+      if (serviceRoleKey) {
+        const adminClient = createClient(url, serviceRoleKey, {
+          auth: { autoRefreshToken: false, persistSession: false },
+        });
+        const { data: authUsers } = await adminClient.auth.admin.listUsers();
+        authUsers?.users?.forEach((authUser) => {
+          const entry = usersMap.get(authUser.id);
+          if (entry) {
+            entry.email = authUser.email || undefined;
+            entry.user_name = authUser.user_metadata?.name || authUser.email?.split('@')[0] || undefined;
+          }
+        });
+      }
+    } catch {
+      // Ignore auth fetch errors
+    }
+
     const users = Array.from(usersMap.values());
-    
+
     return NextResponse.json(users);
   } catch (error) {
     console.error('获取用户角色列表失败:', error);

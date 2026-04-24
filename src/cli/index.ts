@@ -13,6 +13,7 @@ import { taskCmd } from './commands/task';
 import { activityCmd } from './commands/activity';
 import { reportCmd } from './commands/report';
 import { exportCmd } from './commands/export';
+import { userCmd } from './commands/user';
 
 const program = new Command();
 
@@ -44,6 +45,7 @@ program.addCommand(taskCmd);
 program.addCommand(activityCmd);
 program.addCommand(reportCmd);
 program.addCommand(exportCmd);
+program.addCommand(userCmd);
 
 program
   .command('guide')
@@ -69,6 +71,7 @@ program
 │    activity      crm activity list --limit 10 --json        │
 │    report        crm report stats --json                    │
 │    export        crm export customers --format csv           │
+│    user          crm user list --json                       │
 ├─────────────────────────────────────────────────────────────┤
 │  Quick Examples:                                             │
 │    crm customer create --name "Alice" --company "Acme"      │

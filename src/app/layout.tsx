@@ -1,4 +1,5 @@
 import { CRMLayout } from '@/components/crm/layout';
+import { AuthProvider } from '@/lib/auth-context';
 import './globals.css';
 
 export const metadata = {
@@ -14,7 +15,9 @@ export default function RootLayout({
   return (
     <html lang="zh-CN">
       <body className="antialiased">
-        <CRMLayout>{children}</CRMLayout>
+        <AuthProvider>
+          <CRMLayout>{children}</CRMLayout>
+        </AuthProvider>
       </body>
     </html>
   );

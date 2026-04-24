@@ -26,6 +26,7 @@ interface User {
   id: string;
   user_id: string;
   user_name?: string;
+  email?: string;
   roles: Array<{
     id: string;
     name: string;
@@ -194,7 +195,8 @@ export default function UsersPage() {
     const searchLower = searchQuery.toLowerCase();
     return (
       user.user_id.toLowerCase().includes(searchLower) ||
-      user.user_name?.toLowerCase().includes(searchLower)
+      user.user_name?.toLowerCase().includes(searchLower) ||
+      user.email?.toLowerCase().includes(searchLower)
     );
   });
 
@@ -243,8 +245,8 @@ export default function UsersPage() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>用户ID</TableHead>
-                <TableHead>用户名</TableHead>
+                <TableHead>用户</TableHead>
+                <TableHead>邮箱</TableHead>
                 <TableHead>当前角色</TableHead>
                 <TableHead className="text-right">操作</TableHead>
               </TableRow>
@@ -253,10 +255,13 @@ export default function UsersPage() {
               {filteredUsers.map((user) => (
                 <TableRow key={user.id}>
                   <TableCell className="font-medium">
-                    {user.user_id}
+                    <div className="flex flex-col">
+                      <span>{user.user_name || '—'}</span>
+                      <span className="text-xs text-muted-foreground">{user.user_id.slice(0, 8)}...</span>
+                    </div>
                   </TableCell>
                   <TableCell>
-                    {user.user_name || '-'}
+                    {user.email || '—'}
                   </TableCell>
                   <TableCell>
                     <div className="flex flex-wrap gap-1">
@@ -322,7 +327,7 @@ export default function UsersPage() {
           <DialogHeader>
             <DialogTitle>分配角色</DialogTitle>
             <DialogDescription>
-              为用户 {selectedUser?.user_name || selectedUser?.user_id} 分配角色
+              为用户 {selectedUser?.user_name || selectedUser?.email || selectedUser?.user_id} 分配角色
             </DialogDescription>
           </DialogHeader>
           

@@ -515,3 +515,92 @@ src/
     ├── forecast-chart.tsx
     └── conversion-chart.tsx
 ```
+
+---
+
+## 9. CRM CLI (V5.0)
+
+### 9.1 功能概述
+
+为 Agent 友好的命令行工具，支持通过 CLI 与 CRM 系统进行完整交互。所有命令支持 `--json` 输出，便于程序化解析。
+
+### 9.2 启动方式
+
+```bash
+# 开发环境
+pnpm cli <command> [options]
+
+# 直接运行
+npx tsx src/cli/index.ts <command> [options]
+```
+
+### 9.3 全局选项
+
+| 选项 | 说明 |
+|------|------|
+| `--json` | 输出 JSON 格式（Agent 友好） |
+| `--no-color` | 禁用颜色输出 |
+| `-q, --quiet` | 静默模式 |
+| `--compact` | 紧凑表格输出 |
+
+### 9.4 命令清单
+
+| 命令 | 子命令 | 说明 |
+|------|--------|------|
+| `customer` | `list/show/create/update/delete` | 客户管理 |
+| `contact` | `list/show/create/update/delete` | 联系人管理 |
+| `lead` | `list/show/create/update/qualify/disqualify/delete` | 销售线索 |
+| `opportunity` | `list/show/create/update/stage/delete` | 商机管理 |
+| `product` | `list/show/create/update/delete` | 产品管理 |
+| `quote` | `list/show` | 报价单管理 |
+| `task` | `list/show/create/complete/update/delete` | 任务管理 |
+| `activity` | `list` | 活动记录 |
+| `report` | `stats/funnel/summary` | 数据报表 |
+| `export` | `customers/contacts/leads/opportunities` | 数据导出 (JSON/CSV) |
+| `guide` | — | 显示使用指南 |
+
+### 9.5 Agent 示例
+
+```bash
+# 获取客户列表（JSON）
+pnpm cli customer list --json
+
+# 创建客户
+pnpm cli customer create --name "Alice" --company "Acme" --email "alice@acme.com"
+
+# 查看线索并筛选
+pnpm cli lead list --status new --json
+
+# 资格化线索
+pnpm cli lead qualify lead_xxx
+
+# 变更商机阶段
+pnpm cli opportunity stage opp_xxx negotiation
+
+# 导出 CSV
+pnpm cli export customers --format csv --output /tmp/customers.csv
+
+# 查看报表
+pnpm cli report stats --json
+pnpm cli report funnel --range month --json
+```
+
+### 9.6 文件结构
+
+```
+src/cli/
+├── index.ts                 # CLI 入口
+├── utils/
+│   └── formatter.ts         # 输出格式化（表格/JSON/颜色）
+└── commands/
+    ├── customer.ts          # 客户命令
+    ├── contact.ts           # 联系人命令
+    ├── lead.ts              # 线索命令
+    ├── opportunity.ts       # 商机命令
+    ├── product.ts           # 产品命令
+    ├── quote.ts             # 报价单命令
+    ├── task.ts              # 任务命令
+    ├── activity.ts          # 活动命令
+    ├── report.ts            # 报表命令
+    └── export.ts            # 导出命令
+```

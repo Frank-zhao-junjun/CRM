@@ -602,5 +602,83 @@ src/cli/
     ├── task.ts              # 任务命令
     ├── activity.ts          # 活动命令
     ├── report.ts            # 报表命令
-    └── export.ts            # 导出命令
+    ├── export.ts            # 导出命令
+    └── user.ts              # 用户命令
+```
+
+---
+
+## 10. 认证与授权 (V6.0)
+
+### 10.1 功能概述
+
+集成 Supabase Auth，实现完整的用户注册、登录、登出和 RBAC 权限管理。
+
+### 10.2 认证流程
+
+```
+注册 (/register) ──▶ POST /api/auth/register ──▶ Supabase Auth 创建用户
+                                                    │
+                                                    ▼
+                                              自动分配 sales_rep 角色
+                                                    │
+                                              首个用户额外分配 admin 角色
+
+登录 (/login) ──▶ Supabase Auth signInWithPassword ──▶ 获取 session
+                                                          │
+                                                          ▼
+                                               POST /api/auth/session (设置 cookie)
+                                                          │
+                                                          ▼
+                                               跳转至首页
+
+登出 ──▶ Supabase Auth signOut ──▶ DELETE /api/auth/session (清除 cookie)
+```
+
+### 10.3 路由保护
+
+- `src/middleware.ts` 拦截所有请求，未登录用户重定向到 `/login`
+- 公开路径：`/login`, `/register`, `/api/auth/*`
+- 支持 `Authorization: Bearer <token>` Header 和 `sb-token` Cookie 两种认证方式
+
+### 10.4 默认角色
+
+| 角色 | 说明 | 默认权限 |
+|------|------|---------|
+| `admin` | 系统管理员 | 所有权限 |
+| `sales_manager` | 销售经理 | 客户/线索/商机/合同/发票/订单/报价单 + 报表 |
+| `sales_rep` | 销售人员 | 客户/线索/商机/联系人/任务的查看和编辑 |
+| `guest` | 访客 | 只读权限 |
+
+### 10.5 文件结构
+
+```
+src/
+├── lib/
+│   ├── supabase-client.ts       # 浏览器端 Supabase 客户端 (支持 Auth)
+│   ├── auth-context.tsx         # React Auth Context (登录状态管理)
+│   └── permissions.ts           # 客户端权限定义
+│   └── permissions.server.ts    # 服务端权限检查
+├── middleware.ts                # Next.js 认证中间件
+├── app/
+│   ├── login/page.tsx           # 登录页面
+│   ├── register/page.tsx        # 注册页面
+│   ├── api/auth/
+│   │   ├── register/route.ts    # 注册 API (含默认数据初始化)
+│   │   ├── session/route.ts     # Session Cookie 管理
+│   │   └── me/route.ts          # 获取当前用户信息
+│   └── settings/users/page.tsx  # 用户管理 (真实数据)
+```
+
+### 10.6 Agent 示例
+
+```bash
+# 注册用户
+pnpm cli user list --json
+
+# 分配角色
+pnpm cli user assign <userId> admin
+
+# 移除角色
+pnpm cli user remove <userId> sales_rep
 ```

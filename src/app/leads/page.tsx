@@ -42,6 +42,7 @@ import Link from 'next/link';
 import { LEAD_STATUS_CONFIG, LEAD_SOURCE_CONFIG } from '@/lib/crm-types';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
+import { formatDateSafe } from '@/lib/utils';
 import { QuickFollowUp } from '@/components/crm/quick-follow-up';
 
 async function handleExport(format: 'csv' | 'xlsx') {
@@ -332,7 +333,7 @@ export default function LeadsPage() {
                       </div>
                     </TableCell>
                     <TableCell className="text-muted-foreground text-sm">
-                      {format(new Date(lead.createdAt), 'yyyy-MM-dd')}
+                      {formatDateSafe(lead.createdAt, 'yyyy-MM-dd')}
                     </TableCell>
                     <TableCell onClick={(e) => e.stopPropagation()}>
                       <DropdownMenu>

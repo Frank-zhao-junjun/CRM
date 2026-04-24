@@ -10,6 +10,7 @@ import { ArrowLeft, Edit, Printer, Trash2, FileText, CheckCircle, RotateCcw } fr
 import Link from 'next/link';
 import { INVOICE_STATUS_CONFIG, type Invoice, type InvoiceStatus } from '@/lib/crm-types';
 import { format } from 'date-fns';
+import { formatDateSafe } from '@/lib/utils';
 
 export default function InvoiceDetailPage() {
   const router = useRouter();
@@ -112,7 +113,7 @@ export default function InvoiceDetailPage() {
               </Badge>
             </div>
             <p className="text-muted-foreground">
-              创建于 {format(new Date(invoice.createdAt), 'yyyy-MM-dd HH:mm')}
+              创建于 {formatDateSafe(invoice.createdAt, 'yyyy-MM-dd HH:mm')}
             </p>
           </div>
         </div>
@@ -273,18 +274,18 @@ export default function InvoiceDetailPage() {
             <div className="grid grid-cols-2 gap-4 text-sm">
               <div>
                 <p className="text-muted-foreground">开票日期</p>
-                <p className="font-medium">{format(new Date(invoice.issueDate), 'yyyy-MM-dd')}</p>
+                <p className="font-medium">{formatDateSafe(invoice.issueDate, 'yyyy-MM-dd')}</p>
               </div>
               {invoice.dueDate && (
                 <div>
                   <p className="text-muted-foreground">到期日期</p>
-                  <p className="font-medium">{format(new Date(invoice.dueDate), 'yyyy-MM-dd')}</p>
+                  <p className="font-medium">{formatDateSafe(invoice.dueDate, 'yyyy-MM-dd')}</p>
                 </div>
               )}
               {invoice.paidDate && (
                 <div>
                   <p className="text-muted-foreground">收款日期</p>
-                  <p className="font-medium">{format(new Date(invoice.paidDate), 'yyyy-MM-dd')}</p>
+                  <p className="font-medium">{formatDateSafe(invoice.paidDate, 'yyyy-MM-dd')}</p>
                 </div>
               )}
               {invoice.paymentMethod && (

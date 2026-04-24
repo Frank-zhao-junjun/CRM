@@ -32,6 +32,7 @@ import {
 import { Plus, Search, FileText, MoreVertical, Trash2, Eye, Edit, Printer } from 'lucide-react';
 import { INVOICE_STATUS_CONFIG, type Invoice, type InvoiceStatus } from '@/lib/crm-types';
 import { format } from 'date-fns';
+import { formatDateSafe } from '@/lib/utils';
 import Link from 'next/link';
 
 export default function InvoicesPage() {
@@ -236,7 +237,7 @@ export default function InvoicesPage() {
                         {INVOICE_STATUS_CONFIG[invoice.status].label}
                       </Badge>
                     </TableCell>
-                    <TableCell>{format(new Date(invoice.issueDate), 'yyyy-MM-dd')}</TableCell>
+                    <TableCell>{formatDateSafe(invoice.issueDate, 'yyyy-MM-dd')}</TableCell>
                     <TableCell className="text-right">
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>

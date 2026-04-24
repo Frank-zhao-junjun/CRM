@@ -33,6 +33,7 @@ import { Plus, Search, FileText, Trash2, Building2, Briefcase } from 'lucide-rea
 import Link from 'next/link';
 import { QUOTE_STATUS_CONFIG, type Quote, type QuoteStatus } from '@/lib/crm-types';
 import { format } from 'date-fns';
+import { formatDateSafe } from '@/lib/utils';
 import { cn } from '@/lib/utils';
 
 export default function QuotesPage() {
@@ -268,7 +269,7 @@ export default function QuotesPage() {
                       ¥{quote.total.toLocaleString()}
                     </TableCell>
                     <TableCell className="text-sm text-muted-foreground">
-                      {format(new Date(quote.createdAt), 'yyyy-MM-dd')}
+                      {formatDateSafe(quote.createdAt, 'yyyy-MM-dd')}
                     </TableCell>
                     <TableCell>
                       <Button

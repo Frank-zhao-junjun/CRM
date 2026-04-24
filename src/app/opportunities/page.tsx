@@ -43,6 +43,7 @@ import {
 } from '@/components/ui/dialog';
 import { format } from 'date-fns';
 import { zhCN } from 'date-fns/locale';
+import { formatDateSafe } from '@/lib/utils';
 import { Progress } from '@/components/ui/progress';
 
 async function handleExport(format: 'csv' | 'xlsx') {
@@ -302,7 +303,7 @@ export default function OpportunitiesPage() {
                         <div className="flex items-center gap-2 text-muted-foreground text-sm">
                           <Calendar className="h-3.5 w-3.5" />
                           {opp.expectedCloseDate ? (
-                            format(new Date(opp.expectedCloseDate), 'yyyy/MM/dd', { locale: zhCN })
+                            formatDateSafe(opp.expectedCloseDate, 'yyyy/MM/dd')
                           ) : '-'}
                         </div>
                       </TableCell>
@@ -399,7 +400,7 @@ export default function OpportunitiesPage() {
                         <Calendar className="h-3.5 w-3.5" />
                         <span className="text-sm">
                           {opp.expectedCloseDate ? (
-                            format(new Date(opp.expectedCloseDate), 'MM/dd', { locale: zhCN })
+                            formatDateSafe(opp.expectedCloseDate, 'MM/dd')
                           ) : '未设置'}
                         </span>
                       </div>

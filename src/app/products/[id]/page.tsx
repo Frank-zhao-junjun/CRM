@@ -9,6 +9,7 @@ import { ArrowLeft, Edit, Package, DollarSign, Hash, Layers, ToggleRight, Calend
 import Link from 'next/link';
 import { PRODUCT_CATEGORY_CONFIG } from '@/lib/crm-types';
 import { format } from 'date-fns';
+import { formatDateSafe } from '@/lib/utils';
 
 export default function ProductDetailPage() {
   const params = useParams();
@@ -211,7 +212,7 @@ export default function ProductDetailPage() {
                   <span className="text-sm">创建时间</span>
                 </div>
                 <span className="text-sm">
-                  {format(new Date(product.createdAt), 'yyyy-MM-dd')}
+                  {formatDateSafe(product.createdAt, 'yyyy-MM-dd')}
                 </span>
               </div>
               <div className="flex items-center justify-between">
@@ -220,7 +221,7 @@ export default function ProductDetailPage() {
                   <span className="text-sm">更新时间</span>
                 </div>
                 <span className="text-sm">
-                  {format(new Date(product.updatedAt), 'yyyy-MM-dd')}
+                  {formatDateSafe(product.updatedAt, 'yyyy-MM-dd')}
                 </span>
               </div>
             </CardContent>

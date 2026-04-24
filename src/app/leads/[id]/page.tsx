@@ -21,6 +21,7 @@ import {
 import { useState } from 'react';
 import { format } from 'date-fns';
 import { zhCN } from 'date-fns/locale';
+import { formatDateSafe } from '@/lib/utils';
 import { FollowUpTimeline } from '@/components/crm/follow-up-timeline';
 
 export default function LeadDetailPage() {
@@ -273,8 +274,8 @@ export default function LeadDetailPage() {
       <Card>
         <CardContent className="py-4">
           <div className="flex justify-between text-sm text-muted-foreground">
-            <span>创建时间: {format(new Date(lead.createdAt), 'yyyy-MM-dd HH:mm', { locale: zhCN })}</span>
-            <span>更新时间: {format(new Date(lead.updatedAt), 'yyyy-MM-dd HH:mm', { locale: zhCN })}</span>
+            <span>创建时间: {formatDateSafe(lead.createdAt, 'yyyy-MM-dd HH:mm')}</span>
+            <span>更新时间: {formatDateSafe(lead.updatedAt, 'yyyy-MM-dd HH:mm')}</span>
           </div>
         </CardContent>
       </Card>

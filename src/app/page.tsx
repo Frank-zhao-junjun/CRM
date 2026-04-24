@@ -21,6 +21,7 @@ import {
 import { cn } from '@/lib/utils';
 import { format, formatDistanceToNow } from 'date-fns';
 import { zhCN } from 'date-fns/locale';
+import { formatDateSafe } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { SalesFunnel } from '@/components/crm/sales-funnel';
@@ -377,7 +378,7 @@ export default function DashboardPage() {
                       </p>
                       {opp.expectedCloseDate && (
                         <p className="text-xs text-muted-foreground mt-1">
-                          预计 {format(new Date(opp.expectedCloseDate), 'MM/dd', { locale: zhCN })} 成交
+                          预计 {formatDateSafe(opp.expectedCloseDate, 'MM/dd')} 成交
                         </p>
                       )}
                     </div>

@@ -41,6 +41,7 @@ import {
 } from '@/components/ui/dialog';
 import { format } from 'date-fns';
 import { zhCN } from 'date-fns/locale';
+import { formatDateSafe } from '@/lib/utils';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import type { Tag as TagType } from '@/storage/database/shared/schema';
 
@@ -396,7 +397,7 @@ export default function CustomersPage() {
                           </Badge>
                         </TableCell>
                         <TableCell className="text-muted-foreground text-sm">
-                          {format(new Date(customer.createdAt), 'yyyy/MM/dd', { locale: zhCN })}
+                          {formatDateSafe(customer.createdAt)}
                         </TableCell>
                         <TableCell>
                           <Button
@@ -487,7 +488,7 @@ export default function CustomersPage() {
                     
                     <div className="flex items-center justify-between mt-3 pt-3 border-t">
                       <span className="text-xs text-muted-foreground">
-                        创建于 {format(new Date(customer.createdAt), 'yyyy/MM/dd', { locale: zhCN })}
+                        创建于 {formatDateSafe(customer.createdAt)}
                       </span>
                       <ChevronRight className="h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors" />
                     </div>

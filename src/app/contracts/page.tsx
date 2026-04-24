@@ -33,6 +33,7 @@ import { Plus, Search, FileText, Trash2, Building2, Briefcase, FileBarChart } fr
 import Link from 'next/link';
 import { CONTRACT_STATUS_CONFIG, type Contract, type ContractStatus } from '@/lib/crm-types';
 import { format } from 'date-fns';
+import { formatDateSafe } from '@/lib/utils';
 import { cn } from '@/lib/utils';
 
 export default function ContractsPage() {
@@ -274,7 +275,7 @@ export default function ContractsPage() {
                       ¥{contract.amount.toLocaleString()}
                     </TableCell>
                     <TableCell className="text-sm text-muted-foreground">
-                      {contract.expirationDate ? format(new Date(contract.expirationDate), 'yyyy-MM-dd') : '-'}
+                      {contract.expirationDate ? formatDateSafe(contract.expirationDate, 'yyyy-MM-dd') : '-'}
                     </TableCell>
                     <TableCell>
                       <Button

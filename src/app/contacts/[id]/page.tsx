@@ -19,6 +19,7 @@ import {
 import { useState } from 'react';
 import { format } from 'date-fns';
 import { zhCN } from 'date-fns/locale';
+import { formatDateSafe } from '@/lib/utils';
 import { SendEmailDialog } from '@/components/email/send-email-dialog';
 
 export default function ContactDetailPage() {
@@ -157,8 +158,8 @@ export default function ContactDetailPage() {
       <Card>
         <CardContent className="py-4">
           <div className="flex justify-between text-sm text-muted-foreground">
-            <span>创建时间: {format(new Date(contact.createdAt), 'yyyy-MM-dd HH:mm', { locale: zhCN })}</span>
-            <span>更新时间: {format(new Date(contact.updatedAt), 'yyyy-MM-dd HH:mm', { locale: zhCN })}</span>
+            <span>创建时间: {formatDateSafe(contact.createdAt, 'yyyy-MM-dd HH:mm')}</span>
+            <span>更新时间: {formatDateSafe(contact.updatedAt, 'yyyy-MM-dd HH:mm')}</span>
           </div>
         </CardContent>
       </Card>

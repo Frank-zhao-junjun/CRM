@@ -22,6 +22,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { format } from 'date-fns';
 import { ActivityTimeline } from '@/components/crm/activity-timeline';
 import { zhCN } from 'date-fns/locale';
+import { formatDateSafe } from '@/lib/utils';
 import { SendEmailDialog } from '@/components/email/send-email-dialog';
 import type { Tag as TagType } from '@/storage/database/shared/schema';
 
@@ -360,7 +361,7 @@ export default function CustomerDetailPage() {
                   <div className="flex-1 min-w-0">
                     <p className="font-medium truncate">{opp.title}</p>
                     <p className="text-sm text-muted-foreground">
-                      预计 {format(new Date(opp.expectedCloseDate), 'yyyy/MM/dd', { locale: zhCN })} 截止
+                      预计 {formatDateSafe(opp.expectedCloseDate, 'yyyy/MM/dd')} 截止
                     </p>
                   </div>
                   <div className="text-right ml-4">
@@ -378,8 +379,8 @@ export default function CustomerDetailPage() {
       <Card>
         <CardContent className="py-4">
           <div className="flex justify-between text-sm text-muted-foreground">
-            <span>创建时间: {format(new Date(customer.createdAt), 'yyyy-MM-dd HH:mm', { locale: zhCN })}</span>
-            <span>更新时间: {format(new Date(customer.updatedAt), 'yyyy-MM-dd HH:mm', { locale: zhCN })}</span>
+            <span>创建时间: {formatDateSafe(customer.createdAt, 'yyyy-MM-dd HH:mm')}</span>
+            <span>更新时间: {formatDateSafe(customer.updatedAt, 'yyyy-MM-dd HH:mm')}</span>
           </div>
         </CardContent>
       </Card>

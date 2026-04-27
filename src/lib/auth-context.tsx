@@ -1,7 +1,7 @@
 'use client';
 
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
-import { getBrowserClient } from './supabase-client';
+import { createBrowserClient, getBrowserClient } from './supabase-client';
 import type { User } from '@supabase/supabase-js';
 
 interface AuthUser {
@@ -33,8 +33,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [supabaseUser, setSupabaseUser] = useState<User | null>(null);
   const [user, setUser] = useState<AuthUser | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [clientReady, setClientReady] = useState(false);
 
-  const supabase = getBrowserClient();
+  // Initialize browser client via API config
+  useEffect(() => {
+    let mounted = true;
+    async function initClient() {
+      try {
+        const res = await fetch('/api/config');
+        if (!res.ok) throw new Error('Failed to fetch config');
+        const { url, anonKey } = await res.json();
+        if (mounted) {
+          createBrowserClient(url, anonKey);
+          setClientReady(true);
+        }
+      } catch (err) {
+        console.error('Failed to initialize Supabase client:', err);
+        if (mounted) setIsLoading(false);
+      }
+    }
+    initClient();
+    return () => { mounted = false; };
+  }, []);
 
   const fetchUserProfile = async (uid: string) => {
     try {
@@ -51,6 +71,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const refreshUser = async () => {
+    const supabase = getBrowserClient();
     const { data } = await supabase.auth.getSession();
     if (data.session?.user) {
       setSupabaseUser(data.session.user);
@@ -62,7 +83,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   useEffect(() => {
+    if (!clientReady) return;
+
     let mounted = true;
+    const supabase = getBrowserClient();
 
     const init = async () => {
       const { data } = await supabase.auth.getSession();
@@ -81,7 +105,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (session?.user) {
         setSupabaseUser(session.user);
         await fetchUserProfile(session.user.id);
-        // Sync token to cookie for middleware
         await fetch('/api/auth/session', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -98,9 +121,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       mounted = false;
       listener.subscription.unsubscribe();
     };
-  }, [supabase]);
+  }, [clientReady]);
 
   const login = async (email: string, password: string) => {
+    if (!clientReady) return { error: 'Client not ready' };
+    const supabase = getBrowserClient();
     const { data, error } = await supabase.auth.signInWithPassword({ email, password });
     if (error) {
       return { error: error.message };
@@ -118,6 +143,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const logout = async () => {
+    if (!clientReady) return;
+    const supabase = getBrowserClient();
     await supabase.auth.signOut();
     await fetch('/api/auth/session', { method: 'DELETE' });
     setSupabaseUser(null);

@@ -3,14 +3,14 @@
   "version": "0.1.0",
   "private": true,
   "bin": {
-    "crm": "./src/cli/index.ts"
+    "crm": "./dist/cli/index.js"
   },
   "scripts": {
     "preinstall": "npx only-allow pnpm",
     "install:ci": "pnpm install --frozen-lockfile --prefer-offline --ignore-scripts=false --network-concurrency=8",
     "install:safe": "pnpm install --prefer-offline --no-optional --ignore-scripts=false --network-concurrency=8",
     "dev": "bash ./scripts/dev.sh",
-    "build": "next build && tsup src/server.ts --format cjs --platform node --target node22 --outDir dist --no-splitting --no-minify",
+    "build": "next build && tsup src/server.ts --format cjs --platform node --target node22 --outDir dist --no-splitting --no-minify && pnpm build:cli",
     "build:coze": "bash ./scripts/build.sh",
     "start": "bash ./scripts/start.sh",
     "lint": "eslint .",
@@ -22,6 +22,7 @@
     "ts-check:us01-06": "tsc -p tsconfig.us01-06.json",
     "build:us01-06": "tsup src/server.ts --format cjs --platform node --target node22 --outDir dist --no-splitting --no-minify",
     "check:us01-06": "pnpm run lint:us01-06 && pnpm run test && pnpm run ts-check:us01-06 && pnpm run build:us01-06",
+    "build:cli": "tsup src/cli/index.ts --format cjs --platform node --target node22 --outDir dist/cli --no-splitting --no-minify",
     "ts-check": "tsc -p tsconfig.json"
   },
   "dependencies": {
@@ -109,9 +110,9 @@
     "server-only": "^0.0.1",
     "shadcn": "3.7.0",
     "tailwindcss": "^4",
-    "tsup": "^8.3.5",
+    "tsup": "^8.5.1",
     "tsx": "^4.19.2",
-    "typescript": "^5",
+    "typescript": "^5.9.3",
     "vitest": "^3.2.4"
   },
   "packageManager": "pnpm@9.15.9",

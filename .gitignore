@@ -9,6 +9,7 @@ package-lock.json
 
 # Production build
 dist/
+!dist/cli/
 build/
 out/
 .next/

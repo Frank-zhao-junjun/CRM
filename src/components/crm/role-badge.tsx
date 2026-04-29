@@ -198,7 +198,7 @@ export function PermissionTag({
   onClick,
 }: PermissionTagProps) {
   const parts = permission.split('.');
-  const module = parts[0];
+  const moduleName = parts[0];
   const action = parts[1] || permission;
   
   // 模块中文映射
@@ -215,7 +215,7 @@ export function PermissionTag({
     users: '用户',
   };
 
-  const displayLabel = label || `${moduleLabels[module] || module} - ${permissionLabels[action] || action}`;
+  const displayLabel = label || `${moduleLabels[moduleName] || moduleName} - ${permissionLabels[action] || action}`;
 
   return (
     <span

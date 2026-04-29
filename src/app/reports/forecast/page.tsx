@@ -186,14 +186,14 @@ export default function ForecastReportPage() {
                 <div key={item.stage} className="space-y-2">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
-                      <div 
+                      <div
                         className="w-3 h-3 rounded-full"
-                        style={{ backgroundColor: item.color.includes('from-') ? undefined : item.color }}
-                        // @ts-expect-error inline style for dynamic gradient
-                        style={{ 
-                          background: item.color.includes('to-') 
-                            ? `linear-gradient(135deg, ${item.color.split('-')[1]} to ${item.color.split('-')[2]})` 
-                            : item.color 
+                        style={{
+                          background: item.color.includes('to-')
+                            ? `linear-gradient(135deg, ${item.color.split('-')[1]} to ${item.color.split('-')[2]})`
+                            : item.color.includes('from-')
+                              ? undefined
+                              : item.color,
                         }}
                       />
                       <span className="text-sm font-medium">{item.label}</span>

@@ -3,13 +3,14 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import * as db from '@/lib/crm-database';
+import type { InsertSalesLead } from '@/lib/crm-database';
 import { checkApiPermission } from '@/lib/api-permission';
 
-function generateId(prefix: string): string {
+function generateId(): string {
   if (typeof globalThis.crypto?.randomUUID === 'function') {
-    return `${prefix}_${globalThis.crypto.randomUUID()}`;
+    return globalThis.crypto.randomUUID();
   }
-  return `${prefix}_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
+  return `${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
 }
 
 export async function GET(request: NextRequest) {
@@ -41,10 +42,23 @@ export async function POST(request: NextRequest) {
     }
     
     const body = await request.json();
-    const lead = await db.createLead(body);
+    const leadData: InsertSalesLead = {
+      id: generateId(),
+      title: body.title,
+      source: body.source,
+      customer_id: body.customerId,
+      customer_name: body.customerName,
+      contact_id: body.contactId,
+      contact_name: body.contactName,
+      estimated_value: body.estimatedValue,
+      probability: body.probability,
+      status: body.status,
+      notes: body.notes,
+    };
+    const lead = await db.createLead(leadData);
     
     await db.createActivity({
-      id: `act_${generateId('act')}`,
+      id: generateId(),
       type: 'created',
       entity_type: 'lead',
       entity_id: lead.id,
@@ -98,7 +112,7 @@ export async function DELETE(request: NextRequest) {
     if (lead) {
       await db.deleteLead(id);
       await db.createActivity({
-        id: `act_${generateId('act')}`,
+        id: generateId(),
         type: 'deleted',
         entity_type: 'lead',
         entity_id: id,

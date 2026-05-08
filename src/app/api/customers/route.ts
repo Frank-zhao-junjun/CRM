@@ -5,11 +5,11 @@ import { NextRequest, NextResponse } from 'next/server';
 import * as db from '@/lib/crm-database';
 import { checkApiPermission } from '@/lib/api-permission';
 
-function generateId(prefix: string): string {
+function generateId(): string {
   if (typeof globalThis.crypto?.randomUUID === 'function') {
-    return `${prefix}_${globalThis.crypto.randomUUID()}`;
+    return globalThis.crypto.randomUUID();
   }
-  return `${prefix}_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
+  return `${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
 }
 
 export async function GET(request: NextRequest) {
@@ -40,7 +40,7 @@ export async function POST(request: NextRequest) {
     const customer = await db.createCustomer(body);
     
     await db.createActivity({
-      id: `act_${generateId('act')}`,
+      id: generateId(),
       type: 'created',
       entity_type: 'customer',
       entity_id: customer.id,
@@ -94,7 +94,7 @@ export async function DELETE(request: NextRequest) {
     if (customer) {
       await db.deleteCustomer(id);
       await db.createActivity({
-        id: `act_${generateId('act')}`,
+        id: generateId(),
         type: 'deleted',
         entity_type: 'customer',
         entity_id: id,

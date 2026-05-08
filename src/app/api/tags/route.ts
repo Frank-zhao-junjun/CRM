@@ -2,7 +2,12 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseClient } from '@/storage/database/supabase-client.server';
 import type { Tag, InsertTag } from '@/storage/database/shared/schema';
 
-const generateId = () => `tag_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
+function generateId(): string {
+  if (typeof globalThis.crypto?.randomUUID === 'function') {
+    return globalThis.crypto.randomUUID();
+  }
+  return `${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
+}
 
 export async function GET() {
   try {

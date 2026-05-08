@@ -1,6 +1,8 @@
 // 权限检查辅助函数 - 在 API 路由中使用
 import { NextRequest, NextResponse } from 'next/server';
 import { hasPermission, PermissionName } from '@/lib/permissions.server';
+import { getSupabaseCredentials } from '@/storage/database/supabase-client.server';
+import { createClient } from '@supabase/supabase-js';
 
 /**
  * API 权限检查工具
@@ -20,41 +22,72 @@ import { hasPermission, PermissionName } from '@/lib/permissions.server';
  * });
  */
 
-// 从请求中获取用户ID
-// 这个函数需要根据你的认证系统来实现
-export function getUserIdFromRequest(request: NextRequest): string | null {
-  // 方式 1：从 Authorization header 获取
+// 从请求中提取原始 token
+function getTokenFromRequest(request: NextRequest): string | null {
   const authHeader = request.headers.get('Authorization');
   if (authHeader && authHeader.startsWith('Bearer ')) {
-    const token = authHeader.substring(7);
-    // 在这里解析 token 并获取用户ID
-    // 这里假设 token 就是用户ID（简化示例）
-    return token;
+    return authHeader.substring(7);
   }
-  
-  // 方式 2：从 Cookie 获取
-  const cookies = request.cookies;
-  const userIdCookie = cookies.get('user_id');
-  if (userIdCookie) {
-    return userIdCookie.value;
+  const tokenCookie = request.cookies.get('sb-token');
+  if (tokenCookie) {
+    return tokenCookie.value;
   }
-  
-  // 方式 3：从 URL 参数获取（仅用于演示）
-  const searchParams = request.nextUrl.searchParams;
-  const userIdParam = searchParams.get('user_id');
-  if (userIdParam) {
-    return userIdParam;
-  }
-  
   return null;
 }
 
-// 检查 API 权限
+// 验证 Supabase JWT token 并返回真实用户ID
+async function verifySupabaseToken(token: string): Promise<string | null> {
+  try {
+    const { url, anonKey } = getSupabaseCredentials();
+    const supabase = createClient(url, anonKey, {
+      global: { headers: { Authorization: `Bearer ${token}` } },
+      auth: { autoRefreshToken: false, persistSession: false },
+    });
+    const { data, error } = await supabase.auth.getUser();
+    if (error || !data.user) return null;
+    return data.user.id;
+  } catch {
+    return null;
+  }
+}
+
+// 从请求中获取用户ID（带真实验证）
+export async function getVerifiedUserId(request: NextRequest): Promise<string | null> {
+  const token = getTokenFromRequest(request);
+  if (!token) return null;
+  return verifySupabaseToken(token);
+}
+
+// 从请求中获取用户ID（仅解析，不验证签名——用于非敏感读取场景）
+export function getUserIdFromRequest(request: NextRequest): string | null {
+  try {
+    const authHeader = request.headers.get('Authorization');
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      const token = authHeader.substring(7);
+      const parts = token.split('.');
+      if (parts.length !== 3) return null;
+      const payload = JSON.parse(Buffer.from(parts[1], 'base64url').toString('utf-8'));
+      return payload.sub || null;
+    }
+    const tokenCookie = request.cookies.get('sb-token');
+    if (tokenCookie) {
+      const parts = tokenCookie.value.split('.');
+      if (parts.length !== 3) return null;
+      const payload = JSON.parse(Buffer.from(parts[1], 'base64url').toString('utf-8'));
+      return payload.sub || null;
+    }
+    return null;
+  } catch {
+    return null;
+  }
+}
+
+// 检查 API 权限（带 token 真实性验证）
 export async function checkApiPermission(
   request: NextRequest,
   permission: PermissionName
 ): Promise<{ allowed: boolean; userId: string | null; reason?: string }> {
-  const userId = getUserIdFromRequest(request);
+  const userId = await getVerifiedUserId(request);
   
   // 如果无法获取用户ID，返回未授权
   if (!userId) {

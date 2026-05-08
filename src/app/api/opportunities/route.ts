@@ -3,13 +3,14 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import * as db from '@/lib/crm-database';
+import type { InsertOpportunity } from '@/storage/database/shared/schema';
 import { checkApiPermission } from '@/lib/api-permission';
 
-function generateId(prefix: string): string {
+function generateId(): string {
   if (typeof globalThis.crypto?.randomUUID === 'function') {
-    return `${prefix}_${globalThis.crypto.randomUUID()}`;
+    return globalThis.crypto.randomUUID();
   }
-  return `${prefix}_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
+  return `${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
 }
 
 export async function GET(request: NextRequest) {
@@ -38,10 +39,24 @@ export async function POST(request: NextRequest) {
     }
     
     const body = await request.json();
-    const opportunity = await db.createOpportunity(body);
+    const oppData: InsertOpportunity = {
+      id: generateId(),
+      title: body.title,
+      customer_id: body.customerId,
+      contact_id: body.contactId,
+      customer_name: body.customerName,
+      value: body.value,
+      stage: body.stage,
+      probability: body.probability,
+      expected_close_date: body.expectedCloseDate,
+      description: body.description,
+      notes: body.notes,
+      source_lead_id: body.sourceLeadId,
+    };
+    const opportunity = await db.createOpportunity(oppData);
     
     await db.createActivity({
-      id: `act_${generateId('act')}`,
+      id: generateId(),
       type: 'created',
       entity_type: 'opportunity',
       entity_id: opportunity.id,
@@ -86,7 +101,7 @@ export async function PUT(request: NextRequest) {
       };
       
       await db.createActivity({
-        id: `act_${generateId('act')}`,
+        id: generateId(),
         type: updates.stage === 'closed_won' ? 'closed_won' : updates.stage === 'closed_lost' ? 'closed_lost' : 'stage_change',
         entity_type: 'opportunity',
         entity_id: opportunity.id,
@@ -124,7 +139,7 @@ export async function DELETE(request: NextRequest) {
     if (opportunity) {
       await db.deleteOpportunity(id);
       await db.createActivity({
-        id: `act_${generateId('act')}`,
+        id: generateId(),
         type: 'deleted',
         entity_type: 'opportunity',
         entity_id: id,

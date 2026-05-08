@@ -17,11 +17,11 @@ function getSecureUserId(request: NextRequest): string | null {
   return null;
 }
 
-function generateId(prefix: string): string {
+function generateId(): string {
   if (typeof globalThis.crypto?.randomUUID === 'function') {
-    return `${prefix}_${globalThis.crypto.randomUUID()}`;
+    return globalThis.crypto.randomUUID();
   }
-  return `${prefix}_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
+  return `${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
 }
 
 
@@ -213,7 +213,7 @@ export async function POST(request: NextRequest) {
         const customer = await db.createCustomer(data);
         // 记录活动
         await db.createActivity({
-          id: `act_${generateId('act')}`,
+          id: generateId(),
           type: 'created',
           entity_type: 'customer',
           entity_id: customer.id,
@@ -231,7 +231,7 @@ export async function POST(request: NextRequest) {
         }
         const contact = await db.createContact(data);
         await db.createActivity({
-          id: `act_${generateId('act')}`,
+          id: generateId(),
           type: 'created',
           entity_type: 'contact',
           entity_id: contact.id,
@@ -248,7 +248,7 @@ export async function POST(request: NextRequest) {
           return NextResponse.json({ error: '权限不足：创建线索' }, { status: 403 });
         }
         const lead = await db.createLead({
-          id: `lead_${generateId('lead')}`,
+          id: generateId(),
           title: data.title,
           source: data.source,
           customer_id: data.customerId,
@@ -259,7 +259,7 @@ export async function POST(request: NextRequest) {
           notes: data.notes,
         });
         await db.createActivity({
-          id: `act_${generateId('act')}`,
+          id: generateId(),
           type: 'created',
           entity_type: 'lead',
           entity_id: lead.id,
@@ -292,7 +292,7 @@ export async function POST(request: NextRequest) {
         
         // 创建商机
         const opportunity = await db.createOpportunity({
-          id: `opp_${generateId('opp')}`,
+          id: generateId(),
           title: data.opportunityTitle || lead.title,
           customer_id: lead.customer_id,
           customer_name: lead.customer_name,
@@ -308,7 +308,7 @@ export async function POST(request: NextRequest) {
         
         // 记录活动
         await db.createActivity({
-          id: `act_${generateId('act')}`,
+          id: generateId(),
           type: 'qualified',
           entity_type: 'lead',
           entity_id: lead.id,
@@ -318,7 +318,7 @@ export async function POST(request: NextRequest) {
         });
         
         await db.createActivity({
-          id: `act_${generateId('act')}`,
+          id: generateId(),
           type: 'created',
           entity_type: 'opportunity',
           entity_id: opportunity.id,
@@ -343,7 +343,7 @@ export async function POST(request: NextRequest) {
         });
         
         await db.createActivity({
-          id: `act_${generateId('act')}`,
+          id: generateId(),
           type: 'disqualified',
           entity_type: 'lead',
           entity_id: lead.id,
@@ -361,7 +361,7 @@ export async function POST(request: NextRequest) {
           return NextResponse.json({ error: '权限不足：创建商机' }, { status: 403 });
         }
         const opportunity = await db.createOpportunity({
-          id: `opp_${generateId('opp')}`,
+          id: generateId(),
           title: data.title,
           customer_id: data.customerId,
           customer_name: data.customerName,
@@ -374,7 +374,7 @@ export async function POST(request: NextRequest) {
           description: data.description,
         });
         await db.createActivity({
-          id: `act_${generateId('act')}`,
+          id: generateId(),
           type: 'created',
           entity_type: 'opportunity',
           entity_id: opportunity.id,
@@ -407,7 +407,7 @@ export async function POST(request: NextRequest) {
           return NextResponse.json({ error: '权限不足：创建跟进' }, { status: 403 });
         }
         const followUp = await db.createFollowUp({
-          id: `fu_${generateId('fu')}`,
+          id: generateId(),
           entity_type: data.entityType,
           entity_id: data.entityId,
           entity_name: data.entityName,
@@ -417,7 +417,7 @@ export async function POST(request: NextRequest) {
           completed_at: data.completedAt || null,
         });
         await db.createActivity({
-          id: `act_${generateId('act')}`,
+          id: generateId(),
           type: 'follow_up',
           entity_type: data.entityType,
           entity_id: data.entityId,
@@ -433,7 +433,7 @@ export async function POST(request: NextRequest) {
             if (lead && lead.status === 'new') {
               await db.updateLead(data.entityId, { status: 'contacted' });
               await db.createActivity({
-                id: `act_${generateId('act')}_auto`,
+                id: generateId(),
                 type: 'updated',
                 entity_type: 'lead',
                 entity_id: data.entityId,
@@ -463,7 +463,7 @@ export async function POST(request: NextRequest) {
           return NextResponse.json({ error: '权限不足：创建通知' }, { status: 403 });
         }
         const notification = await db.createNotification({
-          id: `notif_${generateId('notif')}`,
+          id: generateId(),
           type: data.type,
           title: data.title,
           message: data.message,
@@ -493,7 +493,7 @@ export async function POST(request: NextRequest) {
           dueDate: data.dueDate,
         });
         await db.createActivity({
-          id: `act_${generateId('act')}`,
+          id: generateId(),
           type: 'created',
           entity_type: 'lead' as any,
           entity_id: task.id,
@@ -510,7 +510,7 @@ export async function POST(request: NextRequest) {
           return NextResponse.json({ error: '权限不足：创建产品' }, { status: 403 });
         }
         const product = await db.createProduct({
-          id: `prod_${generateId('prod')}`,
+          id: generateId(),
           name: data.name,
           sku: data.sku,
           category: data.category,
@@ -566,7 +566,7 @@ export async function PUT(request: NextRequest) {
         }
         const customer = await db.updateCustomer(id, data);
         await db.createActivity({
-          id: `act_${generateId('act')}`,
+          id: generateId(),
           type: 'updated',
           entity_type: 'customer',
           entity_id: customer.id,
@@ -616,7 +616,7 @@ export async function PUT(request: NextRequest) {
           };
           
           await db.createActivity({
-            id: `act_${generateId('act')}`,
+            id: generateId(),
             type: data.stage === 'closed_won' ? 'closed_won' : data.stage === 'closed_lost' ? 'closed_lost' : 'stage_change',
             entity_type: 'opportunity',
             entity_id: opportunity.id,
@@ -689,7 +689,7 @@ export async function PUT(request: NextRequest) {
         });
         
         await db.createActivity({
-          id: `act_${generateId('act')}`,
+          id: generateId(),
           type: data.stage === 'closed_won' ? 'closed_won' : data.stage === 'closed_lost' ? 'closed_lost' : 'stage_change',
           entity_type: 'opportunity',
           entity_id: updated.id,
@@ -705,7 +705,7 @@ export async function PUT(request: NextRequest) {
         // 阶段变更通知 (V3.0)
         if (data.stage === 'closed_won' || data.stage === 'closed_lost') {
           await db.createNotification({
-            id: `notif_${generateId('notif')}`,
+            id: generateId(),
             type: 'stage_change',
             title: data.stage === 'closed_won' ? '机会成交' : '机会失败',
             message: data.stage === 'closed_won' 
@@ -784,7 +784,7 @@ export async function PUT(request: NextRequest) {
           updated_at: data.updatedAt,
         });
         await db.createActivity({
-          id: `act_${generateId('act')}`,
+          id: generateId(),
           type: 'created',
           entity_type: 'lead' as any,
           entity_id: plan.id,
@@ -824,7 +824,7 @@ export async function DELETE(request: NextRequest) {
         if (customer) {
           await db.deleteCustomer(id);
           await db.createActivity({
-            id: `act_${generateId('act')}`,
+            id: generateId(),
             type: 'deleted',
             entity_type: 'customer',
             entity_id: id,
@@ -853,7 +853,7 @@ export async function DELETE(request: NextRequest) {
         if (lead) {
           await db.deleteLead(id);
           await db.createActivity({
-            id: `act_${generateId('act')}`,
+            id: generateId(),
             type: 'deleted',
             entity_type: 'lead',
             entity_id: id,
@@ -874,7 +874,7 @@ export async function DELETE(request: NextRequest) {
         if (opportunity) {
           await db.deleteOpportunity(id);
           await db.createActivity({
-            id: `act_${generateId('act')}`,
+            id: generateId(),
             type: 'deleted',
             entity_type: 'opportunity',
             entity_id: id,

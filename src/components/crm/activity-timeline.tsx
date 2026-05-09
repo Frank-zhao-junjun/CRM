@@ -101,19 +101,26 @@ export function ActivityTimeline({
       params.set('page', String(pagination.page));
       params.set('pageSize', String(pagination.pageSize));
 
-      const res = await fetch(`/api/activities?${params.toString()}`);
-      if (res.ok) {
+      const res = await fetch(`/api/activities?${params.toString()}`, {
+        credentials: 'same-origin',
+      });
+      const contentType = res.headers.get('content-type');
+      if (res.ok && contentType && contentType.includes('application/json')) {
         const data: ActivityListResult = await res.json();
-        setActivities(data.activities);
+        setActivities(data.activities || []);
         setPagination({
-          page: data.page,
-          pageSize: data.pageSize,
-          total: data.total,
-          totalPages: data.totalPages,
+          page: data.page || 1,
+          pageSize: data.pageSize || 20,
+          total: data.total || 0,
+          totalPages: data.totalPages || 0,
         });
+      } else if (!res.ok) {
+        console.error('获取活动失败:', res.status, res.statusText);
+        setActivities([]);
       }
     } catch (error) {
       console.error('获取活动失败:', error);
+      setActivities([]);
     } finally {
       setLoading(false);
     }
@@ -132,6 +139,12 @@ export function ActivityTimeline({
     if (newPage >= 1 && newPage <= pagination.totalPages) {
       setPagination(prev => ({ ...prev, page: newPage }));
     }
+  };
+
+  const safeDate = (timestamp: string | Date | null | undefined): Date | null => {
+    if (!timestamp) return null;
+    const d = new Date(timestamp);
+    return isNaN(d.getTime()) ? null : d;
   };
 
   const getActivityIcon = (type: keyof typeof ACTIVITY_TYPE_CONFIG) => {
@@ -282,10 +295,19 @@ export function ActivityTimeline({
                       </TableCell>
                       <TableCell>
                         <div className="text-sm">
-                          <div>{format(new Date(activity.timestamp), 'yyyy-MM-dd HH:mm')}</div>
-                          <div className="text-xs text-muted-foreground">
-                            {formatDistanceToNow(new Date(activity.timestamp), { addSuffix: true, locale: zhCN })}
-                          </div>
+                          {(() => {
+                            const date = safeDate(activity.timestamp);
+                            return date ? (
+                              <>
+                                <div>{format(date, 'yyyy-MM-dd HH:mm')}</div>
+                                <div className="text-xs text-muted-foreground">
+                                  {formatDistanceToNow(date, { addSuffix: true, locale: zhCN })}
+                                </div>
+                              </>
+                            ) : (
+                              <span className="text-muted-foreground">-</span>
+                            );
+                          })()}
                         </div>
                       </TableCell>
                       <TableCell>
@@ -388,7 +410,10 @@ export function ActivityTimeline({
               <div>
                 <h4 className="font-medium">发生时间</h4>
                 <p className="text-muted-foreground">
-                  {format(new Date(selectedActivity.timestamp), 'yyyy年MM月dd日 HH:mm:ss')}
+                  {(() => {
+                    const date = safeDate(selectedActivity.timestamp);
+                    return date ? format(date, 'yyyy年MM月dd日 HH:mm:ss') : '-';
+                  })()}
                 </p>
               </div>
               

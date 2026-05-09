@@ -471,7 +471,7 @@ export async function getRecentActivities(limit: number = 50): Promise<Activity[
     .order('timestamp', { ascending: false })
     .limit(limit);
   if (error) throw new Error(`获取活动记录失败: ${error.message}`);
-  return data as Activity[];
+  return (data || []) as Activity[];
 }
 
 export async function getActivities(filters: ActivityFilters = {}): Promise<ActivityListResult> {
@@ -520,7 +520,7 @@ export async function getActivities(filters: ActivityFilters = {}): Promise<Acti
 
   const total = count || 0;
   return {
-    activities: data as Activity[],
+    activities: (data || []) as Activity[],
     total,
     page,
     pageSize,
@@ -536,7 +536,7 @@ export async function getActivitiesByEntityId(entityId: string): Promise<Activit
     .eq('entity_id', entityId)
     .order('timestamp', { ascending: false });
   if (error) throw new Error(`获取实体活动失败: ${error.message}`);
-  return data as Activity[];
+  return (data || []) as Activity[];
 }
 
 export async function createActivity(activity: InsertActivity): Promise<Activity> {
